@@ -1,0 +1,20 @@
+{
+    "name": "anime-website",
+    "version": "1.0.0",
+    "description": "Anime streaming website with Vite frontend and Express backend",
+    "scripts": {
+        "dev": "concurrently \"npm run dev:server\" \"npm run dev:app\"",
+        "dev:server": "cd server && npm run dev",
+        "dev:app": "cd app && npm run dev",
+        "install:all": "cd server && npm install && cd ../app && npm install"
+    },
+    "keywords": [
+        "anime",
+        "streaming"
+    ],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "concurrently": "^8.2.2"
+    }
+}

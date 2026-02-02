@@ -1,0 +1,458 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 25% 8%;
+    --foreground: 0 0% 100%;
+    --card: 240 20% 12%;
+    --card-foreground: 0 0% 100%;
+    --popover: 240 20% 10%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 250 70% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 15% 18%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 15% 20%;
+    --muted-foreground: 240 10% 60%;
+    --accent: 195 100% 50%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 15% 20%;
+    --input: 240 15% 20%;
+    --ring: 250 70% 60%;
+    --radius: 0.75rem;
+
+    --anime-purple: #6C5DD3;
+    --anime-blue: #3B82F6;
+    --anime-cyan: #00C2FF;
+    --anime-dark: #0F0F1A;
+    --anime-card: #1A1A2E;
+    --anime-text: #FFFFFF;
+    --anime-text-secondary: #A0A0B0;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Lenis Smooth Scroll */
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+
+  .lenis.lenis-smooth [data-lenis-prevent] {
+    overscroll-behavior: contain;
+  }
+
+  .lenis.lenis-stopped {
+    overflow: hidden;
+  }
+
+  .lenis.lenis-scrolling iframe {
+    pointer-events: none;
+  }
+
+  body {
+    @apply bg-[#0F0F1A] text-white antialiased;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Outfit', sans-serif;
+  }
+
+  /* Prevent body scroll when dialog is open */
+  body[data-scroll-locked] {
+    overflow: hidden !important;
+    padding-right: var(--scrollbar-width, 0) !important;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#6C5DD3] via-[#3B82F6] to-[#00C2FF];
+  }
+
+  .glass {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10;
+  }
+
+  /* Admin sidebar scroll fix */
+  .admin-sidebar-scroll {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: auto !important;
+  }
+
+  .glass-dark {
+    @apply bg-black/40 backdrop-blur-xl border border-white/5;
+  }
+
+  .glow-purple {
+    box-shadow: 0 0 30px rgba(108, 93, 211, 0.4), 0 0 60px rgba(108, 93, 211, 0.2);
+  }
+
+  .glow-blue {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.4), 0 0 60px rgba(59, 130, 246, 0.2);
+  }
+
+  .glow-cyan {
+    box-shadow: 0 0 30px rgba(0, 194, 255, 0.4), 0 0 60px rgba(0, 194, 255, 0.2);
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .hover-lift:hover {
+    @apply -translate-y-2;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Swiper Custom Styles */
+.swiper-pagination-bullet {
+  @apply bg-white/30 w-2 h-2 rounded-full transition-all duration-300;
+}
+
+.swiper-pagination-bullet-active {
+  @apply bg-[#6C5DD3] w-6;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-[#0F0F1A];
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-[#6C5DD3]/50 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-[#6C5DD3];
+}
+
+/* Animation Keyframes */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s ease-out forwards;
+}
+
+/* Video Player Styles */
+.video-player {
+  @apply relative w-full bg-black rounded-xl overflow-hidden;
+}
+
+.video-controls {
+  @apply absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4 opacity-0 transition-opacity duration-300;
+}
+
+.video-player:hover .video-controls {
+  @apply opacity-100;
+}
+
+/* Card Hover Effects */
+.anime-card {
+  @apply relative overflow-hidden rounded-xl transition-all duration-500;
+}
+
+.anime-card::before {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity duration-300 z-10;
+}
+
+.anime-card:hover::before {
+  @apply opacity-100;
+}
+
+.anime-card:hover img {
+  @apply scale-110;
+}
+
+/* Navigation Link Underline */
+.nav-link {
+  @apply relative;
+}
+
+.nav-link::after {
+  content: '';
+  @apply absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-[#6C5DD3] to-[#00C2FF] transition-all duration-300;
+}
+
+.nav-link:hover::after {
+  @apply w-full;
+}
+
+/* Button Styles */
+.btn-primary {
+  @apply px-6 py-3 bg-gradient-to-r from-[#6C5DD3] to-[#00C2FF] rounded-xl font-semibold text-white transition-all duration-300 hover:shadow-lg hover:shadow-[#6C5DD3]/30 hover:-translate-y-0.5;
+}
+
+.btn-secondary {
+  @apply px-6 py-3 bg-white/10 backdrop-blur-sm rounded-xl font-semibold text-white border border-white/20 transition-all duration-300 hover:bg-white/20 hover:-translate-y-0.5;
+}
+
+/* Rating Badge */
+.rating-badge {
+  @apply flex items-center gap-1 px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-lg text-sm font-semibold;
+}
+
+/* Status Badge */
+.status-ongoing {
+  @apply px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-xs font-medium;
+}
+
+.status-completed {
+  @apply px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full text-xs font-medium;
+}
+
+/* Episode Card */
+.episode-card {
+  @apply relative rounded-lg overflow-hidden cursor-pointer transition-all duration-300;
+}
+
+.episode-card:hover {
+  @apply ring-2 ring-[#6C5DD3];
+}
+
+.episode-card .play-icon {
+  @apply absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300;
+}
+
+.episode-card:hover .play-icon {
+  @apply opacity-100;
+}
+
+/* Search Input */
+.search-input {
+  @apply w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-[#6C5DD3] focus:ring-2 focus:ring-[#6C5DD3]/20 transition-all duration-300;
+}
+
+/* Filter Chip */
+.filter-chip {
+  @apply px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-white/70 transition-all duration-300 cursor-pointer hover:bg-white/10 hover:border-white/20;
+}
+
+.filter-chip.active {
+  @apply bg-[#6C5DD3] border-[#6C5DD3] text-white;
+}
+
+/* ========================================
+   MOBILE-SPECIFIC STYLES (< 400px)
+   Optimized for iPhone 14 Pro (390 x 844)
+   ======================================== */
+@media (max-width: 399px) {
+  /* Tighter padding for small screens */
+  .max-w-7xl {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* Smaller buttons */
+  .btn-primary {
+    @apply px-4 py-2.5 text-sm;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2.5 text-sm;
+  }
+
+  /* Smaller headings */
+  h1 {
+    font-size: 1.25rem !important;
+    line-height: 1.3 !important;
+  }
+
+  h2 {
+    font-size: 1.125rem !important;
+  }
+
+  /* Compact cards */
+  .anime-card {
+    border-radius: 0.5rem;
+  }
+
+  /* Smaller rating badges */
+  .rating-badge {
+    @apply px-1.5 py-0.5 text-xs;
+  }
+
+  /* Smaller gaps in grids */
+  .gap-4 {
+    gap: 0.5rem !important;
+  }
+
+  .gap-3 {
+    gap: 0.375rem !important;
+  }
+
+  /* Smaller genre chips */
+  .filter-chip {
+    @apply px-2.5 py-1.5 text-xs;
+  }
+
+  /* Video player controls - larger touch targets */
+  .video-controls button {
+    min-width: 36px;
+    min-height: 36px;
+  }
+}
+
+/* Extra small text utility */
+.text-2xs {
+  font-size: 0.625rem;
+  line-height: 0.875rem;
+}
+
+/* Video Subtitle Styling */
+video::cue {
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: rgba(0, 0, 0, 0.75);
+  padding: 4px 12px;
+  border-radius: 4px;
+  text-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.9),
+    0 0 10px rgba(0, 0, 0, 0.6);
+  line-height: 1.6;
+}
+
+/* Fullscreen subtitle larger */
+video:fullscreen::cue,
+video:-webkit-full-screen::cue {
+  font-size: 1.75rem;
+  padding: 6px 16px;
+}
+
+/* Mobile subtitle smaller */
+@media (max-width: 768px) {
+  video::cue {
+    font-size: 0.875rem;
+    padding: 2px 8px;
+  }
+}
