@@ -2,6 +2,24 @@ const express = require('express');
 const router = express.Router();
 const WatchProgress = require('../models/WatchProgress');
 
+// Get all watch progress for a user (for Continue Watching feature)
+router.get('/user/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        const progressList = await WatchProgress.find({
+            userId,
+            completed: false,
+            currentTime: { $gt: 5 } // Only show if watched more than 5 seconds
+        }).sort({ updatedAt: -1 }).limit(20);
+
+        res.json(progressList);
+    } catch (err) {
+        console.error('[WatchProgress GET ALL Error]', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // Get watch progress for a specific anime/episode
 router.get('/:animeId/:episodeNumber', async (req, res) => {
     try {
@@ -83,24 +101,6 @@ router.delete('/:animeId/:episodeNumber', async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         console.error('[WatchProgress DELETE Error]', err);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
-
-// Get all watch progress for a user (for Continue Watching feature)
-router.get('/user/:userId', async (req, res) => {
-    try {
-        const { userId } = req.params;
-
-        const progressList = await WatchProgress.find({
-            userId,
-            completed: false,
-            currentTime: { $gt: 5 } // Only show if watched more than 5 seconds
-        }).sort({ updatedAt: -1 }).limit(20);
-
-        res.json(progressList);
-    } catch (err) {
-        console.error('[WatchProgress GET ALL Error]', err);
         res.status(500).json({ error: 'Server error' });
     }
 });
