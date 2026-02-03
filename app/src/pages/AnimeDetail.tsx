@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Play,
@@ -17,7 +17,9 @@ import {
   EyeOff,
   Twitter,
   MessageCircle,
-  Copy
+  Copy,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
@@ -33,12 +35,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BACKEND_URL } from '@/config/api';
+import { getAuthHeaders } from '@/lib/auth';
+import { apiFetch } from '@/lib/api';
 
 export default function AnimeDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const {
     animeList,
+    isLoading: animeListLoading,
     bookmarks,
     toggleBookmark,
     watchlist,
@@ -51,9 +56,13 @@ export default function AnimeDetail() {
     getWatchedEpisodes,
     toggleEpisodeWatched,
   } = useApp();
-  const [isLoading, setIsLoading] = useState(true);
+  const [episodeView, setEpisodeView] = useState<'compact' | 'comfy'>('comfy');
+  const [isMobile, setIsMobile] = useState(false);
   const [notifyEnabled, setNotifyEnabled] = useState(false);
   const [notifyLoading, setNotifyLoading] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
+  const actionsRef = useRef<HTMLDivElement | null>(null);
 
   const anime = id ? animeList.find(a => a.id === id) : undefined;
   const isBookmarked = id ? bookmarks.includes(id) : false;
@@ -67,6 +76,7 @@ export default function AnimeDetail() {
   // UI state only
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [copied, setCopied] = useState(false);
+  const [showFullSynopsis, setShowFullSynopsis] = useState(false);
 
   // Save user rating (Database-backed)
   const handleRating = (rating: number) => {
@@ -87,7 +97,9 @@ export default function AnimeDetail() {
 
     const fetchSubscription = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/schedule-subscriptions/check?userId=${user.id}&animeId=${id}`);
+        const res = await apiFetch(`${BACKEND_URL}/api/schedule-subscriptions/check?userId=${user.id}&animeId=${id}`, {
+          headers: { ...getAuthHeaders() }
+        });
         const data = await res.json();
         setNotifyEnabled(data.subscribed || false);
       } catch (err) {
@@ -107,9 +119,9 @@ export default function AnimeDetail() {
 
     setNotifyLoading(true);
     try {
-      const res = await fetch(`${BACKEND_URL}/api/schedule-subscriptions/toggle`, {
+      const res = await apiFetch(`${BACKEND_URL}/api/schedule-subscriptions/toggle`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({
           userId: user.id,
           animeId: id,
@@ -141,10 +153,14 @@ export default function AnimeDetail() {
     window.open(`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`, '_blank');
   };
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Copy link failed:', err);
+    }
   };
 
   // Jadwal Rilis (untuk anime ongoing) - gunakan data dari database
@@ -160,18 +176,29 @@ export default function AnimeDetail() {
       a.genres.some(g => anime.genres.includes(g))
     ).slice(0, 12)
     : [];
+  const episodeNumbers = anime
+    ? (anime.episodeData && anime.episodeData.length > 0
+      ? anime.episodeData.map(e => e.ep || e.episodeNumber || 0).sort((a, b) => a - b)
+      : Array.from({ length: anime.episodes }, (_, i) => i + 1))
+    : [];
+  const latestEpisode = episodeNumbers.length > 0 ? episodeNumbers[episodeNumbers.length - 1] : null;
 
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => setIsLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, [id]);
+    const update = () => setIsMobile(window.matchMedia('(max-width: 640px)').matches);
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  useEffect(() => {
+    setEpisodeView(isMobile ? 'compact' : 'comfy');
+  }, [isMobile]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [id]);
 
-  if (isLoading) {
+  if (animeListLoading) {
     return (
       <div className="min-h-screen bg-[#0F0F1A] flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-[#6C5DD3] border-t-transparent rounded-full animate-spin" />
@@ -203,6 +230,7 @@ export default function AnimeDetail() {
             src={anime.banner || anime.poster}
             alt={anime.title}
             className="w-full h-full object-cover"
+            loading="lazy"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F1A] via-[#0F0F1A]/80 to-[#0F0F1A]/30" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#0F0F1A]/90 via-[#0F0F1A]/50 to-transparent" />
@@ -238,6 +266,7 @@ export default function AnimeDetail() {
                 src={anime.poster}
                 alt={anime.title}
                 className="w-full h-full object-cover"
+                loading="lazy"
               />
             </motion.div>
 
@@ -303,7 +332,7 @@ export default function AnimeDetail() {
               </div>
 
               {/* Actions */}
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3" ref={actionsRef}>
                 <Link
                   to={`/watch/${anime.id}/${lastWatched?.episodeNumber || 1}`}
                   className="btn-primary flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm px-3 sm:px-4 py-2 sm:py-2.5"
@@ -348,7 +377,7 @@ export default function AnimeDetail() {
                 )}
 
                 {/* Share Dialog */}
-                <Dialog>
+                <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
                   <DialogTrigger asChild>
                     <button className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors">
                       <Share2 className="w-4 sm:w-5 h-4 sm:h-5" />
@@ -394,6 +423,31 @@ export default function AnimeDetail() {
                     </div>
                   </DialogContent>
                 </Dialog>
+              </div>
+
+              {/* User Rating - Compact on mobile */}
+              <div className="mt-3 flex sm:hidden items-center gap-2 flex-wrap">
+                <span className="text-white/50 text-xs">Rating Anda:</span>
+                <div className="flex gap-0.5">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                    <button
+                      key={star}
+                      onClick={() => handleRating(star)}
+                      className="transition-transform hover:scale-110"
+                      aria-label={`Beri rating ${star}`}
+                    >
+                      <Star
+                        className={`w-4 h-4 transition-colors ${star <= (hoverRating || userRating)
+                          ? 'text-yellow-400 fill-yellow-400'
+                          : 'text-white/20'
+                          }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+                {userRating > 0 && (
+                  <span className="text-yellow-400 font-medium text-xs">{userRating}/10</span>
+                )}
               </div>
 
               {/* User Rating - hidden on very small screens */}
@@ -470,26 +524,61 @@ export default function AnimeDetail() {
                   Sudah ditonton: <strong className="text-white">{watchedEpisodes.length}</strong> / {anime.episodes} episode
                 </span>
               </div>
-              {watchedEpisodes.length > 0 && (
-                <div className="w-32 h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-green-500 rounded-full transition-all"
-                    style={{ width: `${(watchedEpisodes.length / anime.episodes) * 100}%` }}
-                  />
+              <div className="flex items-center gap-3">
+                {latestEpisode && (
+                  <button
+                    onClick={() => {
+                      const el = document.getElementById('latest-episode');
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
+                    className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs bg-white/5 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    Episode Terbaru
+                  </button>
+                )}
+                {watchedEpisodes.length > 0 && (
+                  <div className="w-24 sm:w-32 h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-green-500 rounded-full transition-all"
+                      style={{ width: `${(watchedEpisodes.length / anime.episodes) * 100}%` }}
+                    />
+                  </div>
+                )}
+                <div className="hidden sm:flex items-center gap-1 rounded-full bg-white/5 p-1 border border-white/10">
+                  <button
+                    onClick={() => setEpisodeView('compact')}
+                    className={`px-2 py-1 text-xs rounded-full transition-colors ${episodeView === 'compact'
+                      ? 'bg-[#6C5DD3] text-white'
+                      : 'text-white/60 hover:text-white'
+                      }`}
+                  >
+                    Ringkas
+                  </button>
+                  <button
+                    onClick={() => setEpisodeView('comfy')}
+                    className={`px-2 py-1 text-xs rounded-full transition-colors ${episodeView === 'comfy'
+                      ? 'bg-[#6C5DD3] text-white'
+                      : 'text-white/60 hover:text-white'
+                      }`}
+                  >
+                    Nyaman
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-              {(anime.episodeData && anime.episodeData.length > 0
-                ? anime.episodeData.map(e => e.ep || e.episodeNumber || 0).sort((a, b) => a - b)
-                : Array.from({ length: anime.episodes }, (_, i) => i + 1)
-              ).map((epNum) => {
+            <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 ${episodeView === 'compact' ? 'gap-2' : 'gap-3'}`}>
+              {episodeNumbers.map((epNum) => {
                 const isWatched = watchedEpisodes.includes(epNum);
+                const isLatest = epNum === latestEpisode;
                 return (
                   <Link
                     to={`/watch/${anime.id}/${epNum}`}
                     key={epNum}
-                    className={`group relative block p-4 rounded-xl border transition-all duration-300 hover:scale-[1.02] cursor-pointer ${isWatched
+                    id={epNum === latestEpisode ? 'latest-episode' : undefined}
+                    className={`group relative block rounded-xl border transition-all duration-300 hover:scale-[1.02] cursor-pointer ${episodeView === 'compact' ? 'p-3' : 'p-4'} ${isLatest
+                      ? 'bg-yellow-500/10 border-yellow-500/40 hover:border-yellow-500/60 shadow-[0_0_0_1px_rgba(234,179,8,0.2),0_0_24px_rgba(234,179,8,0.12)]'
+                      : isWatched
                       ? 'bg-green-500/10 border-green-500/30 hover:border-green-500/50'
                       : lastWatched?.episodeNumber === epNum
                         ? 'bg-[#6C5DD3]/20 border-[#6C5DD3] hover:border-[#8B7BEF]'
@@ -501,6 +590,11 @@ export default function AnimeDetail() {
                         EP {epNum}
                       </span>
                       <div className="flex items-center gap-1">
+                        {isLatest && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400">
+                            Terbaru
+                          </span>
+                        )}
                         {lastWatched?.episodeNumber === epNum && (
                           <span className="text-xs text-[#6C5DD3]">Terakhir</span>
                         )}
@@ -546,9 +640,17 @@ export default function AnimeDetail() {
           {/* Synopsis Tab */}
           <TabsContent value="synopsis">
             <div className="max-w-3xl">
-              <p className="text-white/70 leading-relaxed text-lg">
+              <p className={`text-white/70 leading-relaxed text-lg ${showFullSynopsis ? '' : 'line-clamp-6'}`}>
                 {anime.synopsis}
               </p>
+              {anime.synopsis && anime.synopsis.length > 300 && (
+                <button
+                  onClick={() => setShowFullSynopsis(prev => !prev)}
+                  className="mt-3 text-sm text-[#6C5DD3] hover:text-[#00C2FF] transition-colors"
+                >
+                  {showFullSynopsis ? 'Tutup' : 'Selengkapnya'}
+                </button>
+              )}
               <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="p-4 bg-white/5 rounded-xl">
                   <p className="text-white/50 text-sm mb-1">Status</p>
@@ -610,6 +712,97 @@ export default function AnimeDetail() {
           </div>
         </div>
       </section>
+
+      {/* Sticky Mobile Actions */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 sm:hidden">
+        <div className="bg-[#0F0F1A]/95 backdrop-blur-md border-t border-white/10 px-3 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+8px)]">
+          <div className="flex items-center gap-2">
+            <Link
+              to={`/watch/${anime.id}/${lastWatched?.episodeNumber || 1}`}
+              className="flex-1 btn-primary flex items-center justify-center gap-2 text-xs px-3 py-2.5"
+            >
+              <Play className="w-4 h-4 fill-current" />
+              {lastWatched ? `Lanjutkan EP ${lastWatched.episodeNumber}` : 'Tonton'}
+            </Link>
+            <button
+              onClick={() => setMobileActionsOpen(prev => !prev)}
+              className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+              aria-label="Menu aksi"
+            >
+              {mobileActionsOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+            </button>
+          </div>
+
+          {mobileActionsOpen && (
+            <div className="mt-2 grid grid-cols-4 gap-2">
+              <button
+                onClick={() => toggleBookmark(anime.id)}
+                className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-[10px] ${isBookmarked ? 'bg-[#6C5DD3]/30 text-white' : 'bg-white/5 text-white/70 hover:bg-white/10'}`}
+              >
+                {isBookmarked ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                Favorit
+              </button>
+              <button
+                onClick={() => toggleWatchlist(anime.id)}
+                className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-[10px] ${isInWatchlist ? 'bg-green-500/20 text-green-400' : 'bg-white/5 text-white/70 hover:bg-white/10'}`}
+              >
+                {isInWatchlist ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                Watchlist
+              </button>
+              {latestEpisode ? (
+                <button
+                  onClick={() => {
+                    const el = document.getElementById('latest-episode');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setMobileActionsOpen(false);
+                  }}
+                  className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-[10px] bg-white/5 text-white/70 hover:bg-white/10"
+                >
+                  <ChevronDown className="w-4 h-4" />
+                  Terbaru
+                </button>
+              ) : (
+                <div className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-[10px] bg-white/5 text-white/40">
+                  <ChevronDown className="w-4 h-4" />
+                  Terbaru
+                </div>
+              )}
+              {anime.status === 'Ongoing' ? (
+                <button
+                  onClick={toggleNotify}
+                  disabled={notifyLoading}
+                  className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-[10px] ${notifyEnabled ? 'bg-yellow-500/20 text-yellow-400' : 'bg-white/5 text-white/70 hover:bg-white/10'}`}
+                >
+                  {notifyLoading ? (
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  ) : notifyEnabled ? (
+                    <Bell className="w-4 h-4" />
+                  ) : (
+                    <BellOff className="w-4 h-4" />
+                  )}
+                  Notif
+                </button>
+              ) : (
+                <div className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-[10px] bg-white/5 text-white/40">
+                  <BellOff className="w-4 h-4" />
+                  Notif
+                </div>
+              )}
+              <button
+                onClick={() => {
+                  setShareDialogOpen(true);
+                  setMobileActionsOpen(false);
+                  actionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }}
+                className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-[10px] bg-white/5 text-white/70 hover:bg-white/10"
+              >
+                <Share2 className="w-4 h-4" />
+                Bagikan
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </main>
   );
 }

@@ -12,6 +12,9 @@ import {
     Loader2
 } from 'lucide-react';
 import { BACKEND_URL } from '@/config/api';
+import { getAuthHeaders } from '@/lib/auth';
+import { apiFetch } from '@/lib/api';
+import SafeAvatar from '@/components/SafeAvatar';
 
 interface StatsData {
     totals: {
@@ -51,7 +54,9 @@ export default function AdminStats() {
     const fetchStats = async () => {
         try {
             setLoading(true);
-            const res = await fetch(`${BACKEND_URL}/api/admin/stats`);
+            const res = await apiFetch(`${BACKEND_URL}/api/admin/stats`, {
+                headers: { ...getAuthHeaders() }
+            });
             if (!res.ok) throw new Error('Failed to fetch stats');
             const data = await res.json();
             setStats(data);
@@ -64,8 +69,72 @@ export default function AdminStats() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 text-[#6C5DD3] animate-spin" />
+            <div className="space-y-6 animate-pulse">
+                {/* Stats Cards Skeleton */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-white/10" />
+                                <div className="flex-1 space-y-2">
+                                    <div className="h-3 bg-white/10 rounded w-1/2" />
+                                    <div className="h-5 bg-white/10 rounded w-2/3" />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Weekly Stats Skeleton */}
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <div className="h-5 bg-white/10 rounded w-1/3 mb-4" />
+                    <div className="grid grid-cols-2 gap-4">
+                        {[1, 2].map((i) => (
+                            <div key={i} className="bg-white/5 rounded-lg p-3">
+                                <div className="h-3 bg-white/10 rounded w-2/3 mb-2" />
+                                <div className="h-6 bg-white/10 rounded w-1/2" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Top Anime Skeleton */}
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <div className="h-5 bg-white/10 rounded w-1/3 mb-4" />
+                    <div className="space-y-3">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="flex items-center gap-3 bg-white/5 rounded-lg p-3">
+                                <div className="w-6 h-4 bg-white/10 rounded" />
+                                <div className="w-10 h-14 bg-white/10 rounded" />
+                                <div className="flex-1 space-y-2">
+                                    <div className="h-4 bg-white/10 rounded w-2/3" />
+                                    <div className="h-3 bg-white/10 rounded w-1/2" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Recent Users Skeleton */}
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <div className="h-5 bg-white/10 rounded w-1/3 mb-4" />
+                    <div className="space-y-2">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="flex items-center gap-3 bg-white/5 rounded-lg p-3">
+                                <SafeAvatar
+                                    loading
+                                    className="w-10 h-10 rounded-full"
+                                    skeletonClassName="bg-white/10"
+                                />
+                                <div className="flex-1 space-y-2">
+                                    <div className="h-4 bg-white/10 rounded w-1/3" />
+                                    <div className="h-3 bg-white/10 rounded w-1/2" />
+                                </div>
+                                <div className="w-12 h-4 bg-white/10 rounded" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         );
     }
@@ -147,6 +216,7 @@ export default function AdminStats() {
                                 src={anime.poster}
                                 alt={anime.title}
                                 className="w-10 h-14 object-cover rounded"
+                                loading="lazy"
                             />
                             <div className="flex-1 min-w-0">
                                 <p className="font-medium text-white truncate">{anime.title}</p>
@@ -179,13 +249,18 @@ export default function AdminStats() {
                 <div className="space-y-2">
                     {stats.recentUsers.map((user) => (
                         <div key={user._id} className="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center">
-                                {user.avatar ? (
-                                    <img src={user.avatar} alt="" className="w-full h-full rounded-full object-cover" />
-                                ) : (
-                                    <span className="text-white font-bold">{user.name?.charAt(0).toUpperCase()}</span>
-                                )}
-                            </div>
+                            <SafeAvatar
+                                src={user.avatar}
+                                name={user.name}
+                                className="w-10 h-10 rounded-full"
+                                fallbackBgClassName={
+                                    user.isBanned
+                                        ? 'bg-gradient-to-br from-gray-500 to-gray-700'
+                                        : user.isAdmin
+                                            ? 'bg-gradient-to-br from-red-500 to-rose-600'
+                                            : undefined
+                                }
+                            />
                             <div className="flex-1 min-w-0">
                                 <p className="font-medium text-white truncate">{user.name}</p>
                                 <p className="text-sm text-white/50 truncate">{user.email}</p>

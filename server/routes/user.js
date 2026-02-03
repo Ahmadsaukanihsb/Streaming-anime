@@ -3,7 +3,20 @@ const router = express.Router();
 const multer = require('multer');
 const AnimeInteraction = require('../models/AnimeInteraction');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const { uploadFile } = require('../utils/r2-storage');
+const { requireAuth } = require('../middleware/auth');
+const { validateBody, EMAIL_REGEX } = require('../middleware/validate');
+
+router.use(requireAuth);
+
+function ensureSelf(req, res, userId) {
+    if (userId && userId !== req.user.id) {
+        res.status(403).json({ error: 'Not authorized' });
+        return false;
+    }
+    return true;
+}
 
 // Configure multer for avatar uploads (memory storage for small files)
 const avatarUpload = multer({
@@ -21,11 +34,7 @@ const avatarUpload = multer({
 
 // Upload Avatar
 router.put('/avatar', avatarUpload.single('avatar'), async (req, res) => {
-    const { userId } = req.body;
-
-    if (!userId) {
-        return res.status(400).json({ error: 'User ID is required' });
-    }
+    const userId = req.user.id;
 
     if (!req.file) {
         return res.status(400).json({ error: 'No image file provided' });
@@ -73,18 +82,19 @@ router.put('/avatar', avatarUpload.single('avatar'), async (req, res) => {
 // Get User Data (Bookmarks, History, etc)
 router.get('/:userId', async (req, res) => {
     try {
-        let interaction = await AnimeInteraction.findOne({ userId: req.params.userId });
+        if (!ensureSelf(req, res, req.params.userId)) return;
+
+        let interaction = await AnimeInteraction.findOne({ userId: req.user.id });
         if (!interaction) {
             // Create if not exists
             interaction = new AnimeInteraction({
-                userId: req.params.userId,
+                userId: req.user.id,
                 bookmarks: [],
                 watchlist: [],
                 watchHistory: [],
                 ratings: [],
                 watchedEpisodes: [],
                 subscribedAnime: [],
-                notifications: [],
                 settings: {}
             });
             await interaction.save();
@@ -97,8 +107,11 @@ router.get('/:userId', async (req, res) => {
 });
 
 // Update Bookmarks
-router.post('/bookmarks', async (req, res) => {
-    const { userId, animeId } = req.body;
+router.post('/bookmarks', validateBody([
+    { field: 'animeId', required: true, type: 'string', minLength: 1, maxLength: 200 }
+]), async (req, res) => {
+    const { animeId } = req.body;
+    const userId = req.user.id;
     try {
         let interaction = await AnimeInteraction.findOne({ userId });
         if (!interaction) {
@@ -120,8 +133,11 @@ router.post('/bookmarks', async (req, res) => {
 });
 
 // Update Watchlist
-router.post('/watchlist', async (req, res) => {
-    const { userId, animeId } = req.body;
+router.post('/watchlist', validateBody([
+    { field: 'animeId', required: true, type: 'string', minLength: 1, maxLength: 200 }
+]), async (req, res) => {
+    const { animeId } = req.body;
+    const userId = req.user.id;
     try {
         let interaction = await AnimeInteraction.findOne({ userId });
         if (!interaction) {
@@ -143,8 +159,14 @@ router.post('/watchlist', async (req, res) => {
 });
 
 // Update History
-router.post('/history', async (req, res) => {
-    const { userId, animeId, episodeId, episodeNumber, progress } = req.body;
+router.post('/history', validateBody([
+    { field: 'animeId', required: true, type: 'string', minLength: 1, maxLength: 200 },
+    { field: 'episodeId', required: true, type: 'string', minLength: 1, maxLength: 200 },
+    { field: 'episodeNumber', required: true, type: 'number', integer: true, min: 1 },
+    { field: 'progress', required: true, type: 'number', min: 0, max: 100 }
+]), async (req, res) => {
+    const { animeId, episodeId, episodeNumber, progress } = req.body;
+    const userId = req.user.id;
     try {
         let interaction = await AnimeInteraction.findOne({ userId });
         if (!interaction) {
@@ -176,8 +198,12 @@ router.post('/history', async (req, res) => {
 // ==================== NEW ENDPOINTS ====================
 
 // Rate Anime
-router.post('/rating', async (req, res) => {
-    const { userId, animeId, rating } = req.body;
+router.post('/rating', validateBody([
+    { field: 'animeId', required: true, type: 'string', minLength: 1, maxLength: 200 },
+    { field: 'rating', required: true, type: 'number', min: 0, max: 10 }
+]), async (req, res) => {
+    const { animeId, rating } = req.body;
+    const userId = req.user.id;
     try {
         let interaction = await AnimeInteraction.findOne({ userId });
         if (!interaction) {
@@ -207,8 +233,9 @@ router.post('/rating', async (req, res) => {
 // Delete Rating
 router.delete('/rating/:userId/:animeId', async (req, res) => {
     const { userId, animeId } = req.params;
+    if (!ensureSelf(req, res, userId)) return;
     try {
-        let interaction = await AnimeInteraction.findOne({ userId });
+        let interaction = await AnimeInteraction.findOne({ userId: req.user.id });
         if (!interaction) {
             return res.status(404).json({ msg: 'User not found' });
         }
@@ -223,8 +250,12 @@ router.delete('/rating/:userId/:animeId', async (req, res) => {
 });
 
 // Toggle Watched Episode
-router.post('/watched-episode', async (req, res) => {
-    const { userId, animeId, episodeNumber } = req.body;
+router.post('/watched-episode', validateBody([
+    { field: 'animeId', required: true, type: 'string', minLength: 1, maxLength: 200 },
+    { field: 'episodeNumber', required: true, type: 'number', integer: true, min: 1 }
+]), async (req, res) => {
+    const { animeId, episodeNumber } = req.body;
+    const userId = req.user.id;
     try {
         let interaction = await AnimeInteraction.findOne({ userId });
         if (!interaction) {
@@ -256,8 +287,9 @@ router.post('/watched-episode', async (req, res) => {
 // Get Watched Episodes for an Anime
 router.get('/watched-episodes/:userId/:animeId', async (req, res) => {
     const { userId, animeId } = req.params;
+    if (!ensureSelf(req, res, userId)) return;
     try {
-        let interaction = await AnimeInteraction.findOne({ userId });
+        let interaction = await AnimeInteraction.findOne({ userId: req.user.id });
         if (!interaction) {
             return res.json({ episodes: [] });
         }
@@ -271,8 +303,11 @@ router.get('/watched-episodes/:userId/:animeId', async (req, res) => {
 });
 
 // Toggle Anime Subscription (for notifications)
-router.post('/subscribe', async (req, res) => {
-    const { userId, animeId } = req.body;
+router.post('/subscribe', validateBody([
+    { field: 'animeId', required: true, type: 'string', minLength: 1, maxLength: 200 }
+]), async (req, res) => {
+    const { animeId } = req.body;
+    const userId = req.user.id;
     try {
         let interaction = await AnimeInteraction.findOne({ userId });
         if (!interaction) {
@@ -297,15 +332,23 @@ router.post('/subscribe', async (req, res) => {
 // Get Notifications
 router.get('/notifications/:userId', async (req, res) => {
     try {
-        let interaction = await AnimeInteraction.findOne({ userId: req.params.userId });
-        if (!interaction) {
-            return res.json([]);
-        }
-        // Return notifications sorted by date (newest first)
-        const notifications = interaction.notifications.sort((a, b) =>
-            new Date(b.createdAt) - new Date(a.createdAt)
-        );
-        res.json(notifications);
+        if (!ensureSelf(req, res, req.params.userId)) return;
+        const { page = 1, limit = 50 } = req.query;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const notifications = await Notification.find({ userId: req.user.id })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(parseInt(limit))
+            .lean();
+
+        // Backward compatibility: include "read" alias
+        const mapped = notifications.map(n => ({
+            ...n,
+            read: n.isRead
+        }));
+
+        res.json(mapped);
     } catch (err) {
         console.error('[User] Get notifications error:', err.message);
         res.status(500).json({ error: 'Server error', message: err.message });
@@ -313,25 +356,52 @@ router.get('/notifications/:userId', async (req, res) => {
 });
 
 // Add Notification (for system/admin use)
-router.post('/notifications', async (req, res) => {
-    const { userId, type, title, message, animeId } = req.body;
+router.post('/notifications', validateBody([
+    { field: 'type', required: false, type: 'string', minLength: 1, maxLength: 50 },
+    { field: 'title', required: false, type: 'string', minLength: 1, maxLength: 200 },
+    { field: 'message', required: false, type: 'string', minLength: 1, maxLength: 500 },
+    { field: 'animeId', required: false, type: 'string', minLength: 1, maxLength: 200 },
+    { field: 'animeTitle', required: false, type: 'string', minLength: 1, maxLength: 200 },
+    { field: 'animePoster', required: false, type: 'string', minLength: 1, maxLength: 500 },
+    { field: 'episodeNumber', required: false, type: 'number', integer: true, min: 1 }
+], { atLeastOne: ['title', 'message'] }), async (req, res) => {
+    const { type, title, message, animeId, animeTitle, animePoster, episodeNumber } = req.body;
+    const userId = req.user.id;
     try {
-        let interaction = await AnimeInteraction.findOne({ userId });
-        if (!interaction) {
-            interaction = new AnimeInteraction({ userId, notifications: [] });
-        }
+        const allowedTypes = new Set([
+            'like_discussion',
+            'like_reply',
+            'reply',
+            'mention',
+            'new_episode',
+            'system',
+            'anime',
+            'episode'
+        ]);
+        const normalizedType = allowedTypes.has(type) ? type : 'system';
 
-        interaction.notifications.push({
-            type: type || 'system',
-            title,
-            message,
-            animeId,
-            read: false,
-            createdAt: new Date()
+        await Notification.create({
+            userId,
+            type: normalizedType,
+            message: message || title || 'Notifikasi',
+            animeId: animeId || undefined,
+            animeTitle: animeTitle || undefined,
+            animePoster: animePoster || undefined,
+            episodeNumber: episodeNumber || undefined,
+            isRead: false
         });
 
-        await interaction.save();
-        res.json(interaction.notifications);
+        const notifications = await Notification.find({ userId })
+            .sort({ createdAt: -1 })
+            .limit(50)
+            .lean();
+
+        const mapped = notifications.map(n => ({
+            ...n,
+            read: n.isRead
+        }));
+
+        res.json(mapped);
     } catch (err) {
         console.error('[User] Add notification error:', err.message);
         res.status(500).json({ error: 'Server error', message: err.message });
@@ -339,21 +409,38 @@ router.post('/notifications', async (req, res) => {
 });
 
 // Mark Notification as Read
-router.put('/notifications/read', async (req, res) => {
-    const { userId, notificationId } = req.body;
+router.put('/notifications/read', validateBody([
+    { field: 'notificationId', required: true, type: 'string', minLength: 1, maxLength: 200 }
+]), async (req, res) => {
+    const { notificationId } = req.body;
     try {
-        let interaction = await AnimeInteraction.findOne({ userId });
-        if (!interaction) {
-            return res.status(404).json({ msg: 'User not found' });
+        if (!notificationId) {
+            return res.status(400).json({ error: 'notificationId is required' });
         }
 
-        const notification = interaction.notifications.id(notificationId);
-        if (notification) {
-            notification.read = true;
-            await interaction.save();
+        const notification = await Notification.findById(notificationId);
+        if (!notification) {
+            return res.status(404).json({ error: 'Notification not found' });
         }
 
-        res.json(interaction.notifications);
+        if (notification.userId.toString() !== req.user.id) {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
+
+        notification.isRead = true;
+        await notification.save();
+
+        const notifications = await Notification.find({ userId: req.user.id })
+            .sort({ createdAt: -1 })
+            .limit(50)
+            .lean();
+
+        const mapped = notifications.map(n => ({
+            ...n,
+            read: n.isRead
+        }));
+
+        res.json(mapped);
     } catch (err) {
         console.error('[User] Mark notification read error:', err.message);
         res.status(500).json({ error: 'Server error', message: err.message });
@@ -363,15 +450,23 @@ router.put('/notifications/read', async (req, res) => {
 // Mark All Notifications as Read
 router.put('/notifications/read-all/:userId', async (req, res) => {
     try {
-        let interaction = await AnimeInteraction.findOne({ userId: req.params.userId });
-        if (!interaction) {
-            return res.status(404).json({ msg: 'User not found' });
-        }
+        if (!ensureSelf(req, res, req.params.userId)) return;
+        await Notification.updateMany(
+            { userId: req.user.id, isRead: false },
+            { isRead: true }
+        );
 
-        interaction.notifications.forEach(n => n.read = true);
-        await interaction.save();
+        const notifications = await Notification.find({ userId: req.user.id })
+            .sort({ createdAt: -1 })
+            .limit(50)
+            .lean();
 
-        res.json(interaction.notifications);
+        const mapped = notifications.map(n => ({
+            ...n,
+            read: n.isRead
+        }));
+
+        res.json(mapped);
     } catch (err) {
         console.error('[User] Mark all notifications read error:', err.message);
         res.status(500).json({ error: 'Server error', message: err.message });
@@ -381,7 +476,8 @@ router.put('/notifications/read-all/:userId', async (req, res) => {
 // Get User Settings
 router.get('/settings/:userId', async (req, res) => {
     try {
-        let interaction = await AnimeInteraction.findOne({ userId: req.params.userId });
+        if (!ensureSelf(req, res, req.params.userId)) return;
+        let interaction = await AnimeInteraction.findOne({ userId: req.user.id });
         if (!interaction) {
             return res.json({
                 autoPlayNext: true,
@@ -400,7 +496,8 @@ router.get('/settings/:userId', async (req, res) => {
 
 // Update User Settings
 router.put('/settings', async (req, res) => {
-    const { userId, settings } = req.body;
+    const { settings } = req.body;
+    const userId = req.user.id;
     try {
         let interaction = await AnimeInteraction.findOne({ userId });
         if (!interaction) {
@@ -424,7 +521,8 @@ router.put('/settings', async (req, res) => {
 // Delete Watch History
 router.delete('/history/:userId', async (req, res) => {
     try {
-        let interaction = await AnimeInteraction.findOne({ userId: req.params.userId });
+        if (!ensureSelf(req, res, req.params.userId)) return;
+        let interaction = await AnimeInteraction.findOne({ userId: req.user.id });
         if (!interaction) {
             return res.status(404).json({ msg: 'User not found' });
         }
@@ -440,12 +538,12 @@ router.delete('/history/:userId', async (req, res) => {
 });
 
 // Update User Profile (name, email)
-router.put('/profile', async (req, res) => {
-    const { userId, name, email } = req.body;
-
-    if (!userId) {
-        return res.status(400).json({ error: 'User ID is required' });
-    }
+router.put('/profile', validateBody([
+    { field: 'name', required: false, type: 'string', minLength: 2, maxLength: 80 },
+    { field: 'email', required: false, type: 'string', minLength: 5, maxLength: 254, pattern: EMAIL_REGEX }
+], { atLeastOne: ['name', 'email'] }), async (req, res) => {
+    const { name, email } = req.body;
+    const userId = req.user.id;
 
     try {
         const user = await User.findById(userId);

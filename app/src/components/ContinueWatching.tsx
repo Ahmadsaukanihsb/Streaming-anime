@@ -32,7 +32,7 @@ export default function ContinueWatching() {
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center shadow-md sm:shadow-lg shadow-[#6C5DD3]/20 sm:shadow-[#6C5DD3]/30">
                         <Play className="w-5 h-5 text-white" />
                     </div>
                     <div>
@@ -72,19 +72,20 @@ export default function ContinueWatching() {
                                         src={item.anime.poster}
                                         alt={item.anime.title}
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        loading="lazy"
                                     />
                                     {/* Gradient Overlay */}
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
                                     {/* Play Button */}
                                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <div className="w-14 h-14 rounded-full bg-[#6C5DD3] flex items-center justify-center shadow-lg shadow-[#6C5DD3]/30">
+                                        <div className="w-14 h-14 rounded-full bg-[#6C5DD3] flex items-center justify-center shadow-md sm:shadow-lg shadow-[#6C5DD3]/20 sm:shadow-[#6C5DD3]/30">
                                             <Play className="w-6 h-6 text-white fill-white ml-1" />
                                         </div>
                                     </div>
 
                                     {/* Episode Badge */}
-                                    <div className="absolute top-3 left-3 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-lg text-xs font-medium text-white">
+                                    <div className="absolute top-3 left-3 px-2 py-1 bg-black/60 backdrop-blur-[2px] sm:backdrop-blur-sm rounded-lg text-xs font-medium text-white">
                                         EP {item.episodeNumber}
                                     </div>
 

@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { BACKEND_URL } from '@/config/api';
 import RoleBadge from '@/components/RoleBadge';
+import { getAuthHeaders } from '@/lib/auth';
+import { apiFetch } from '@/lib/api';
+import SafeAvatar from '@/components/SafeAvatar';
 
 interface Discussion {
     _id: string;
@@ -96,7 +99,7 @@ export default function Community() {
                 const url = selectedCategory === 'all'
                     ? `${BACKEND_URL}/api/discussions`
                     : `${BACKEND_URL}/api/discussions?category=${selectedCategory}`;
-                const res = await fetch(url);
+                const res = await apiFetch(url);
                 const data = await res.json();
                 setDiscussions(data.discussions || []);
             } catch (err) {
@@ -116,7 +119,7 @@ export default function Community() {
         const fetchReviews = async () => {
             try {
                 setReviewsLoading(true);
-                const res = await fetch(`${BACKEND_URL}/api/reviews?sort=${reviewSort}&limit=20`);
+                const res = await apiFetch(`${BACKEND_URL}/api/reviews?sort=${reviewSort}&limit=20`);
                 const data = await res.json();
                 setReviews(data.reviews || []);
             } catch (err) {
@@ -136,9 +139,9 @@ export default function Community() {
         if (!user || !newDiscussion.title.trim() || !newDiscussion.content.trim()) return;
 
         try {
-            const res = await fetch(`${BACKEND_URL}/api/discussions`, {
+            const res = await apiFetch(`${BACKEND_URL}/api/discussions`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({
                     userId: user.id,
                     userName: user.name,
@@ -171,9 +174,9 @@ export default function Community() {
         if (!user) return;
 
         try {
-            const res = await fetch(`${BACKEND_URL}/api/discussions/${discussionId}/like`, {
+            const res = await apiFetch(`${BACKEND_URL}/api/discussions/${discussionId}/like`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({ userId: user.id, userName: user.name })
             });
 
@@ -196,9 +199,9 @@ export default function Community() {
         if (!user?.isAdmin) return;
 
         try {
-            const res = await fetch(`${BACKEND_URL}/api/discussions/${discussionId}/pin`, {
+            const res = await apiFetch(`${BACKEND_URL}/api/discussions/${discussionId}/pin`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({ isAdmin: user.isAdmin })
             });
 
@@ -269,9 +272,9 @@ export default function Community() {
         if (!user || !editingDiscussion || !editForm.title.trim() || !editForm.content.trim()) return;
 
         try {
-            const res = await fetch(`${BACKEND_URL}/api/discussions/${editingDiscussion._id}`, {
+            const res = await apiFetch(`${BACKEND_URL}/api/discussions/${editingDiscussion._id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({
                     userId: user.id,
                     title: editForm.title,
@@ -301,9 +304,9 @@ export default function Community() {
         if (!selectedAnime) return;
 
         try {
-            const res = await fetch(`${BACKEND_URL}/api/reviews`, {
+            const res = await apiFetch(`${BACKEND_URL}/api/reviews`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({
                     userId: user.id,
                     userName: user.name,
@@ -339,9 +342,9 @@ export default function Community() {
         if (!user) return;
 
         try {
-            const res = await fetch(`${BACKEND_URL}/api/reviews/${reviewId}/like`, {
+            const res = await apiFetch(`${BACKEND_URL}/api/reviews/${reviewId}/like`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({ userId: user.id })
             });
 
@@ -363,9 +366,9 @@ export default function Community() {
         if (!user) return;
 
         try {
-            const res = await fetch(`${BACKEND_URL}/api/reviews/${reviewId}/helpful`, {
+            const res = await apiFetch(`${BACKEND_URL}/api/reviews/${reviewId}/helpful`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({ userId: user.id })
             });
 
@@ -545,8 +548,24 @@ export default function Community() {
 
                                 {/* Discussion List */}
                                 {loading ? (
-                                    <div className="flex justify-center py-12">
-                                        <div className="w-8 h-8 border-2 border-[#6C5DD3] border-t-transparent rounded-full animate-spin" />
+                                    <div className="space-y-4">
+                                        {[1, 2, 3].map((i) => (
+                                            <div key={i} className="p-4 sm:p-5 bg-white/5 rounded-xl sm:rounded-2xl border border-white/10 animate-pulse">
+                                                <div className="flex items-start gap-2 sm:gap-3 mb-3">
+                                                    <SafeAvatar
+                                                        loading
+                                                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0"
+                                                        skeletonClassName="bg-white/10"
+                                                    />
+                                                    <div className="flex-1 space-y-2">
+                                                        <div className="h-4 bg-white/10 rounded w-3/5" />
+                                                        <div className="h-3 bg-white/10 rounded w-2/5" />
+                                                    </div>
+                                                </div>
+                                                <div className="h-4 bg-white/10 rounded w-5/6 mb-2" />
+                                                <div className="h-4 bg-white/10 rounded w-2/3" />
+                                            </div>
+                                        ))}
                                     </div>
                                 ) : discussions.length === 0 ? (
                                     <div className="text-center py-12">
@@ -566,17 +585,12 @@ export default function Community() {
                                             >
                                                 {/* Header */}
                                                 <div className="flex items-start gap-2 sm:gap-3 mb-3">
-                                                    {discussion.userAvatar ? (
-                                                        <img
-                                                            src={discussion.userAvatar}
-                                                            alt={discussion.userName}
-                                                            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover flex-shrink-0"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center text-white font-bold text-sm sm:text-base flex-shrink-0">
-                                                            {discussion.userName.charAt(0).toUpperCase()}
-                                                        </div>
-                                                    )}
+                                                    <SafeAvatar
+                                                        src={discussion.userAvatar}
+                                                        name={discussion.userName}
+                                                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0 text-sm sm:text-base"
+                                                        fallbackClassName="text-sm sm:text-base"
+                                                    />
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                                                             {discussion.isPinned && (
@@ -727,7 +741,12 @@ export default function Community() {
                                                                             className="w-full px-4 py-2 text-left text-white hover:bg-[#6C5DD3]/20 transition-colors flex items-center gap-3"
                                                                         >
                                                                             {anime.poster && (
-                                                                                <img src={anime.poster} alt="" className="w-8 h-12 object-cover rounded" />
+                                                                                <img
+                                                                                    src={anime.poster}
+                                                                                    alt=""
+                                                                                    className="w-8 h-12 object-cover rounded"
+                                                                                    loading="lazy"
+                                                                                />
                                                                             )}
                                                                             <span className="truncate">{anime.title}</span>
                                                                         </button>
@@ -839,6 +858,7 @@ export default function Community() {
                                                                 src={review.animePoster}
                                                                 alt={review.animeTitle}
                                                                 className="w-20 h-28 object-cover rounded-lg"
+                                                                loading="lazy"
                                                             />
                                                         </Link>
                                                     )}
@@ -869,13 +889,12 @@ export default function Community() {
                                                         {/* Footer */}
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex items-center gap-2">
-                                                                {review.userAvatar ? (
-                                                                    <img src={review.userAvatar} alt={review.userName} className="w-6 h-6 rounded-full object-cover" />
-                                                                ) : (
-                                                                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center text-white text-xs font-bold">
-                                                                        {review.userName.charAt(0).toUpperCase()}
-                                                                    </div>
-                                                                )}
+                                                                <SafeAvatar
+                                                                    src={review.userAvatar}
+                                                                    name={review.userName}
+                                                                    className="w-6 h-6 rounded-full"
+                                                                    fallbackClassName="text-xs"
+                                                                />
                                                                 <span className="text-white/60 text-sm">{review.userName}</span>
                                                                 <span className="text-white/30 text-xs">•</span>
                                                                 <span className="text-white/40 text-xs">{formatDate(review.createdAt)}</span>

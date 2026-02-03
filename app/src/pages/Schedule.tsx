@@ -5,6 +5,8 @@ import { Calendar, Clock, Play, Bell, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { BACKEND_URL } from '@/config/api';
+import { getAuthHeaders } from '@/lib/auth';
+import { apiFetch } from '@/lib/api';
 
 // Day names in Indonesian
 const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -25,7 +27,9 @@ export default function Schedule() {
 
         const fetchSubscriptions = async () => {
             try {
-                const res = await fetch(`${BACKEND_URL}/api/schedule-subscriptions/ids?userId=${user.id}`);
+                const res = await apiFetch(`${BACKEND_URL}/api/schedule-subscriptions/ids?userId=${user.id}`, {
+                    headers: { ...getAuthHeaders() }
+                });
                 const data = await res.json();
                 setSubscribedAnime(data.animeIds || []);
             } catch (err) {
@@ -46,9 +50,9 @@ export default function Schedule() {
         setLoadingSubscription(anime.id);
 
         try {
-            const res = await fetch(`${BACKEND_URL}/api/schedule-subscriptions/toggle`, {
+            const res = await apiFetch(`${BACKEND_URL}/api/schedule-subscriptions/toggle`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({
                     userId: user.id,
                     animeId: anime.id,
@@ -214,6 +218,7 @@ export default function Schedule() {
                                                 src={anime.poster}
                                                 alt={anime.title}
                                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                loading="lazy"
                                             />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                             <div className="absolute bottom-1 left-1 right-1 flex items-center justify-center">

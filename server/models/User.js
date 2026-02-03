@@ -23,8 +23,9 @@ const userSchema = new mongoose.Schema({
     },
     communityRole: {
         type: String,
-        enum: ['member', 'supporter', 'knight', 'guardian', 'legend', 'moderator', 'admin'],
         default: 'member',
+        trim: true,
+        lowercase: true,
     },
     isBanned: {
         type: Boolean,
@@ -44,6 +45,20 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
+    refreshTokenHash: {
+        type: String,
+    },
+    refreshTokenExpiresAt: {
+        type: Date,
+    },
+    // Multi-device refresh tokens
+    refreshTokens: [{
+        hash: { type: String, required: true },
+        expiresAt: { type: Date, required: true },
+        createdAt: { type: Date, default: Date.now },
+        userAgent: { type: String },
+        ip: { type: String }
+    }],
 });
 
 module.exports = mongoose.model('User', userSchema);

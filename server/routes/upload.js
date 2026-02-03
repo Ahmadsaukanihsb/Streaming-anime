@@ -12,6 +12,11 @@ const r2 = require('../utils/r2-storage');
 const { CustomAnime } = require('../models/CustomAnime');
 const Notification = require('../models/Notification');
 const ScheduleSubscription = require('../models/ScheduleSubscription');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { validateBody } = require('../middleware/validate');
+
+router.use(requireAuth);
+router.use(requireAdmin);
 
 // Create temp upload directory
 const uploadDir = path.join(__dirname, '../temp_uploads');
@@ -50,7 +55,12 @@ const upload = multer({
  * - quality: string (e.g., "720p", "1080p")
  * - contentType: string (optional, default: "video/mp4")
  */
-router.post('/presign', async (req, res) => {
+router.post('/presign', validateBody([
+    { field: 'animeTitle', required: true, type: 'string', minLength: 1, maxLength: 200 },
+    { field: 'episode', required: true, type: 'number', integer: true, min: 1 },
+    { field: 'quality', required: false, type: 'string', minLength: 1, maxLength: 20 },
+    { field: 'contentType', required: false, type: 'string', minLength: 1, maxLength: 100 }
+]), async (req, res) => {
     try {
         const { animeTitle, episode, quality = '720p', contentType = 'video/mp4' } = req.body;
 
@@ -95,7 +105,13 @@ router.post('/presign', async (req, res) => {
  * - quality: string
  * - publicUrl: string
  */
-router.post('/confirm', async (req, res) => {
+router.post('/confirm', validateBody([
+    { field: 'publicUrl', required: true, type: 'string', minLength: 1, maxLength: 1000 },
+    { field: 'episode', required: true, type: 'number', integer: true, min: 1 },
+    { field: 'animeId', required: false, type: 'string', minLength: 1, maxLength: 200 },
+    { field: 'animeTitle', required: false, type: 'string', minLength: 1, maxLength: 200 },
+    { field: 'quality', required: false, type: 'string', minLength: 1, maxLength: 20 }
+]), async (req, res) => {
     try {
         const { animeId, animeTitle, episode, quality = '720p', publicUrl } = req.body;
 
@@ -374,7 +390,9 @@ router.post('/video', upload.single('video'), async (req, res) => {
  * Delete a video file from R2
  * Body: { key: "anime/slug/ep-1-720p.mp4" }
  */
-router.delete('/video', async (req, res) => {
+router.delete('/video', validateBody([
+    { field: 'key', required: true, type: 'string', minLength: 1, maxLength: 500 }
+]), async (req, res) => {
     try {
         const { key } = req.body;
 

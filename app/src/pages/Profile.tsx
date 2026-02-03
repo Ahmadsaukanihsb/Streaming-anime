@@ -12,6 +12,8 @@ import {
   Play,
   Star,
   Bell,
+  MessageCircle,
+  Heart,
   Eye,
   Trophy,
   TrendingUp,
@@ -30,6 +32,9 @@ import {
 } from '@/components/ui/dialog';
 import RoleBadge from '@/components/RoleBadge';
 import { BACKEND_URL } from '@/config/api';
+import { getAuthHeaders } from '@/lib/auth';
+import { apiFetch } from '@/lib/api';
+import SafeAvatar from '@/components/SafeAvatar';
 
 export default function Profile() {
   const {
@@ -97,7 +102,9 @@ export default function Profile() {
     if (!user) return;
     const fetchSubscriptions = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/schedule-subscriptions?userId=${user.id}`);
+        const res = await apiFetch(`${BACKEND_URL}/api/schedule-subscriptions?userId=${user.id}`, {
+          headers: { ...getAuthHeaders() }
+        });
         const data = await res.json();
         if (data.subscriptions) {
           setSubscribedAnimeIds(data.subscriptions.map((s: { animeId: string }) => s.animeId));
@@ -114,9 +121,9 @@ export default function Profile() {
     if (!user) return;
     setLoadingSubscriptions(true);
     try {
-      await fetch(`${BACKEND_URL}/api/schedule-subscriptions/toggle`, {
+      await apiFetch(`${BACKEND_URL}/api/schedule-subscriptions/toggle`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ userId: user.id, animeId })
       });
       setSubscribedAnimeIds(prev => prev.filter(id => id !== animeId));
@@ -170,6 +177,23 @@ export default function Profile() {
     { label: 'Jam Menonton', value: totalWatchHours, icon: Clock },
   ];
 
+  const getNotificationMeta = (type: string) => {
+    switch (type) {
+      case 'new_episode':
+      case 'episode':
+        return { icon: <Eye className="w-5 h-5" />, badgeClass: 'bg-[#6C5DD3]/20 text-[#6C5DD3]' };
+      case 'anime':
+        return { icon: <Trophy className="w-5 h-5" />, badgeClass: 'bg-green-500/20 text-green-400' };
+      case 'reply':
+        return { icon: <MessageCircle className="w-5 h-5" />, badgeClass: 'bg-blue-500/20 text-blue-400' };
+      case 'like_discussion':
+      case 'like_reply':
+        return { icon: <Heart className="w-5 h-5" />, badgeClass: 'bg-red-500/20 text-red-400' };
+      default:
+        return { icon: <Bell className="w-5 h-5" />, badgeClass: 'bg-yellow-500/20 text-yellow-400' };
+    }
+  };
+
   return (
     <main className="min-h-screen bg-[#0F0F1A] pt-20">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -188,10 +212,13 @@ export default function Profile() {
               {/* Avatar with glow */}
               <div className="relative group">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] rounded-2xl blur-lg opacity-50 group-hover:opacity-70 transition-opacity" />
-                <img
+                <SafeAvatar
                   src={user.avatar}
-                  alt={user.name}
-                  className={`relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-2 border-white/20 ${avatarLoading ? 'opacity-50' : ''}`}
+                  name={user.name}
+                  className={`relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-white/20 ${avatarLoading ? 'opacity-50' : ''}`}
+                  imgClassName="object-cover"
+                  fallbackBgClassName={user.isAdmin ? 'bg-gradient-to-br from-red-500 to-rose-600' : undefined}
+                  fallbackClassName="text-xl"
                 />
                 {avatarLoading && (
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -408,6 +435,7 @@ export default function Profile() {
                       src={item.anime?.poster}
                       alt={item.anime?.title}
                       className="w-16 h-22 sm:w-20 sm:h-28 object-cover rounded-lg flex-shrink-0"
+                      loading="lazy"
                     />
                     <div className="flex-1 min-w-0 w-full xs:w-auto">
                       <h3 className="font-semibold text-white text-sm sm:text-base line-clamp-1">{item.anime?.title}</h3>
@@ -460,6 +488,7 @@ export default function Profile() {
                         src={anime.poster}
                         alt={anime.title}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        loading="lazy"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                       <div className="absolute bottom-0 left-0 right-0 p-3">
@@ -495,6 +524,7 @@ export default function Profile() {
                         src={anime.poster}
                         alt={anime.title}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        loading="lazy"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                       <div className="absolute bottom-0 left-0 right-0 p-3">
@@ -534,7 +564,12 @@ export default function Profile() {
                         transition={{ delay: index * 0.1 }}
                         className="flex items-center gap-4 p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
                       >
-                        <img src={anime.poster} alt={anime.title} className="w-16 h-20 object-cover rounded-lg" />
+                        <img
+                          src={anime.poster}
+                          alt={anime.title}
+                          className="w-16 h-20 object-cover rounded-lg"
+                          loading="lazy"
+                        />
                         <div className="flex-1">
                           <Link to={`/anime/${anime.id}`} className="font-semibold text-white hover:text-[#6C5DD3]">{anime.title}</Link>
                           <div className="flex items-center gap-1 mt-2">
@@ -597,7 +632,12 @@ export default function Profile() {
                       if (!anime) return null;
                       return (
                         <div key={animeId} className="relative group rounded-xl overflow-hidden">
-                          <img src={anime.poster} alt={anime.title} className="w-full aspect-[3/4] object-cover" />
+                          <img
+                            src={anime.poster}
+                            alt={anime.title}
+                            className="w-full aspect-[3/4] object-cover"
+                            loading="lazy"
+                          />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                           <div className="absolute bottom-0 left-0 right-0 p-3">
                             <h4 className="font-medium text-white text-sm line-clamp-1">{anime.title}</h4>
@@ -627,23 +667,28 @@ export default function Profile() {
                 <h3 className="text-lg font-semibold text-white mb-4">Notifikasi Terbaru</h3>
                 {notifications.length > 0 ? (
                   <div className="space-y-2">
-                    {notifications.map((notif) => (
-                      <div
-                        key={notif._id}
-                        onClick={() => notif._id && !notif.read && markNotificationRead(notif._id)}
-                        className={`flex items-center gap-4 p-4 rounded-xl transition-colors cursor-pointer ${notif.read ? 'bg-white/5' : 'bg-[#6C5DD3]/10 border border-[#6C5DD3]/30'}`}
-                      >
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${notif.type === 'episode' ? 'bg-[#6C5DD3]/20 text-[#6C5DD3]' : notif.type === 'anime' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                          {notif.type === 'episode' ? <Eye className="w-5 h-5" /> : notif.type === 'anime' ? <Trophy className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+                    {notifications.map((notif) => {
+                      const { icon, badgeClass } = getNotificationMeta(notif.type);
+                      const primaryText = notif.message || notif.title || 'Notifikasi';
+                      const secondaryText = notif.discussionTitle || notif.animeTitle;
+                      return (
+                        <div
+                          key={notif._id}
+                          onClick={() => !notif.isRead && markNotificationRead(notif._id)}
+                          className={`flex items-center gap-4 p-4 rounded-xl transition-colors cursor-pointer ${notif.isRead ? 'bg-white/5' : 'bg-[#6C5DD3]/10 border border-[#6C5DD3]/30'}`}
+                        >
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${badgeClass}`}>
+                            {icon}
+                          </div>
+                          <div className="flex-1">
+                            <p className={`text-sm ${notif.isRead ? 'text-white/70' : 'text-white font-medium'}`}>{primaryText}</p>
+                            {secondaryText && <p className="text-xs text-white/40">{secondaryText}</p>}
+                            <p className="text-xs text-white/30 mt-1">{new Date(notif.createdAt).toLocaleDateString('id-ID')}</p>
+                          </div>
+                          {!notif.isRead && <span className="w-2 h-2 bg-[#6C5DD3] rounded-full" />}
                         </div>
-                        <div className="flex-1">
-                          <p className={`text-sm ${notif.read ? 'text-white/70' : 'text-white font-medium'}`}>{notif.title}</p>
-                          <p className="text-xs text-white/40">{notif.message}</p>
-                          <p className="text-xs text-white/30 mt-1">{new Date(notif.createdAt).toLocaleDateString('id-ID')}</p>
-                        </div>
-                        {!notif.read && <span className="w-2 h-2 bg-[#6C5DD3] rounded-full" />}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-8 bg-white/5 rounded-xl">

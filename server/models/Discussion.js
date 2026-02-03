@@ -16,8 +16,9 @@ const discussionSchema = new mongoose.Schema({
     },
     userRole: {
         type: String,
-        enum: ['member', 'supporter', 'knight', 'guardian', 'legend', 'moderator', 'admin'],
-        default: 'member'
+        default: 'member',
+        trim: true,
+        lowercase: true
     },
     title: {
         type: String,

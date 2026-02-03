@@ -38,6 +38,8 @@ import {
 import { motion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { API_CONFIG, getApiUrl, BACKEND_URL } from '../config/api';
+import { getAuthHeaders } from '@/lib/auth';
+import { apiFetch } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -50,6 +52,8 @@ import AdminStats from '@/components/AdminStats';
 import AdminModeration from '@/components/AdminModeration';
 import AdminUsers from '@/components/AdminUsers';
 import AdminBadges from '@/components/AdminBadges';
+import AdminSchedule from '@/components/AdminSchedule';
+import SafeAvatar from '@/components/SafeAvatar';
 
 
 export default function Admin() {
@@ -125,7 +129,9 @@ export default function Admin() {
   useEffect(() => {
     const loadWidgets = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/settings/sidebarWidgets`);
+        const res = await apiFetch(`${BACKEND_URL}/api/settings/sidebarWidgets`, {
+          headers: { ...getAuthHeaders() }
+        });
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
@@ -134,9 +140,9 @@ export default function Admin() {
         } else if (res.status === 404) {
           // First time - save default widgets to database
           console.log('[Admin] No saved widgets found, saving defaults to DB...');
-          await fetch(`${BACKEND_URL}/api/settings/sidebarWidgets`, {
+          await apiFetch(`${BACKEND_URL}/api/settings/sidebarWidgets`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
             body: JSON.stringify({ value: defaultWidgets }),
           });
         }
@@ -153,9 +159,9 @@ export default function Admin() {
   const saveSidebarWidgets = async (widgets: SidebarWidget[]) => {
     setSidebarWidgets(widgets);
     try {
-      await fetch(`${BACKEND_URL}/api/settings/sidebarWidgets`, {
+      await apiFetch(`${BACKEND_URL}/api/settings/sidebarWidgets`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ value: widgets }),
       });
     } catch (err) {
@@ -193,7 +199,9 @@ export default function Admin() {
   useEffect(() => {
     const loadHeroSettings = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/settings/heroAnimeIds`);
+        const res = await apiFetch(`${BACKEND_URL}/api/settings/heroAnimeIds`, {
+          headers: { ...getAuthHeaders() }
+        });
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
@@ -211,9 +219,9 @@ export default function Admin() {
   const saveHeroSettings = async (ids: string[]) => {
     setHeroAnimeIds(ids);
     try {
-      await fetch(`${BACKEND_URL}/api/settings/heroAnimeIds`, {
+      await apiFetch(`${BACKEND_URL}/api/settings/heroAnimeIds`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ value: ids }),
       });
       showToast('Hero settings saved!', 'success');
@@ -353,9 +361,9 @@ export default function Admin() {
           else contentType = 'video/mp4';
         }
 
-        const presignRes = await fetch(`${BACKEND_URL}/api/upload/presign`, {
+        const presignRes = await apiFetch(`${BACKEND_URL}/api/upload/presign`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
           body: JSON.stringify({
             animeTitle: selectedAnimeForEpisodes.title,
             episode: item.episodeNumber,
@@ -401,9 +409,9 @@ export default function Admin() {
         });
 
         // Step 3: Confirm upload
-        await fetch(`${BACKEND_URL}/api/upload/confirm`, {
+        await apiFetch(`${BACKEND_URL}/api/upload/confirm`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
           body: JSON.stringify({
             animeId: selectedAnimeForEpisodes.id || selectedAnimeForEpisodes._id,
             animeTitle: selectedAnimeForEpisodes.title,
@@ -465,9 +473,9 @@ export default function Admin() {
 
     try {
       // Step 1: Get presigned URL from backend
-      const presignRes = await fetch(`${BACKEND_URL}/api/upload/presign`, {
+      const presignRes = await apiFetch(`${BACKEND_URL}/api/upload/presign`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({
           animeTitle: selectedAnimeForEpisodes.title,
           episode: episodeToEdit.ep,
@@ -513,9 +521,9 @@ export default function Admin() {
       setUploadProgress(95);
 
       // Step 3: Confirm upload and update database
-      const confirmRes = await fetch(`${BACKEND_URL}/api/upload/confirm`, {
+      const confirmRes = await apiFetch(`${BACKEND_URL}/api/upload/confirm`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({
           animeId: selectedAnimeForEpisodes.id || selectedAnimeForEpisodes._id,
           animeTitle: selectedAnimeForEpisodes.title,
@@ -732,9 +740,9 @@ export default function Admin() {
 
     setIsScraping(true);
     try {
-      const res = await fetch(`${BACKEND_URL}/api/anime/scrape-episodes/${selectedAnimeForEpisodes.id}`, {
+      const res = await apiFetch(`${BACKEND_URL}/api/anime/scrape-episodes/${selectedAnimeForEpisodes.id}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({
           url: scrapeUrl || undefined,
           animeData: selectedAnimeForEpisodes  // Send full anime data for auto-creation if not in DB
@@ -791,9 +799,9 @@ export default function Admin() {
       // Show progress stages
       setSubtitleProgress('⏳ Mengekstrak audio dari video...');
 
-      const res = await fetch(`${BACKEND_URL}/api/anime/${selectedAnimeForEpisodes.id}/episode/${episodeNum}/generate-subtitle`, {
+      const res = await apiFetch(`${BACKEND_URL}/api/anime/${selectedAnimeForEpisodes.id}/episode/${episodeNum}/generate-subtitle`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({
           provider: subtitleProvider,
           language: subtitleLanguage,
@@ -840,8 +848,9 @@ export default function Admin() {
     if (!confirm(`Hapus subtitle Episode ${episodeNum}?`)) return;
 
     try {
-      const res = await fetch(`${BACKEND_URL}/api/anime/${selectedAnimeForEpisodes.id}/episode/${episodeNum}/subtitle`, {
-        method: 'DELETE'
+      const res = await apiFetch(`${BACKEND_URL}/api/anime/${selectedAnimeForEpisodes.id}/episode/${episodeNum}/subtitle`, {
+        method: 'DELETE',
+        headers: { ...getAuthHeaders() }
       });
 
       const data = await res.json();
@@ -945,6 +954,7 @@ export default function Admin() {
             {[
               { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
               { id: 'anime', label: 'Kelola Anime', icon: Film },
+              { id: 'kelola-jadwal', label: 'Kelola Jadwal', icon: Calendar },
               { id: 'add-anime', label: 'Tambah Anime', icon: Plus },
               { id: 'episodes', label: 'Kelola Episode', icon: PlaySquare },
               { id: 'generate-sub', label: 'Generate Subtitle', icon: Captions },
@@ -991,7 +1001,13 @@ export default function Admin() {
         {/* User Profile Section */}
         <div className="flex-shrink-0 p-4 border-t border-white/5 bg-[#0F0F1A]">
           <div className="flex items-center gap-2.5 mb-3 p-2 rounded-lg bg-white/5">
-            <img src={user.avatar} alt={user.name} className="w-9 h-9 rounded-lg ring-2 ring-[#6C5DD3]/50" />
+            <SafeAvatar
+              src={user.avatar}
+              name={user.name}
+              className="w-9 h-9 rounded-lg ring-2 ring-[#6C5DD3]/50"
+              fallbackBgClassName={user.isAdmin ? 'bg-gradient-to-br from-red-500 to-rose-600' : undefined}
+              fallbackClassName="text-sm"
+            />
             <div className="flex-1 min-w-0">
               <p className="text-white font-medium text-sm truncate">{user.name}</p>
               <p className="text-white/50 text-xs flex items-center gap-1">
@@ -1282,7 +1298,12 @@ export default function Admin() {
                               setApiSearchResults([]); // Clear results after selection
                             }}
                           >
-                            <img src={item.img || item.cover} alt={item.title || item.judul} className="w-8 h-10 object-cover rounded" />
+                            <img
+                              src={item.img || item.cover}
+                              alt={item.title || item.judul}
+                              className="w-8 h-10 object-cover rounded"
+                              loading="lazy"
+                            />
                             <div className="flex-1">
                               <div className="text-sm text-white">{item.title || item.judul}</div>
                               <div className="text-xs text-white/50">{item.studio || 'Unknown'} • {item.rating || item.score || 'N/A'}</div>
@@ -1633,6 +1654,7 @@ export default function Admin() {
                         src={anime.poster}
                         alt={anime.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
                       />
                       {/* Overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A2E] via-transparent to-transparent" />
@@ -1731,6 +1753,20 @@ export default function Admin() {
           </motion.div>
         )}
 
+        {/* Schedule Management */}
+        {activeTab === 'kelola-jadwal' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <AdminSchedule
+              animeList={animeList}
+              updateAnime={updateAnime}
+              showToast={showToast}
+            />
+          </motion.div>
+        )}
+
         {/* Add Anime Interaction Tab (Jikan Integration) */}
         {activeTab === 'add-anime' && (
           <motion.div
@@ -1772,7 +1808,12 @@ export default function Admin() {
               {apiSearchResults.map((anime: any, index: number) => (
                 <div key={`${anime.mal_id}-${index}`} className="bg-[#1A1A2E] border border-white/5 rounded-2xl overflow-hidden hover:border-[#6C5DD3] transition-colors group relative">
                   <div className="aspect-[2/3] relative">
-                    <img src={anime.images?.jpg?.large_image_url} alt={anime.title} className="w-full h-full object-cover" />
+                    <img
+                      src={anime.images?.jpg?.large_image_url}
+                      alt={anime.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-4">
                       <Button
                         onClick={async () => {
@@ -1923,6 +1964,7 @@ export default function Admin() {
                             src={anime.poster}
                             alt={anime.title}
                             className="w-full h-full object-cover"
+                            loading="lazy"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
 
@@ -1974,6 +2016,7 @@ export default function Admin() {
                       src={selectedAnimeForEpisodes.poster}
                       alt={selectedAnimeForEpisodes.title}
                       className="w-20 h-28 object-cover rounded-lg flex-shrink-0"
+                      loading="lazy"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4">
@@ -2785,7 +2828,12 @@ export default function Admin() {
                           className="bg-[#0F0F1A] border border-white/10 rounded-xl overflow-hidden hover:border-[#6C5DD3]/50 transition-all"
                         >
                           <div className="relative aspect-[2/3]">
-                            <img src={anime.poster} alt={anime.title} className="w-full h-full object-cover" />
+                            <img
+                              src={anime.poster}
+                              alt={anime.title}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
 
                             {/* Stats */}
@@ -2829,7 +2877,12 @@ export default function Admin() {
               <div className="bg-gradient-to-br from-[#1A1A2E] to-[#12121F] border border-white/5 rounded-2xl overflow-hidden">
                 <div className="p-6 border-b border-white/5 flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <img src={selectedAnimeForEpisodes.poster} alt="" className="w-16 h-20 object-cover rounded-lg" />
+                    <img
+                      src={selectedAnimeForEpisodes.poster}
+                      alt=""
+                      className="w-16 h-20 object-cover rounded-lg"
+                      loading="lazy"
+                    />
                     <div>
                       <h3 className="text-white font-bold">{selectedAnimeForEpisodes.title}</h3>
                       <p className="text-white/50 text-sm">{selectedAnimeForEpisodes.studio} • {selectedAnimeForEpisodes.releasedYear}</p>
@@ -2939,6 +2992,7 @@ export default function Admin() {
                             src={anime.poster}
                             alt={anime.title}
                             className="w-12 h-16 object-cover rounded-lg"
+                            loading="lazy"
                           />
                         )}
 
@@ -3039,6 +3093,7 @@ export default function Admin() {
                             src={anime.poster}
                             alt={anime.title}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            loading="lazy"
                           />
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <div className="p-3 bg-[#6C5DD3] rounded-full">

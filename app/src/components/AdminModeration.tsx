@@ -7,6 +7,8 @@ import {
     AlertTriangle
 } from 'lucide-react';
 import { BACKEND_URL } from '@/config/api';
+import { getAuthHeaders } from '@/lib/auth';
+import { apiFetch } from '@/lib/api';
 
 interface BannedWord {
     _id: string;
@@ -30,7 +32,9 @@ export default function AdminModeration() {
     const fetchBannedWords = async () => {
         try {
             setLoading(true);
-            const res = await fetch(`${BACKEND_URL}/api/admin/banned-words`);
+            const res = await apiFetch(`${BACKEND_URL}/api/admin/banned-words`, {
+                headers: { ...getAuthHeaders() }
+            });
             if (!res.ok) throw new Error('Failed to fetch');
             const data = await res.json();
             setBannedWords(data);
@@ -47,9 +51,9 @@ export default function AdminModeration() {
         try {
             setIsAdding(true);
             setError(null);
-            const res = await fetch(`${BACKEND_URL}/api/admin/banned-words`, {
+            const res = await apiFetch(`${BACKEND_URL}/api/admin/banned-words`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({ word: newWord.trim() })
             });
 
@@ -74,9 +78,9 @@ export default function AdminModeration() {
         try {
             setIsAdding(true);
             setError(null);
-            const res = await fetch(`${BACKEND_URL}/api/admin/banned-words/bulk`, {
+            const res = await apiFetch(`${BACKEND_URL}/api/admin/banned-words/bulk`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({ words })
             });
 
@@ -96,8 +100,9 @@ export default function AdminModeration() {
 
     const deleteWord = async (id: string) => {
         try {
-            const res = await fetch(`${BACKEND_URL}/api/admin/banned-words/${id}`, {
-                method: 'DELETE'
+            const res = await apiFetch(`${BACKEND_URL}/api/admin/banned-words/${id}`, {
+                method: 'DELETE',
+                headers: { ...getAuthHeaders() }
             });
 
             if (!res.ok) throw new Error('Failed to delete');

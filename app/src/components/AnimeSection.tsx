@@ -61,7 +61,7 @@ export default function AnimeSection({
           {/* Header */}
           <div className="flex items-center justify-between mb-3 sm:mb-6">
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br ${iconGradient} flex items-center justify-center shadow-lg`}>
+              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br ${iconGradient} flex items-center justify-center shadow-md sm:shadow-lg`}>
                 <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <div>
@@ -116,7 +116,7 @@ export default function AnimeSection({
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${iconGradients.clock} flex items-center justify-center shadow-lg`}>
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${iconGradients.clock} flex items-center justify-center shadow-md sm:shadow-lg`}>
                 <Clock className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -151,6 +151,7 @@ export default function AnimeSection({
                     src={episode.thumbnail}
                     alt={episode.title}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
@@ -194,7 +195,7 @@ export default function AnimeSection({
       <section className="py-8 bg-white/5 rounded-2xl p-6 border border-white/10 h-fit">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${iconGradient} flex items-center justify-center shadow-lg`}>
+          <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${iconGradient} flex items-center justify-center shadow-md sm:shadow-lg`}>
             <Icon className="w-4 h-4 text-white fill-current" />
           </div>
           <div>
@@ -207,8 +208,13 @@ export default function AnimeSection({
           {displayAnime.slice(0, 5).map((anime, index) => (
             <Link key={anime.id} to={`/anime/${anime.id}`} className="group flex gap-3">
               <div className="relative w-16 h-24 flex-shrink-0 rounded-lg overflow-hidden">
-                <img src={anime.poster} alt={anime.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
-                <div className="absolute top-1 left-1 w-5 h-5 bg-black/60 backdrop-blur-sm rounded-md flex items-center justify-center">
+                <img
+                  src={anime.poster}
+                  alt={anime.title}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                  loading="lazy"
+                />
+                <div className="absolute top-1 left-1 w-5 h-5 bg-black/60 backdrop-blur-[2px] sm:backdrop-blur-sm rounded-md flex items-center justify-center">
                   <span className="text-xs font-bold text-white">#{index + 1}</span>
                 </div>
               </div>
@@ -242,7 +248,7 @@ export default function AnimeSection({
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${iconGradients.star} flex items-center justify-center shadow-lg`}>
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${iconGradients.star} flex items-center justify-center shadow-md sm:shadow-lg`}>
                 <Star className="w-5 h-5 text-white fill-current" />
               </div>
               <div>
@@ -277,6 +283,7 @@ export default function AnimeSection({
                     src={displayAnime[0].poster}
                     alt={displayAnime[0].title}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
 
@@ -286,7 +293,7 @@ export default function AnimeSection({
                   </div>
 
                   {/* Rating */}
-                  <div className="absolute top-4 right-4 flex items-center gap-1 px-3 py-1.5 bg-black/60 backdrop-blur-sm rounded-lg">
+                  <div className="absolute top-4 right-4 flex items-center gap-1 px-3 py-1.5 bg-black/60 backdrop-blur-[2px] sm:backdrop-blur-sm rounded-lg">
                     <Star className="w-4 h-4 text-yellow-400 fill-current" />
                     <span className="font-bold text-white">{displayAnime[0].rating}</span>
                   </div>
@@ -328,7 +335,7 @@ export default function AnimeSection({
         {/* Header */}
         <div className="flex items-center justify-between mb-3 sm:mb-6">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br ${iconGradient} flex items-center justify-center shadow-lg`}>
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br ${iconGradient} flex items-center justify-center shadow-md sm:shadow-lg`}>
               <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
             <div>

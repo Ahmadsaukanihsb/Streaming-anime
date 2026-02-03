@@ -5,6 +5,8 @@ const DiscussionReply = require('../models/DiscussionReply');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const BannedWord = require('../models/BannedWord');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { validateBody } = require('../middleware/validate');
 
 // Helper function to check for banned words
 async function containsBannedWord(text) {
@@ -84,11 +86,21 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create new discussion (requires auth)
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, validateBody([
+    { field: 'title', required: true, type: 'string', minLength: 3, maxLength: 200 },
+    { field: 'content', required: true, type: 'string', minLength: 3, maxLength: 5000 },
+    { field: 'category', required: false, type: 'string', enum: ['general', 'anime', 'recommendation', 'question', 'info'] },
+    { field: 'animeId', required: false, type: 'string', minLength: 1, maxLength: 200 },
+    { field: 'animeTitle', required: false, type: 'string', minLength: 1, maxLength: 200 },
+    { field: 'animePoster', required: false, type: 'string', minLength: 1, maxLength: 500 }
+]), async (req, res) => {
     try {
-        const { userId, userName, userAvatar, title, content, category, animeId, animeTitle, animePoster } = req.body;
+        const { title, content, category, animeId, animeTitle, animePoster } = req.body;
+        const userId = req.user.id;
+        const userName = req.user.name;
+        const userAvatar = req.user.avatar || '';
 
-        if (!userId || !userName || !title || !content) {
+        if (!userName || !title || !content) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
@@ -142,9 +154,14 @@ router.post('/', async (req, res) => {
 });
 
 // Update discussion (owner only)
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAuth, validateBody([
+    { field: 'title', required: false, type: 'string', minLength: 3, maxLength: 200 },
+    { field: 'content', required: false, type: 'string', minLength: 3, maxLength: 5000 },
+    { field: 'category', required: false, type: 'string', enum: ['general', 'anime', 'recommendation', 'question', 'info'] }
+], { atLeastOne: ['title', 'content', 'category'] }), async (req, res) => {
     try {
-        const { userId, title, content, category } = req.body;
+        const { title, content, category } = req.body;
+        const userId = req.user.id;
 
         const discussion = await Discussion.findById(req.params.id);
         if (!discussion || discussion.isDeleted) {
@@ -169,9 +186,10 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete discussion (owner or admin)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
     try {
-        const { userId, isAdmin } = req.body;
+        const userId = req.user.id;
+        const isAdmin = req.user.isAdmin;
 
         const discussion = await Discussion.findById(req.params.id);
         if (!discussion) {
@@ -201,12 +219,10 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Toggle like on discussion
-router.post('/:id/like', async (req, res) => {
+router.post('/:id/like', requireAuth, async (req, res) => {
     try {
-        const { userId, userName } = req.body;
-        if (!userId) {
-            return res.status(400).json({ error: 'userId required' });
-        }
+        const userId = req.user.id;
+        const userName = req.user.name;
 
         const discussion = await Discussion.findById(req.params.id);
         if (!discussion || discussion.isDeleted) {
@@ -248,11 +264,17 @@ router.post('/:id/like', async (req, res) => {
 });
 
 // Add reply to discussion
-router.post('/:id/reply', async (req, res) => {
+router.post('/:id/reply', requireAuth, validateBody([
+    { field: 'content', required: true, type: 'string', minLength: 1, maxLength: 2000 },
+    { field: 'parentReplyId', required: false, type: 'string', minLength: 1, maxLength: 200 }
+]), async (req, res) => {
     try {
-        const { userId, userName, userAvatar, content, parentReplyId } = req.body;
+        const { content, parentReplyId } = req.body;
+        const userId = req.user.id;
+        const userName = req.user.name;
+        const userAvatar = req.user.avatar || '';
 
-        if (!userId || !userName || !content) {
+        if (!userName || !content) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
@@ -325,9 +347,10 @@ router.post('/:id/reply', async (req, res) => {
 });
 
 // Delete reply
-router.delete('/:id/reply/:replyId', async (req, res) => {
+router.delete('/:id/reply/:replyId', requireAuth, async (req, res) => {
     try {
-        const { userId, isAdmin } = req.body;
+        const userId = req.user.id;
+        const isAdmin = req.user.isAdmin;
 
         const reply = await DiscussionReply.findById(req.params.replyId);
         if (!reply) {
@@ -353,12 +376,10 @@ router.delete('/:id/reply/:replyId', async (req, res) => {
 });
 
 // Toggle like on reply
-router.post('/:id/reply/:replyId/like', async (req, res) => {
+router.post('/:id/reply/:replyId/like', requireAuth, async (req, res) => {
     try {
-        const { userId, userName } = req.body;
-        if (!userId) {
-            return res.status(400).json({ error: 'userId required' });
-        }
+        const userId = req.user.id;
+        const userName = req.user.name;
 
         const reply = await DiscussionReply.findById(req.params.replyId);
         if (!reply || reply.isDeleted) {
@@ -401,13 +422,8 @@ router.post('/:id/reply/:replyId/like', async (req, res) => {
 });
 
 // Admin: Pin/Unpin discussion
-router.post('/:id/pin', async (req, res) => {
+router.post('/:id/pin', requireAuth, requireAdmin, async (req, res) => {
     try {
-        const { isAdmin } = req.body;
-        if (!isAdmin) {
-            return res.status(403).json({ error: 'Admin only' });
-        }
-
         const discussion = await Discussion.findById(req.params.id);
         if (!discussion) {
             return res.status(404).json({ error: 'Discussion not found' });
@@ -424,13 +440,8 @@ router.post('/:id/pin', async (req, res) => {
 });
 
 // Admin: Lock/Unlock discussion
-router.post('/:id/lock', async (req, res) => {
+router.post('/:id/lock', requireAuth, requireAdmin, async (req, res) => {
     try {
-        const { isAdmin } = req.body;
-        if (!isAdmin) {
-            return res.status(403).json({ error: 'Admin only' });
-        }
-
         const discussion = await Discussion.findById(req.params.id);
         if (!discussion) {
             return res.status(404).json({ error: 'Discussion not found' });

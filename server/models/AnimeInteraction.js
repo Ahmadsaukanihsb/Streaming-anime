@@ -45,25 +45,6 @@ const animeInteractionSchema = new mongoose.Schema({
     subscribedAnime: [{
         type: String // animeId
     }],
-    // New: Notification history
-    notifications: [{
-        type: {
-            type: String,
-            enum: ['episode', 'anime', 'system'],
-            default: 'system'
-        },
-        title: String,
-        message: String,
-        animeId: String,
-        read: {
-            type: Boolean,
-            default: false
-        },
-        createdAt: {
-            type: Date,
-            default: Date.now
-        }
-    }],
     // New: User settings
     settings: {
         autoPlayNext: {

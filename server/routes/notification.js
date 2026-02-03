@@ -1,15 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const Notification = require('../models/Notification');
+const { requireAuth } = require('../middleware/auth');
+
+router.use(requireAuth);
 
 // Get user's notifications
 router.get('/', async (req, res) => {
     try {
-        const { userId, limit = 20, page = 1 } = req.query;
-
-        if (!userId) {
-            return res.status(400).json({ error: 'userId required' });
-        }
+        const { limit = 20, page = 1 } = req.query;
+        const userId = req.user.id;
 
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -41,11 +41,7 @@ router.get('/', async (req, res) => {
 // Get unread count
 router.get('/unread-count', async (req, res) => {
     try {
-        const { userId } = req.query;
-
-        if (!userId) {
-            return res.status(400).json({ error: 'userId required' });
-        }
+        const userId = req.user.id;
 
         const count = await Notification.countDocuments({ userId, isRead: false });
         res.json({ count });
@@ -58,11 +54,7 @@ router.get('/unread-count', async (req, res) => {
 // Mark all as read
 router.post('/mark-read', async (req, res) => {
     try {
-        const { userId } = req.body;
-
-        if (!userId) {
-            return res.status(400).json({ error: 'userId required' });
-        }
+        const userId = req.user.id;
 
         await Notification.updateMany(
             { userId, isRead: false },
@@ -84,6 +76,11 @@ router.post('/:id/read', async (req, res) => {
             return res.status(404).json({ error: 'Notification not found' });
         }
 
+        // Ownership check
+        if (notification.userId.toString() !== req.user.id) {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
+
         notification.isRead = true;
         await notification.save();
 
@@ -94,18 +91,27 @@ router.post('/:id/read', async (req, res) => {
     }
 });
 
+// Delete all notifications for user
+router.delete('/clear-all', async (req, res) => {
+    try {
+        await Notification.deleteMany({ userId: req.user.id });
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[Notification] Clear all error:', err.message);
+        res.status(500).json({ error: 'Server error', message: err.message });
+    }
+});
+
 // Delete notification
 router.delete('/:id', async (req, res) => {
     try {
-        const { userId } = req.body;
-
         const notification = await Notification.findById(req.params.id);
         if (!notification) {
             return res.status(404).json({ error: 'Notification not found' });
         }
 
         // Check ownership
-        if (notification.userId.toString() !== userId) {
+        if (notification.userId.toString() !== req.user.id) {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
@@ -113,23 +119,6 @@ router.delete('/:id', async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         console.error('[Notification] Delete error:', err.message);
-        res.status(500).json({ error: 'Server error', message: err.message });
-    }
-});
-
-// Delete all notifications for user
-router.delete('/clear-all', async (req, res) => {
-    try {
-        const { userId } = req.body;
-
-        if (!userId) {
-            return res.status(400).json({ error: 'userId required' });
-        }
-
-        await Notification.deleteMany({ userId });
-        res.json({ success: true });
-    } catch (err) {
-        console.error('[Notification] Clear all error:', err.message);
         res.status(500).json({ error: 'Server error', message: err.message });
     }
 });

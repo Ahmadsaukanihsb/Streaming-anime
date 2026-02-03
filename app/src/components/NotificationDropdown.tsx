@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { BACKEND_URL } from '@/config/api';
+import { getAuthHeaders } from '@/lib/auth';
+import { apiFetch } from '@/lib/api';
 
 interface NotificationItem {
     _id: string;
@@ -35,7 +37,9 @@ export default function NotificationDropdown() {
 
         const fetchUnreadCount = async () => {
             try {
-                const res = await fetch(`${BACKEND_URL}/api/notifications/unread-count?userId=${user.id}`);
+                const res = await apiFetch(`${BACKEND_URL}/api/notifications/unread-count?userId=${user.id}`, {
+                    headers: { ...getAuthHeaders() }
+                });
                 const data = await res.json();
                 setUnreadCount(data.count || 0);
             } catch (err) {
@@ -56,7 +60,9 @@ export default function NotificationDropdown() {
         const fetchNotifications = async () => {
             setLoading(true);
             try {
-                const res = await fetch(`${BACKEND_URL}/api/notifications?userId=${user.id}&limit=10`);
+                const res = await apiFetch(`${BACKEND_URL}/api/notifications?userId=${user.id}&limit=10`, {
+                    headers: { ...getAuthHeaders() }
+                });
                 const data = await res.json();
                 setNotifications(data.notifications || []);
             } catch (err) {
@@ -86,9 +92,9 @@ export default function NotificationDropdown() {
         if (!user) return;
 
         try {
-            await fetch(`${BACKEND_URL}/api/notifications/mark-read`, {
+            await apiFetch(`${BACKEND_URL}/api/notifications/mark-read`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({ userId: user.id })
             });
 
@@ -165,7 +171,7 @@ export default function NotificationDropdown() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute right-0 mt-2 w-80 bg-[#1A1A2E] border border-white/10 rounded-xl shadow-xl overflow-hidden z-50"
+                        className="fixed inset-x-3 top-16 sm:absolute sm:inset-auto sm:right-0 mt-2 w-auto sm:w-[90vw] sm:max-w-sm bg-[#1A1A2E] border border-white/10 rounded-xl shadow-xl overflow-hidden z-50"
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-white/10">
@@ -190,7 +196,7 @@ export default function NotificationDropdown() {
                         </div>
 
                         {/* Content */}
-                        <div className="max-h-80 overflow-y-auto">
+                        <div className="max-h-[70vh] sm:max-h-80 overflow-y-auto">
                             {loading ? (
                                 <div className="flex justify-center py-8">
                                     <div className="w-6 h-6 border-2 border-[#6C5DD3] border-t-transparent rounded-full animate-spin" />
@@ -215,6 +221,7 @@ export default function NotificationDropdown() {
                                                         src={notification.animePoster}
                                                         alt={notification.animeTitle || ''}
                                                         className="w-10 h-14 rounded-lg object-cover flex-shrink-0"
+                                                        loading="lazy"
                                                     />
                                                 ) : (
                                                     <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">

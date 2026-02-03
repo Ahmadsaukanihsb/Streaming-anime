@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Badge = require('../models/Badge');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { validateBody } = require('../middleware/validate');
 
 // Default badges to seed if none exist
 const defaultBadges = [
@@ -39,7 +41,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/badges/all - Get all badges including inactive (for admin)
-router.get('/all', async (req, res) => {
+router.get('/all', requireAuth, requireAdmin, async (req, res) => {
     try {
         const badges = await Badge.find().sort({ order: 1 });
         res.json(badges);
@@ -50,7 +52,14 @@ router.get('/all', async (req, res) => {
 });
 
 // POST /api/badges - Create new badge
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, requireAdmin, validateBody([
+    { field: 'roleId', required: true, type: 'string', minLength: 2, maxLength: 50 },
+    { field: 'name', required: true, type: 'string', minLength: 2, maxLength: 50 },
+    { field: 'icon', required: false, type: 'string', minLength: 1, maxLength: 50 },
+    { field: 'bgColor', required: false, type: 'string', minLength: 1, maxLength: 50 },
+    { field: 'textColor', required: false, type: 'string', minLength: 1, maxLength: 50 },
+    { field: 'order', required: false, type: 'number', integer: true, min: 0 }
+]), async (req, res) => {
     try {
         const { roleId, name, icon, bgColor, textColor, order } = req.body;
 
@@ -83,8 +92,38 @@ router.post('/', async (req, res) => {
     }
 });
 
+// PUT /api/badges/reorder - Reorder badges
+router.put('/reorder', requireAuth, requireAdmin, validateBody([
+    { field: 'orders', required: true, type: 'array' }
+]), async (req, res) => {
+    try {
+        const { orders } = req.body; // Array of { id, order }
+
+        if (!Array.isArray(orders)) {
+            return res.status(400).json({ error: 'orders array required' });
+        }
+
+        for (const item of orders) {
+            await Badge.findByIdAndUpdate(item.id, { order: item.order });
+        }
+
+        const badges = await Badge.find().sort({ order: 1 });
+        res.json(badges);
+    } catch (err) {
+        console.error('[Badge] Reorder error:', err);
+        res.status(500).json({ error: 'Failed to reorder badges' });
+    }
+});
+
 // PUT /api/badges/:id - Update badge
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAuth, requireAdmin, validateBody([
+    { field: 'name', required: false, type: 'string', minLength: 2, maxLength: 50 },
+    { field: 'icon', required: false, type: 'string', minLength: 1, maxLength: 50 },
+    { field: 'bgColor', required: false, type: 'string', minLength: 1, maxLength: 50 },
+    { field: 'textColor', required: false, type: 'string', minLength: 1, maxLength: 50 },
+    { field: 'order', required: false, type: 'number', integer: true, min: 0 },
+    { field: 'isActive', required: false, type: 'boolean' }
+], { atLeastOne: ['name', 'icon', 'bgColor', 'textColor', 'order', 'isActive'] }), async (req, res) => {
     try {
         const { name, icon, bgColor, textColor, order, isActive } = req.body;
 
@@ -111,7 +150,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /api/badges/:id - Delete badge (only non-system badges)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
     try {
         const badge = await Badge.findById(req.params.id);
         if (!badge) {
@@ -128,27 +167,6 @@ router.delete('/:id', async (req, res) => {
     } catch (err) {
         console.error('[Badge] Delete error:', err);
         res.status(500).json({ error: 'Failed to delete badge' });
-    }
-});
-
-// PUT /api/badges/reorder - Reorder badges
-router.put('/reorder', async (req, res) => {
-    try {
-        const { orders } = req.body; // Array of { id, order }
-
-        if (!Array.isArray(orders)) {
-            return res.status(400).json({ error: 'orders array required' });
-        }
-
-        for (const item of orders) {
-            await Badge.findByIdAndUpdate(item.id, { order: item.order });
-        }
-
-        const badges = await Badge.find().sort({ order: 1 });
-        res.json(badges);
-    } catch (err) {
-        console.error('[Badge] Reorder error:', err);
-        res.status(500).json({ error: 'Failed to reorder badges' });
     }
 });
 

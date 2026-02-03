@@ -1,18 +1,59 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shuffle, Play, Info, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 
 export default function RandomAnimeButton() {
-    const { animeList } = useApp();
+    const { animeList, isLoading } = useApp();
     const navigate = useNavigate();
     const [isSpinning, setIsSpinning] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
     const [randomAnime, setRandomAnime] = useState<typeof animeList[0] | null>(null);
+    const [noData, setNoData] = useState(false);
+    const buttonRef = useRef<HTMLButtonElement | null>(null);
+    const [desktopStyle, setDesktopStyle] = useState<React.CSSProperties | null>(null);
+
+    useEffect(() => {
+        if (!showPreview) return;
+
+        const updateDesktopPosition = () => {
+            if (!buttonRef.current) return;
+            const rect = buttonRef.current.getBoundingClientRect();
+            const viewportW = window.innerWidth;
+            const width = Math.min(viewportW * 0.4, 360);
+            const left = Math.max(16, Math.min(rect.left, viewportW - width - 16));
+            const top = Math.max(16, rect.top - 12);
+            setDesktopStyle({
+                position: 'fixed',
+                left,
+                top,
+                width,
+                transform: 'translateY(-100%)'
+            });
+        };
+
+        if (window.innerWidth >= 640) {
+            updateDesktopPosition();
+            const closeOnScroll = () => setShowPreview(false);
+            window.addEventListener('scroll', closeOnScroll, true);
+            window.addEventListener('resize', updateDesktopPosition);
+            return () => {
+                window.removeEventListener('scroll', closeOnScroll, true);
+                window.removeEventListener('resize', updateDesktopPosition);
+            };
+        }
+        return;
+    }, [showPreview]);
 
     const getRandomAnime = () => {
-        if (animeList.length === 0) return;
+        if (isLoading) return;
+        if (animeList.length === 0) {
+            setNoData(true);
+            setShowPreview(false);
+            setTimeout(() => setNoData(false), 2000);
+            return;
+        }
 
         setIsSpinning(true);
         setShowPreview(false);
@@ -45,11 +86,12 @@ export default function RandomAnimeButton() {
     };
 
     return (
-        <div className="relative">
+        <div className="relative overflow-visible">
             {/* Main Button */}
             <motion.button
+                ref={buttonRef}
                 onClick={getRandomAnime}
-                disabled={isSpinning}
+                disabled={isSpinning || isLoading || animeList.length === 0}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 className="w-full p-4 bg-gradient-to-r from-[#6C5DD3] to-[#00C2FF] rounded-2xl text-white font-semibold shadow-lg shadow-[#6C5DD3]/30 hover:shadow-[#6C5DD3]/50 transition-shadow disabled:opacity-70"
@@ -61,10 +103,20 @@ export default function RandomAnimeButton() {
                     >
                         <Shuffle className="w-5 h-5" />
                     </motion.div>
-                    <span>{isSpinning ? 'Mencari...' : 'Anime Random'}</span>
+                    <span>{isLoading ? 'Memuat data...' : isSpinning ? 'Mencari...' : 'Anime Random'}</span>
                     <Sparkles className="w-4 h-4" />
                 </div>
             </motion.button>
+            {noData && (
+                <div className="mt-2 text-xs text-white/60 text-center">
+                    Belum ada anime di database.
+                </div>
+            )}
+            {!isLoading && animeList.length === 0 && (
+                <div className="mt-2 text-xs text-white/50 text-center">
+                    Isi data anime di Admin agar tombol ini aktif.
+                </div>
+            )}
 
             {/* Preview Card */}
             <AnimatePresence>
@@ -73,7 +125,8 @@ export default function RandomAnimeButton() {
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute bottom-full left-0 right-0 mb-3 p-4 bg-[#1A1A2E] rounded-2xl border border-white/10 shadow-xl z-50"
+                        style={desktopStyle || undefined}
+                        className="absolute left-0 right-0 top-full mt-3 sm:mt-0 sm:top-auto sm:bottom-full sm:mb-3 sm:fixed p-4 bg-[#1A1A2E] rounded-2xl border border-white/10 shadow-xl z-[60]"
                     >
                         <div className="flex gap-3">
                             <div className="relative w-20 h-28 rounded-lg overflow-hidden flex-shrink-0">
@@ -81,6 +134,7 @@ export default function RandomAnimeButton() {
                                     src={randomAnime.poster}
                                     alt={randomAnime.title}
                                     className="w-full h-full object-cover"
+                                    loading="lazy"
                                 />
                             </div>
                             <div className="flex-1 min-w-0">

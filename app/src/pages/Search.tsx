@@ -291,6 +291,7 @@ export default function SearchPage() {
                         src={anime.poster}
                         alt={anime.title}
                         className="w-20 h-28 object-cover rounded-lg"
+                        loading="lazy"
                       />
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-white truncate">{anime.title}</h3>

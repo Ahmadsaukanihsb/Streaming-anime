@@ -10,6 +10,7 @@ import RandomAnimeButton from '@/components/RandomAnimeButton';
 import { HomePageSkeleton } from '@/components/SkeletonLoading';
 import { useApp } from '@/context/AppContext';
 import { BACKEND_URL } from '@/config/api';
+import { apiFetch } from '@/lib/api';
 
 // Sidebar widget config type
 interface SidebarWidget {
@@ -38,6 +39,17 @@ export default function Home() {
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [trendingAnime, setTrendingAnime] = useState<any[]>([]);
+  const [animatedPlaceholder, setAnimatedPlaceholder] = useState('Cari anime favoritmu...');
+  const [caretVisible, setCaretVisible] = useState(true);
+  const typingActive = !isSearchFocused && searchQuery.length === 0;
+  const sectionStyle: React.CSSProperties = {
+    contentVisibility: 'auto',
+    containIntrinsicSize: '1px 800px'
+  };
+  const sidebarSectionStyle: React.CSSProperties = {
+    contentVisibility: 'auto',
+    containIntrinsicSize: '1px 600px'
+  };
 
   // Search suggestions - filter anime based on query
   const searchSuggestions = searchQuery.length >= 2
@@ -53,7 +65,7 @@ export default function Home() {
   useEffect(() => {
     const loadWidgets = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/settings/sidebarWidgets`);
+        const res = await apiFetch(`${BACKEND_URL}/api/settings/sidebarWidgets`);
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
@@ -73,11 +85,73 @@ export default function Home() {
     window.scrollTo(0, 0);
   }, []);
 
+  // Animated placeholder typing effect (pause when search focused or user typed)
+  useEffect(() => {
+    if (!typingActive) {
+      setAnimatedPlaceholder('Cari anime favoritmu...');
+      return;
+    }
+
+    const phrases = [
+      'Cari anime favoritmu...',
+      'Coba "One Piece"...',
+      'Cari genre: Action, Romance...',
+      'Cari anime terbaru...'
+    ];
+
+    let phraseIndex = 0;
+    let charIndex = 0;
+    let deleting = false;
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const tick = () => {
+      const current = phrases[phraseIndex];
+      const speed = deleting ? 70 : 100;
+      const pause = 1200;
+
+      if (!deleting) {
+        charIndex = Math.min(charIndex + 1, current.length);
+        setAnimatedPlaceholder(current.slice(0, charIndex));
+        if (charIndex === current.length) {
+          deleting = true;
+          timeoutId = setTimeout(tick, pause);
+          return;
+        }
+      } else {
+        charIndex = Math.max(charIndex - 1, 0);
+        setAnimatedPlaceholder(current.slice(0, charIndex));
+        if (charIndex === 0) {
+          deleting = false;
+          phraseIndex = (phraseIndex + 1) % phrases.length;
+          timeoutId = setTimeout(tick, 200);
+          return;
+        }
+      }
+
+      timeoutId = setTimeout(tick, speed);
+    };
+
+    tick();
+    return () => clearTimeout(timeoutId);
+  }, [typingActive]);
+
+  // Blinking caret for placeholder (only when typing active)
+  useEffect(() => {
+    if (!typingActive) {
+      setCaretVisible(false);
+      return;
+    }
+    const interval = setInterval(() => {
+      setCaretVisible(prev => !prev);
+    }, 500);
+    return () => clearInterval(interval);
+  }, [typingActive]);
+
   // Fetch weekly trending
   useEffect(() => {
     const fetchTrending = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/anime/trending/weekly`);
+        const res = await apiFetch(`${BACKEND_URL}/api/anime/trending/weekly`);
         if (res.ok) {
           const data = await res.json();
           if (data.length > 0) {
@@ -203,14 +277,14 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-12">
 
           {/* Quick Search & Filter Bar */}
-          <div className="mb-4 sm:mb-6 space-y-2 sm:space-y-4">
+          <div className="mb-4 sm:mb-6 space-y-2 sm:space-y-4 sticky top-16 z-30 bg-[#0F0F1A]/90 backdrop-blur-sm sm:backdrop-blur border border-white/10 rounded-2xl p-3 sm:static sm:bg-transparent sm:backdrop-blur-0 sm:border-0 sm:p-0">
             {/* Search Bar */}
             <form onSubmit={handleSearch} className="relative max-w-2xl mx-auto">
               <div className="relative group">
                 <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 sm:w-5 h-4 sm:h-5 text-white/40 group-focus-within:text-[#6C5DD3] transition-colors z-10" />
                 <input
                   type="text"
-                  placeholder="Cari anime favoritmu..."
+                  placeholder={`${animatedPlaceholder}${caretVisible ? '|' : ''}`}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchFocused(true)}
@@ -229,7 +303,7 @@ export default function Home() {
 
                 {/* Autocomplete Dropdown */}
                 {isSearchFocused && searchSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-[#1A1A2E] border border-white/10 rounded-xl overflow-hidden shadow-xl z-50">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-[#1A1A2E] border border-white/10 rounded-xl overflow-hidden shadow-lg sm:shadow-xl z-50">
                     {searchSuggestions.map((anime) => (
                       <Link
                         key={anime.id}
@@ -244,6 +318,7 @@ export default function Home() {
                           src={anime.poster}
                           alt={anime.title}
                           className="w-10 h-14 object-cover rounded-lg flex-shrink-0"
+                          loading="lazy"
                         />
                         <div className="flex-1 min-w-0">
                           <p className="text-white font-medium text-sm line-clamp-1">{anime.title}</p>
@@ -273,12 +348,30 @@ export default function Home() {
               </div>
             </form>
 
+            {/* Mobile Genre Chips */}
+            <div className="lg:hidden overflow-x-auto -mx-1 px-1">
+              <div className="flex gap-2 min-w-max py-1">
+                {(popularGenres.length > 0
+                  ? popularGenres
+                  : ['Action', 'Romance', 'Fantasy', 'Comedy', 'Isekai', 'Slice of Life', 'Adventure', 'Supernatural']
+                ).slice(0, 10).map((genre) => (
+                  <Link
+                    key={genre}
+                    to={`/anime-list?genre=${genre}`}
+                    className="px-3 py-1.5 text-xs bg-white/5 hover:bg-[#6C5DD3]/20 text-white/70 hover:text-white rounded-full transition-colors"
+                  >
+                    {genre}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
             {/* Genre Filter Chips - horizontal scroll on mobile */}
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide justify-start sm:justify-center sm:flex-wrap">
               <button
                 onClick={() => setSelectedGenre(null)}
                 className={`flex-shrink-0 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${selectedGenre === null
-                  ? 'bg-[#6C5DD3] text-white shadow-lg shadow-[#6C5DD3]/30'
+                  ? 'bg-[#6C5DD3] text-white shadow-md shadow-[#6C5DD3]/20 sm:shadow-lg sm:shadow-[#6C5DD3]/30'
                   : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
                   }`}
               >
@@ -289,7 +382,7 @@ export default function Home() {
                   key={genre}
                   onClick={() => setSelectedGenre(selectedGenre === genre ? null : genre)}
                   className={`flex-shrink-0 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${selectedGenre === genre
-                    ? 'bg-[#6C5DD3] text-white shadow-lg shadow-[#6C5DD3]/30'
+                    ? 'bg-[#6C5DD3] text-white shadow-md shadow-[#6C5DD3]/20 sm:shadow-lg sm:shadow-[#6C5DD3]/30'
                     : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
                     }`}
                 >
@@ -301,7 +394,7 @@ export default function Home() {
 
           {/* Trending Section */}
           {trendingAnime.length > 0 && !selectedGenre && (
-            <div className="mb-4 sm:mb-8">
+            <div className="mb-4 sm:mb-8" style={sectionStyle}>
               <div className="flex items-center gap-2 mb-2 sm:mb-4">
                 <TrendingUp className="w-4 sm:w-5 h-4 sm:h-5 text-[#FF6B6B]" />
                 <h2 className="text-lg sm:text-xl font-bold text-white">Trending Minggu Ini</h2>
@@ -321,7 +414,7 @@ export default function Home() {
                         loading="lazy"
                       />
                       {/* Rank Badge */}
-                      <div className="absolute top-1.5 sm:top-2 left-1.5 sm:left-2 w-6 sm:w-8 h-6 sm:h-8 rounded-md sm:rounded-lg bg-gradient-to-br from-[#FF6B6B] to-[#FF8E53] flex items-center justify-center shadow-lg">
+                      <div className="absolute top-1.5 sm:top-2 left-1.5 sm:left-2 w-6 sm:w-8 h-6 sm:h-8 rounded-md sm:rounded-lg bg-gradient-to-br from-[#FF6B6B] to-[#FF8E53] flex items-center justify-center shadow-md sm:shadow-lg">
                         <span className="text-white font-bold text-xs sm:text-sm">#{index + 1}</span>
                       </div>
                       {/* Gradient Overlay */}
@@ -338,7 +431,9 @@ export default function Home() {
           )}
 
           {/* Continue Watching - Shows only if user has watch history */}
-          <ContinueWatching />
+          <div style={sectionStyle}>
+            <ContinueWatching />
+          </div>
 
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
 
@@ -347,54 +442,62 @@ export default function Home() {
 
               {/* Anime Ongoing - Slider */}
               {ongoingAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre)).length > 0 && (
-                <AnimeSection
-                  title={selectedGenre ? `Ongoing - ${selectedGenre}` : "Anime Ongoing"}
-                  subtitle="Anime yang sedang tayang minggu ini"
-                  animeList={ongoingAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre))}
-                  variant="slider"
-                  icon="flame"
-                  viewAllLink={`/anime-list?status=ongoing${selectedGenre ? `&genre=${selectedGenre}` : ''}`}
-                  limit={15}
-                />
+                <div style={sectionStyle}>
+                  <AnimeSection
+                    title={selectedGenre ? `Ongoing - ${selectedGenre}` : "Anime Ongoing"}
+                    subtitle="Anime yang sedang tayang minggu ini"
+                    animeList={ongoingAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre))}
+                    variant="slider"
+                    icon="flame"
+                    viewAllLink={`/anime-list?status=ongoing${selectedGenre ? `&genre=${selectedGenre}` : ''}`}
+                    limit={15}
+                  />
+                </div>
               )}
 
               {/* Update Terbaru - Grid style */}
               {latestAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre)).length > 0 && (
-                <AnimeSection
-                  title={selectedGenre ? `Terbaru - ${selectedGenre}` : "Update Terbaru"}
-                  subtitle="Anime yang baru ditambahkan"
-                  animeList={latestAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre))}
-                  variant="grid"
-                  icon="clock"
-                  viewAllLink={`/anime-list${selectedGenre ? `?genre=${selectedGenre}` : ''}`}
-                  limit={8}
-                />
+                <div style={sectionStyle}>
+                  <AnimeSection
+                    title={selectedGenre ? `Terbaru - ${selectedGenre}` : "Update Terbaru"}
+                    subtitle="Anime yang baru ditambahkan"
+                    animeList={latestAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre))}
+                    variant="grid"
+                    icon="clock"
+                    viewAllLink={`/anime-list${selectedGenre ? `?genre=${selectedGenre}` : ''}`}
+                    limit={8}
+                  />
+                </div>
               )}
 
               {/* Semua Anime - Full Grid */}
               {allAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre)).length > 0 && (
-                <AnimeSection
-                  title={selectedGenre ? `${selectedGenre} Anime` : "Jelajahi Anime"}
-                  subtitle="Temukan anime favoritmu"
-                  animeList={allAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre))}
-                  variant="grid"
-                  icon="trending"
-                  viewAllLink={`/anime-list${selectedGenre ? `?genre=${selectedGenre}` : ''}`}
-                  limit={12}
-                />
+                <div style={sectionStyle}>
+                  <AnimeSection
+                    title={selectedGenre ? `${selectedGenre} Anime` : "Jelajahi Anime"}
+                    subtitle="Temukan anime favoritmu"
+                    animeList={allAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre))}
+                    variant="grid"
+                    icon="trending"
+                    viewAllLink={`/anime-list${selectedGenre ? `?genre=${selectedGenre}` : ''}`}
+                    limit={12}
+                  />
+                </div>
               )}
 
               {/* Completed Anime - Optional */}
               {completedAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre)).length > 4 && (
-                <AnimeSection
-                  title={selectedGenre ? `Selesai - ${selectedGenre}` : "Anime Selesai"}
-                  subtitle="Anime yang sudah tamat"
-                  animeList={completedAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre)).slice(0, 12)}
-                  variant="grid"
-                  icon="star"
-                  viewAllLink={`/anime-list?status=completed${selectedGenre ? `&genre=${selectedGenre}` : ''}`}
-                  limit={6}
-                />
+                <div style={sectionStyle}>
+                  <AnimeSection
+                    title={selectedGenre ? `Selesai - ${selectedGenre}` : "Anime Selesai"}
+                    subtitle="Anime yang sudah tamat"
+                    animeList={completedAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre)).slice(0, 12)}
+                    variant="grid"
+                    icon="star"
+                    viewAllLink={`/anime-list?status=completed${selectedGenre ? `&genre=${selectedGenre}` : ''}`}
+                    limit={6}
+                  />
+                </div>
               )}
             </div>
 
@@ -402,13 +505,13 @@ export default function Home() {
             <div className="w-full lg:w-80 flex-shrink-0 mt-8 lg:mt-0">
               <div className="lg:sticky lg:top-24 space-y-3 sm:space-y-5">
                 {/* Mobile: Show only schedule and random button */}
-                <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4" style={sidebarSectionStyle}>
                   {sortedWidgets
                     .filter(w => w.enabled && ['schedule', 'random'].includes(w.id))
                     .map(widget => widgetComponents[widget.id])}
                 </div>
                 {/* Desktop: Show all widgets */}
-                <div className="hidden lg:block space-y-6">
+                <div className="hidden lg:block space-y-6" style={sidebarSectionStyle}>
                   {sortedWidgets
                     .filter(w => w.enabled)
                     .map(widget => widgetComponents[widget.id])}

@@ -3,6 +3,8 @@ const router = express.Router();
 const Comment = require('../models/Comment');
 const User = require('../models/User');
 const BannedWord = require('../models/BannedWord');
+const { requireAuth } = require('../middleware/auth');
+const { validateBody } = require('../middleware/validate');
 
 // Helper function to check for banned words
 async function containsBannedWord(text) {
@@ -119,11 +121,18 @@ router.get('/:animeId/episode/:episodeNumber', async (req, res) => {
 });
 
 // Create a new comment
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, validateBody([
+    { field: 'animeId', required: true, type: 'string', minLength: 1, maxLength: 200 },
+    { field: 'content', required: true, type: 'string', minLength: 1, maxLength: 1000 },
+    { field: 'episodeNumber', required: false, type: 'number', integer: true }
+]), async (req, res) => {
     try {
-        const { userId, userName, userAvatar, animeId, episodeNumber, content, parentId } = req.body;
+        const { animeId, episodeNumber, content, parentId } = req.body;
+        const userId = req.user.id;
+        const userName = req.user.name;
+        const userAvatar = req.user.avatar || '';
 
-        if (!userId || !animeId || !content) {
+        if (!animeId || !content) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
@@ -132,7 +141,7 @@ router.post('/', async (req, res) => {
         }
 
         // Check if user is banned
-        const user = await User.findById(userId);
+        const user = await User.findById(userId).select('communityRole isAdmin isBanned');
         if (user && user.isBanned) {
             return res.status(403).json({ error: 'Akun Anda dibanned dan tidak bisa berkomentar' });
         }
@@ -146,10 +155,12 @@ router.post('/', async (req, res) => {
             });
         }
 
+        const userRole = user?.isAdmin ? 'admin' : (user?.communityRole || 'member');
         const comment = new Comment({
             userId,
             userName: userName || 'Anonymous',
             userAvatar: userAvatar || '',
+            userRole,
             animeId,
             episodeNumber: episodeNumber || null,
             content: content.trim(),
@@ -166,10 +177,13 @@ router.post('/', async (req, res) => {
 });
 
 // Update a comment (owner only)
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAuth, validateBody([
+    { field: 'content', required: true, type: 'string', minLength: 1, maxLength: 1000 }
+]), async (req, res) => {
     try {
         const { id } = req.params;
-        const { userId, content } = req.body;
+        const { content } = req.body;
+        const userId = req.user.id;
 
         const comment = await Comment.findById(id);
 
@@ -196,10 +210,11 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete a comment (soft delete, owner or admin)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
     try {
         const { id } = req.params;
-        const { userId, isAdmin } = req.body;
+        const userId = req.user.id;
+        const isAdmin = req.user.isAdmin;
 
         const comment = await Comment.findById(id);
 
@@ -228,14 +243,10 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Toggle like on a comment
-router.post('/:id/like', async (req, res) => {
+router.post('/:id/like', requireAuth, async (req, res) => {
     try {
         const { id } = req.params;
-        const { userId } = req.body;
-
-        if (!userId) {
-            return res.status(400).json({ error: 'User ID required' });
-        }
+        const userId = req.user.id;
 
         const comment = await Comment.findById(id);
 

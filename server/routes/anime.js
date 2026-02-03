@@ -7,6 +7,8 @@ const quinime = require('../utils/quinime-scraper');
 const nonton = require('../utils/nontonanimeid-scraper');
 const { generateSubtitle, checkFFmpeg, translateText } = require('../utils/subtitle-generator');
 const { uploadFile: uploadToR2 } = require('../utils/r2-storage');
+const { requireAdmin } = require('../middleware/auth');
+const { validateBody } = require('../middleware/validate');
 
 // Get all custom anime (that are not deleted)
 router.get('/custom', async (req, res) => {
@@ -37,7 +39,11 @@ router.get('/deleted', async (req, res) => {
 });
 
 // Translate text to Indonesian
-router.post('/translate', async (req, res) => {
+router.post('/translate', validateBody([
+    { field: 'text', required: false, type: 'string', maxLength: 5000, allowEmptyString: true },
+    { field: 'targetLang', required: false, type: 'string', minLength: 2, maxLength: 10 },
+    { field: 'sourceLang', required: false, type: 'string', minLength: 2, maxLength: 10 }
+]), async (req, res) => {
     try {
         const { text, targetLang = 'id', sourceLang = 'auto' } = req.body;
 
@@ -56,7 +62,10 @@ router.post('/translate', async (req, res) => {
 });
 
 // Add Custom Anime
-router.post('/', async (req, res) => {
+router.post('/', requireAdmin, validateBody([
+    { field: 'id', required: true, type: 'string', minLength: 1, maxLength: 200 },
+    { field: 'title', required: true, type: 'string', minLength: 1, maxLength: 200 }
+]), async (req, res) => {
     try {
         console.log('[POST /api/anime] Received data:', JSON.stringify(req.body, null, 2));
 
@@ -143,7 +152,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Update Anime (Upsert: Create if not exists - overrides API data)
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
@@ -167,7 +176,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete Anime (Blacklist)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -385,7 +394,7 @@ router.get('/search-otaku/:query', async (req, res) => {
 // ==== SCRAPE EPISODES FEATURE ====
 // Scrape all episodes for an anime from available scrapers
 // Optionally accepts a URL in request body for direct scraping
-router.post('/scrape-episodes/:id', async (req, res) => {
+router.post('/scrape-episodes/:id', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { url, animeData } = req.body; // Optional: direct URL and anime data from frontend
@@ -666,7 +675,12 @@ router.get('/subtitle/status', async (req, res) => {
 });
 
 // Generate subtitle for an episode
-router.post('/:id/episode/:ep/generate-subtitle', async (req, res) => {
+router.post('/:id/episode/:ep/generate-subtitle', requireAdmin, validateBody([
+    { field: 'provider', required: false, type: 'string', enum: ['openai', 'local'] },
+    { field: 'language', required: false, type: 'string', minLength: 2, maxLength: 10 },
+    { field: 'translate', required: false, type: 'boolean' },
+    { field: 'model', required: false, type: 'string', minLength: 1, maxLength: 50 }
+]), async (req, res) => {
     try {
         const { id, ep } = req.params;
         const {
@@ -763,7 +777,7 @@ router.get('/:id/episode/:ep/subtitle', async (req, res) => {
 });
 
 // Delete subtitle for an episode
-router.delete('/:id/episode/:ep/subtitle', async (req, res) => {
+router.delete('/:id/episode/:ep/subtitle', requireAdmin, async (req, res) => {
     try {
         const { id, ep } = req.params;
 

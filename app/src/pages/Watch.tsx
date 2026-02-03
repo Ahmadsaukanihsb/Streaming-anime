@@ -29,6 +29,7 @@ import { useApp } from '@/context/AppContext';
 import { BACKEND_URL } from '@/config/api';
 import AnimeCard from '@/components/AnimeCard';
 import CommentSection from '@/components/CommentSection';
+import { apiFetch } from '@/lib/api';
 
 
 export default function Watch() {
@@ -93,14 +94,14 @@ export default function Watch() {
 
     // Track view for trending
     if (id) {
-      fetch(`${BACKEND_URL}/api/anime/${id}/view`, { method: 'POST' })
+      apiFetch(`${BACKEND_URL}/api/anime/${id}/view`, { method: 'POST' })
         .catch(() => { }); // Silent fail is ok
     }
 
     // Fetch anime detail if missing from context
     if (id && !contextAnime && !apiAnime) {
       console.log('[Watch] Anime missing from context, fetching from API:', id);
-      fetch(`${BACKEND_URL}/api/anime/${id}`)
+      apiFetch(`${BACKEND_URL}/api/anime/${id}`)
         .then(res => {
           if (!res.ok) throw new Error('Failed to fetch anime info');
           return res.json();
@@ -129,7 +130,7 @@ export default function Watch() {
         // === SERVER FETCH ===
         console.log(`[Watch] Fetching from Server: ${selectedServer} | ${anime.title} Episode ${currentEpisode}`);
 
-        const response = await fetch(
+        const response = await apiFetch(
           `${BACKEND_URL}/api/anime/stream/${encodeURIComponent(anime.title)}/${currentEpisode}?server=${selectedServer}`
         );
 
@@ -512,14 +513,14 @@ export default function Watch() {
   }, [isPlaying, volume, isMuted, isTheaterMode, playbackSpeed, currentEpisode, totalEpisodes]);
 
   // Resume Playback - Save position to database
-  const userId = user?.id || 'anonymous';
+  const userId = user?.id;
 
   // Load saved position from database
   useEffect(() => {
     const loadProgress = async () => {
-      if (!id || !currentEpisode) return;
+      if (!id || !currentEpisode || !userId) return;
       try {
-        const res = await fetch(`${BACKEND_URL}/api/watch-progress/${id}/${currentEpisode}?userId=${userId}`);
+        const res = await apiFetch(`${BACKEND_URL}/api/watch-progress/${id}/${currentEpisode}?userId=${userId}`);
         if (res.ok) {
           const data = await res.json();
           if (data.currentTime > 5 && videoRef.current && duration > 0 && data.currentTime < duration - 10) {
@@ -539,15 +540,14 @@ export default function Watch() {
   // Save progress periodically to database
   useEffect(() => {
     const saveInterval = setInterval(async () => {
-      if (videoRef.current && currentTime > 5 && id && currentEpisode) {
+      if (videoRef.current && currentTime > 5 && id && currentEpisode && userId) {
         try {
-          await fetch(`${BACKEND_URL}/api/watch-progress/${id}/${currentEpisode}`, {
+          await apiFetch(`${BACKEND_URL}/api/watch-progress/${id}/${currentEpisode}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               currentTime,
               duration,
-              userId,
               completed: false
             })
           });
@@ -587,15 +587,14 @@ export default function Watch() {
   // Handle Video End - Auto Next Episode
   const handleVideoEnd = async () => {
     // Mark as completed in database
-    if (id && currentEpisode) {
+    if (id && currentEpisode && userId) {
       try {
-        await fetch(`${BACKEND_URL}/api/watch-progress/${id}/${currentEpisode}`, {
+        await apiFetch(`${BACKEND_URL}/api/watch-progress/${id}/${currentEpisode}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             currentTime: duration,
             duration,
-            userId,
             completed: true
           })
         });
@@ -651,6 +650,14 @@ export default function Watch() {
 
   return (
     <main className="min-h-screen bg-[#0F0F1A]">
+      {!user && (
+        <div className="px-4 sm:px-6 lg:px-8 pt-20">
+          <div className="mx-auto max-w-3xl bg-white/5 border border-white/10 rounded-xl p-4 text-center text-white/70">
+            Login untuk menyimpan progress dan melanjutkan tontonan dari menit terakhir.
+            <Link to="/login" className="ml-2 text-[#6C5DD3] hover:underline">Login</Link>
+          </div>
+        </div>
+      )}
       {/* Video Player + Episode List Section */}
       <div className={`mx-auto px-4 sm:px-6 lg:px-8 pt-20 transition-all duration-300 ${isTheaterMode ? 'max-w-full' : 'max-w-7xl'}`}>
         <div className={`grid gap-4 ${isTheaterMode ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-4'}`}>

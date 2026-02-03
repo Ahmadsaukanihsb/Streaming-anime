@@ -9,7 +9,17 @@ const notificationSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['like_discussion', 'like_reply', 'reply', 'mention', 'new_episode'],
+        enum: [
+            'like_discussion',
+            'like_reply',
+            'reply',
+            'mention',
+            'new_episode',
+            // Legacy/system types for backward compatibility
+            'system',
+            'anime',
+            'episode'
+        ],
         required: true
     },
     fromUserId: {

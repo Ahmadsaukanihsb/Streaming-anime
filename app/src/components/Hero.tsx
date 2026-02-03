@@ -4,9 +4,12 @@ import { Play, Info, ChevronLeft, ChevronRight, Star, Clock, Volume2, VolumeX } 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { BACKEND_URL } from '@/config/api';
+import { apiFetch } from '@/lib/api';
 
 export default function Hero() {
   const { animeList } = useApp();
+  const [isMobile, setIsMobile] = useState(false);
+  const touchStartX = useRef<number | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
@@ -18,18 +21,38 @@ export default function Hero() {
   useEffect(() => {
     const loadHeroSettings = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/settings/heroAnimeIds`);
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setHeroAnimeIds(data);
-          }
+        const res = await apiFetch(`${BACKEND_URL}/api/settings/heroAnimeIds`);
+        if (!res.ok) {
+          console.warn('[Hero] Settings fetch failed:', res.status, res.statusText);
+          return;
+        }
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          console.warn('[Hero] Settings response not JSON:', contentType);
+          return;
+        }
+        let data: unknown;
+        try {
+          data = await res.json();
+        } catch {
+          console.warn('[Hero] Settings JSON parse failed');
+          return;
+        }
+        if (Array.isArray(data) && data.length > 0) {
+          setHeroAnimeIds(data);
         }
       } catch (err) {
         console.error('Failed to load hero settings:', err);
       }
     };
     loadHeroSettings();
+  }, []);
+
+  useEffect(() => {
+    const update = () => setIsMobile(window.matchMedia('(max-width: 640px)').matches);
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
   }, []);
 
   // Use custom hero anime if available, otherwise fallback to top rated
@@ -117,7 +140,27 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative h-[80vh] lg:h-[70vh] max-h-[800px] min-h-[550px] w-full overflow-hidden">
+    <section
+      className="relative h-[70vh] sm:h-[75vh] lg:h-[70vh] max-h-[800px] min-h-[420px] sm:min-h-[520px] w-full overflow-hidden"
+      onTouchStart={(e) => {
+        touchStartX.current = e.touches[0]?.clientX ?? null;
+      }}
+      onTouchEnd={(e) => {
+        const startX = touchStartX.current;
+        const endX = e.changedTouches[0]?.clientX ?? null;
+        if (startX == null || endX == null) return;
+        const delta = endX - startX;
+        if (Math.abs(delta) < 40) return;
+        if (delta < 0) {
+          nextSlide();
+        } else {
+          prevSlide();
+        }
+        setIsAutoPlaying(false);
+        setTimeout(() => setIsAutoPlaying(true), 8000);
+        touchStartX.current = null;
+      }}
+    >
       {/* Background - Video Trailer or Image */}
       <AnimatePresence mode="wait">
         <motion.div
@@ -128,7 +171,7 @@ export default function Hero() {
           transition={{ duration: 1.2, ease: [0.645, 0.045, 0.355, 1] }}
           className="absolute inset-0"
         >
-          {hasTrailer ? (
+          {hasTrailer && !isMobile ? (
             slide.trailerType === 'youtube' ? (
               <iframe
                 key={`yt-${slide.id}-${currentSlide}`}
@@ -155,6 +198,7 @@ export default function Hero() {
               src={slide.poster}
               alt={slide.title}
               className="w-full h-full object-cover"
+              loading="lazy"
             />
           )}
           {/* Gradient Overlays */}
@@ -190,14 +234,14 @@ export default function Hero() {
           >
             {/* Badges */}
             <div className="flex items-center gap-2 mb-4 flex-wrap">
-              <span className="px-3 py-1.5 bg-gradient-to-r from-[#6C5DD3] to-[#8B7BEF] text-white text-xs font-bold rounded-full shadow-lg shadow-[#6C5DD3]/30">
+              <span className="px-3 py-1.5 bg-gradient-to-r from-[#6C5DD3] to-[#8B7BEF] text-white text-xs font-bold rounded-full shadow-md sm:shadow-lg shadow-[#6C5DD3]/20 sm:shadow-[#6C5DD3]/30">
                 ✨ FEATURED
               </span>
-              <span className="flex items-center gap-1 px-3 py-1.5 bg-yellow-500/20 text-yellow-400 text-xs font-bold rounded-full backdrop-blur-sm">
+              <span className="flex items-center gap-1 px-3 py-1.5 bg-yellow-500/20 text-yellow-400 text-xs font-bold rounded-full backdrop-blur-[2px] sm:backdrop-blur-sm">
                 <Star className="w-3.5 h-3.5 fill-current" />
                 {slide.rating?.toFixed(1) || '0.0'}
               </span>
-              <span className={`px-3 py-1.5 text-xs font-bold rounded-full backdrop-blur-sm ${slide.status === 'Ongoing'
+              <span className={`px-3 py-1.5 text-xs font-bold rounded-full backdrop-blur-[2px] sm:backdrop-blur-sm ${slide.status === 'Ongoing'
                 ? 'bg-green-500/20 text-green-400'
                 : 'bg-blue-500/20 text-blue-400'
                 }`}>
@@ -228,7 +272,7 @@ export default function Hero() {
             {/* Genres */}
             <div className="flex flex-wrap gap-2 mb-4">
               {slide.genres?.slice(0, 4).map((genre: string) => (
-                <span key={genre} className="px-3 py-1 text-xs bg-white/10 text-white/80 rounded-full backdrop-blur-sm">
+                <span key={genre} className="px-3 py-1 text-xs bg-white/10 text-white/80 rounded-full backdrop-blur-[2px] sm:backdrop-blur-sm">
                   {genre}
                 </span>
               ))}
@@ -240,35 +284,63 @@ export default function Hero() {
             </p>
 
             {/* Actions */}
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-4">
               <Link
                 to={`/watch/${slide.id}/1`}
-                className="group flex items-center gap-2 px-6 py-3 bg-[#6C5DD3] hover:bg-[#5a4bbf] text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-[#6C5DD3]/30 hover:shadow-[#6C5DD3]/50"
+                className="group flex items-center justify-center gap-2 px-5 py-2 text-sm bg-[#6C5DD3] hover:bg-[#5a4bbf] text-white font-semibold rounded-xl transition-all duration-300 shadow-md sm:shadow-lg shadow-[#6C5DD3]/20 sm:shadow-[#6C5DD3]/30 hover:shadow-[#6C5DD3]/40 w-full sm:w-auto sm:px-6 sm:py-3 sm:text-base"
               >
                 <Play className="w-5 h-5 fill-current group-hover:scale-110 transition-transform" />
                 Tonton Sekarang
               </Link>
               <Link
                 to={`/anime/${slide.id}`}
-                className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all duration-300 backdrop-blur-sm border border-white/10"
+                className="flex items-center justify-center gap-2 px-5 py-2 text-sm bg-transparent hover:bg-white/10 text-white font-semibold rounded-xl transition-colors duration-200 border border-white/40 w-full sm:w-auto sm:px-6 sm:py-3 sm:text-base"
               >
                 <Info className="w-5 h-5" />
                 Detail Anime
               </Link>
+            </div>
+
+            <div className="mt-3 flex items-center gap-2 sm:hidden">
+              <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-[#6C5DD3]/20 text-[#9B8CFF] rounded-full border border-[#6C5DD3]/30">
+                Featured
+              </span>
+              <p className="text-xs text-white/50">
+                Geser untuk melihat anime unggulan lainnya.
+              </p>
+              <motion.span
+                className="ml-1 inline-block text-white/40"
+                animate={{ x: [0, 6, 0] }}
+                transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                aria-hidden="true"
+              >
+                →
+              </motion.span>
+            </div>
+            <div className="mt-3 flex items-center gap-2 sm:hidden">
+              {heroSlides.map((_, index) => (
+                <span
+                  key={index}
+                  className={`h-1.5 rounded-full transition-all ${index === currentSlide
+                    ? 'w-6 bg-[#6C5DD3]'
+                    : 'w-2 bg-white/30'
+                    }`}
+                />
+              ))}
             </div>
           </motion.div>
         </AnimatePresence>
       </div>
 
       {/* Navigation Arrows */}
-      <div className="absolute bottom-1/2 translate-y-1/2 left-4 right-4 flex justify-between pointer-events-none z-20">
+      <div className="absolute bottom-1/2 translate-y-1/2 left-4 right-4 hidden sm:flex justify-between pointer-events-none z-20">
         <button
           onClick={() => {
             prevSlide();
             setIsAutoPlaying(false);
             setTimeout(() => setIsAutoPlaying(true), 10000);
           }}
-          className="pointer-events-auto p-3 rounded-full bg-black/30 backdrop-blur-sm text-white/70 hover:bg-[#6C5DD3] hover:text-white transition-all duration-300"
+          className="pointer-events-auto p-3 rounded-full bg-black/30 backdrop-blur-[2px] sm:backdrop-blur-sm text-white/70 hover:bg-[#6C5DD3] hover:text-white transition-all duration-300"
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
@@ -278,7 +350,7 @@ export default function Hero() {
             setIsAutoPlaying(false);
             setTimeout(() => setIsAutoPlaying(true), 10000);
           }}
-          className="pointer-events-auto p-3 rounded-full bg-black/30 backdrop-blur-sm text-white/70 hover:bg-[#6C5DD3] hover:text-white transition-all duration-300"
+          className="pointer-events-auto p-3 rounded-full bg-black/30 backdrop-blur-[2px] sm:backdrop-blur-sm text-white/70 hover:bg-[#6C5DD3] hover:text-white transition-all duration-300"
         >
           <ChevronRight className="w-6 h-6" />
         </button>
@@ -304,6 +376,7 @@ export default function Hero() {
               src={item.poster}
               alt={item.title}
               className="w-full h-full object-cover"
+              loading="lazy"
             />
             {/* Progress Bar on Active */}
             {index === currentSlide && (

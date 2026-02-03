@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { Anime } from '@/data/animeData';
 import { BACKEND_URL } from '../config/api';
+import { getAuthHeaders, saveAuthToken } from '@/lib/auth';
+import { apiFetch } from '@/lib/api';
+import { COMMUNITY_ROLES, getRoleConfig } from '@/config/roles';
 
 interface User {
   id: string;
@@ -26,14 +29,32 @@ interface Rating {
   ratedAt?: Date;
 }
 
+type NotificationType =
+  | 'like_discussion'
+  | 'like_reply'
+  | 'reply'
+  | 'mention'
+  | 'new_episode'
+  | 'system'
+  | 'anime'
+  | 'episode';
+
 interface Notification {
-  _id?: string;
-  type: 'episode' | 'anime' | 'system';
-  title: string;
-  message?: string;
+  _id: string;
+  type: NotificationType;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  discussionId?: string;
+  discussionTitle?: string;
+  replyId?: string;
   animeId?: string;
-  read: boolean;
-  createdAt: Date;
+  animeTitle?: string;
+  animePoster?: string;
+  episodeNumber?: number;
+  fromUserName?: string;
+  // Backward-compat alias
+  title?: string;
 }
 
 interface UserSettings {
@@ -42,6 +63,13 @@ interface UserSettings {
   defaultQuality: '480' | '720' | '1080' | 'auto';
   notifyNewEpisode: boolean;
   notifyNewAnime: boolean;
+}
+
+interface BadgeConfig {
+  name: string;
+  icon: string;
+  bgColor: string;
+  textColor: string;
 }
 
 interface AppContextType {
@@ -112,6 +140,9 @@ interface AppContextType {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
 
+  // Badges / Roles
+  getBadgeConfig: (role: string) => BadgeConfig;
+  refreshBadges: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -239,6 +270,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     notifyNewAnime: true,
   });
 
+  // Badge config map (roleId -> config)
+  const [badgeMap, setBadgeMap] = useState<Record<string, BadgeConfig>>({});
+
   // Search
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -254,18 +288,51 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // UI
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  const refreshBadges = useCallback(async () => {
+    try {
+      const res = await apiFetch(`${BACKEND_URL}/api/badges`, {
+        headers: { ...getAuthHeaders() }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        const nextMap: Record<string, BadgeConfig> = {};
+        for (const badge of data) {
+          if (!badge?.roleId) continue;
+          nextMap[String(badge.roleId).toLowerCase()] = {
+            name: badge.name || badge.roleId,
+            icon: badge.icon || 'Award',
+            bgColor: badge.bgColor || 'bg-gray-500/20',
+            textColor: badge.textColor || 'text-gray-400'
+          };
+        }
+        setBadgeMap(nextMap);
+      }
+    } catch (err) {
+      console.warn('[AppContext] Failed to fetch badges');
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshBadges();
+  }, [refreshBadges]);
+
   // Auth Functions
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     try {
-      const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
+      const res = await apiFetch(`${BACKEND_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
       if (!res.ok) throw new Error('Login failed');
 
       const data = await res.json();
+      if (data.token) {
+        saveAuthToken(data.token);
+      }
 
       // Map backend response to User interface
       const mappedUser: User = {
@@ -291,17 +358,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const register = useCallback(async (name: string, email: string, password: string): Promise<boolean> => {
     try {
-      const res = await fetch(`${BACKEND_URL}/api/auth/register`, {
+      const res = await apiFetch(`${BACKEND_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ name, email, password }),
       });
 
       if (!res.ok) throw new Error('Registration failed');
 
       const data = await res.json();
-      setUser(data);
-      saveUser(data);
+      if (data.token) {
+        saveAuthToken(data.token);
+      }
+      const mappedUser: User = {
+        id: data._id || data.id,
+        name: data.name,
+        email: data.email,
+        avatar: data.avatar,
+        isAdmin: data.isAdmin || false,
+        createdAt: data.createdAt,
+      };
+      setUser(mappedUser);
+      saveUser(mappedUser);
       return true;
     } catch (err) {
       console.error(err);
@@ -310,8 +389,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    apiFetch(`${BACKEND_URL}/api/auth/logout`, {
+      method: 'POST',
+      credentials: 'include'
+    }).catch(() => undefined);
     setUser(null);
     saveUser(null);
+    saveAuthToken(null);
     setBookmarks([]);
     setWatchlist([]);
     setWatchHistory([]);
@@ -333,9 +417,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!user) return { success: false, error: 'Not logged in' };
 
     try {
-      const res = await fetch(`${BACKEND_URL}/api/user/profile`, {
+      const res = await apiFetch(`${BACKEND_URL}/api/user/profile`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ userId: user.id, name, email }),
       });
 
@@ -369,8 +453,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       formData.append('avatar', file);
       formData.append('userId', user.id);
 
-      const res = await fetch(`${BACKEND_URL}/api/user/avatar`, {
+      const res = await apiFetch(`${BACKEND_URL}/api/user/avatar`, {
         method: 'PUT',
+        headers: { ...getAuthHeaders() },
         body: formData,
       });
 
@@ -395,10 +480,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
+  const fetchNotifications = async () => {
+    try {
+      const res = await apiFetch(`${BACKEND_URL}/api/notifications?limit=50`, {
+        headers: { ...getAuthHeaders() }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const mapped = (data.notifications || []).map((n: any) => ({
+          ...n,
+          isRead: n.isRead ?? n.read ?? false,
+          message: n.message || n.title || 'Notifikasi'
+        }));
+        setNotifications(mapped);
+      }
+    } catch (err) {
+      console.error('Failed to fetch notifications', err);
+    }
+  };
+
   // Sync Data
   const fetchUserData = async (userId: string) => {
     try {
-      const res = await fetch(`${BACKEND_URL}/api/user/${userId}`);
+      const res = await apiFetch(`${BACKEND_URL}/api/user/${userId}`, {
+        headers: { ...getAuthHeaders() }
+      });
       if (res.ok) {
         const data = await res.json();
         setBookmarks(data.bookmarks || []);
@@ -408,10 +514,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setRatings(data.ratings || []);
         setWatchedEpisodes(data.watchedEpisodes || []);
         setSubscribedAnime(data.subscribedAnime || []);
-        setNotifications(data.notifications || []);
         if (data.settings) {
           setUserSettings(prev => ({ ...prev, ...data.settings }));
         }
+        await fetchNotifications();
       }
     } catch (err) {
       console.error('Failed to sync user data', err);
@@ -436,9 +542,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         views: 0,
       };
 
-      await fetch(`${BACKEND_URL}/api/anime`, {
+      await apiFetch(`${BACKEND_URL}/api/anime`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify(newAnime),
       });
 
@@ -453,9 +559,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setAnimeList(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
 
     try {
-      await fetch(`${BACKEND_URL}/api/anime/${id}`, {
+      await apiFetch(`${BACKEND_URL}/api/anime/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify(updates),
       });
     } catch (err) {
@@ -466,8 +572,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const deleteAnime = useCallback(async (id: string) => {
     try {
-      await fetch(`${BACKEND_URL}/api/anime/${id}`, {
+      await apiFetch(`${BACKEND_URL}/api/anime/${id}`, {
         method: 'DELETE',
+        headers: { ...getAuthHeaders() },
       });
 
       setAnimeList(prev => prev.filter(a => a.id !== id));
@@ -487,9 +594,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     );
 
     try {
-      await fetch(`${BACKEND_URL}/api/user/bookmarks`, {
+      await apiFetch(`${BACKEND_URL}/api/user/bookmarks`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ userId: user.id, animeId }),
       });
     } catch (err) {
@@ -509,9 +616,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     // Sync to backend
     try {
-      await fetch(`${BACKEND_URL}/api/user/watchlist`, {
+      await apiFetch(`${BACKEND_URL}/api/user/watchlist`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ userId: user.id, animeId }),
       });
     } catch (err) {
@@ -537,9 +644,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       // Debounce logic should be here ideally, but for now direct call
       try {
-        await fetch(`${BACKEND_URL}/api/user/history`, {
+        await apiFetch(`${BACKEND_URL}/api/user/history`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
           body: JSON.stringify({ userId: user.id, animeId, episodeId, episodeNumber, progress }),
         });
       } catch (err) { console.error(err); }
@@ -577,9 +684,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
 
     try {
-      await fetch(`${BACKEND_URL}/api/user/rating`, {
+      await apiFetch(`${BACKEND_URL}/api/user/rating`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ userId: user.id, animeId, rating }),
       });
     } catch (err) {
@@ -596,7 +703,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     setRatings(prev => prev.filter(r => r.animeId !== animeId));
     try {
-      await fetch(`${BACKEND_URL}/api/user/rating/${user.id}/${animeId}`, { method: 'DELETE' });
+      await apiFetch(`${BACKEND_URL}/api/user/rating/${user.id}/${animeId}`, { method: 'DELETE', headers: { ...getAuthHeaders() } });
     } catch (err) {
       console.error('Failed to delete rating', err);
     }
@@ -621,9 +728,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
 
     try {
-      await fetch(`${BACKEND_URL}/api/user/watched-episode`, {
+      await apiFetch(`${BACKEND_URL}/api/user/watched-episode`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ userId: user.id, animeId, episodeNumber }),
       });
     } catch (err) {
@@ -645,9 +752,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     );
 
     try {
-      await fetch(`${BACKEND_URL}/api/user/subscribe`, {
+      await apiFetch(`${BACKEND_URL}/api/user/subscribe`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ userId: user.id, animeId }),
       });
     } catch (err) {
@@ -660,14 +767,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
 
     setNotifications(prev =>
-      prev.map(n => n._id === notificationId ? { ...n, read: true } : n)
+      prev.map(n => n._id === notificationId ? { ...n, isRead: true } : n)
     );
 
     try {
-      await fetch(`${BACKEND_URL}/api/user/notifications/read`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, notificationId }),
+      await apiFetch(`${BACKEND_URL}/api/notifications/${notificationId}/read`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders() }
       });
     } catch (err) {
       console.error('Failed to mark notification read', err);
@@ -677,16 +783,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const markAllNotificationsRead = useCallback(async () => {
     if (!user) return;
 
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
 
     try {
-      await fetch(`${BACKEND_URL}/api/user/notifications/read-all/${user.id}`, { method: 'PUT' });
+      await apiFetch(`${BACKEND_URL}/api/notifications/mark-read`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders() }
+      });
     } catch (err) {
       console.error('Failed to mark all notifications read', err);
     }
   }, [user]);
 
-  const unreadNotificationCount = notifications.filter(n => !n.read).length;
+  const unreadNotificationCount = notifications.filter(n => !n.isRead).length;
 
   // Settings Functions
   const updateSettings = useCallback(async (newSettings: Partial<UserSettings>) => {
@@ -695,9 +804,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setUserSettings(prev => ({ ...prev, ...newSettings }));
 
     try {
-      await fetch(`${BACKEND_URL}/api/user/settings`, {
+      await apiFetch(`${BACKEND_URL}/api/user/settings`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ userId: user.id, settings: newSettings }),
       });
     } catch (err) {
@@ -711,11 +820,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setWatchHistory([]);
 
     try {
-      await fetch(`${BACKEND_URL}/api/user/history/${user.id}`, { method: 'DELETE' });
+      await apiFetch(`${BACKEND_URL}/api/user/history/${user.id}`, { method: 'DELETE', headers: { ...getAuthHeaders() } });
     } catch (err) {
       console.error('Failed to delete history', err);
     }
   }, [user]);
+
+  const getBadgeConfig = useCallback((role: string): BadgeConfig => {
+    const normalized = (role || '').toLowerCase().trim();
+    if (normalized && badgeMap[normalized]) {
+      return badgeMap[normalized];
+    }
+
+    if (normalized && Object.prototype.hasOwnProperty.call(COMMUNITY_ROLES, normalized)) {
+      return getRoleConfig(normalized);
+    }
+
+    const displayName = normalized
+      ? normalized.replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+      : 'Member';
+
+    return {
+      name: displayName,
+      icon: 'Award',
+      bgColor: 'bg-gray-500/20',
+      textColor: 'text-gray-400'
+    };
+  }, [badgeMap]);
 
   return (
     <AppContext.Provider value={{
@@ -766,6 +897,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setSelectedStatus,
       isSidebarOpen,
       setIsSidebarOpen,
+      getBadgeConfig,
+      refreshBadges,
     }}>
       {children}
     </AppContext.Provider>

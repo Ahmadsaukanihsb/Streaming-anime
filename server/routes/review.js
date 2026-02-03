@@ -3,6 +3,8 @@ const router = express.Router();
 const Review = require('../models/Review');
 const User = require('../models/User');
 const BannedWord = require('../models/BannedWord');
+const { requireAuth } = require('../middleware/auth');
+const { validateBody } = require('../middleware/validate');
 
 // Helper function to check for banned words
 async function containsBannedWord(text) {
@@ -72,11 +74,20 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create new review
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, validateBody([
+    { field: 'animeId', required: true, type: 'string', minLength: 1, maxLength: 200 },
+    { field: 'animeTitle', required: true, type: 'string', minLength: 1, maxLength: 200 },
+    { field: 'rating', required: true, type: 'number', min: 1, max: 10 },
+    { field: 'title', required: true, type: 'string', minLength: 1, maxLength: 200 },
+    { field: 'content', required: true, type: 'string', minLength: 1, maxLength: 5000 }
+]), async (req, res) => {
     try {
-        const { userId, userName, userAvatar, animeId, animeTitle, animePoster, rating, title, content } = req.body;
+        const { animeId, animeTitle, animePoster, rating, title, content } = req.body;
+        const userId = req.user.id;
+        const userName = req.user.name;
+        const userAvatar = req.user.avatar || '';
 
-        if (!userId || !userName || !animeId || !animeTitle || !rating || !title || !content) {
+        if (!animeId || !animeTitle || !rating || !title || !content) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
@@ -136,9 +147,14 @@ router.post('/', async (req, res) => {
 });
 
 // Update review (owner only)
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAuth, validateBody([
+    { field: 'rating', required: false, type: 'number', min: 1, max: 10 },
+    { field: 'title', required: false, type: 'string', minLength: 1, maxLength: 200 },
+    { field: 'content', required: false, type: 'string', minLength: 1, maxLength: 5000 }
+], { atLeastOne: ['rating', 'title', 'content'] }), async (req, res) => {
     try {
-        const { userId, rating, title, content } = req.body;
+        const { rating, title, content } = req.body;
+        const userId = req.user.id;
 
         const review = await Review.findById(req.params.id);
         if (!review || review.isDeleted) {
@@ -162,9 +178,10 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete review (owner or admin)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
     try {
-        const { userId, isAdmin } = req.body;
+        const userId = req.user.id;
+        const isAdmin = req.user.isAdmin;
 
         const review = await Review.findById(req.params.id);
         if (!review) {
@@ -187,12 +204,9 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Toggle like on review
-router.post('/:id/like', async (req, res) => {
+router.post('/:id/like', requireAuth, async (req, res) => {
     try {
-        const { userId } = req.body;
-        if (!userId) {
-            return res.status(400).json({ error: 'userId required' });
-        }
+        const userId = req.user.id;
 
         const review = await Review.findById(req.params.id);
         if (!review || review.isDeleted) {
@@ -215,12 +229,9 @@ router.post('/:id/like', async (req, res) => {
 });
 
 // Toggle helpful on review
-router.post('/:id/helpful', async (req, res) => {
+router.post('/:id/helpful', requireAuth, async (req, res) => {
     try {
-        const { userId } = req.body;
-        if (!userId) {
-            return res.status(400).json({ error: 'userId required' });
-        }
+        const userId = req.user.id;
 
         const review = await Review.findById(req.params.id);
         if (!review || review.isDeleted) {

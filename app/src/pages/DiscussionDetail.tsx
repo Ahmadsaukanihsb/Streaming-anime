@@ -6,6 +6,9 @@ import { useApp } from '@/context/AppContext';
 import { Button } from '@/components/ui/button';
 import { BACKEND_URL } from '@/config/api';
 import RoleBadge from '@/components/RoleBadge';
+import { getAuthHeaders } from '@/lib/auth';
+import { apiFetch } from '@/lib/api';
+import SafeAvatar from '@/components/SafeAvatar';
 
 interface Discussion {
     _id: string;
@@ -61,7 +64,7 @@ export default function DiscussionDetail() {
 
             try {
                 setLoading(true);
-                const res = await fetch(`${BACKEND_URL}/api/discussions/${id}`);
+                const res = await apiFetch(`${BACKEND_URL}/api/discussions/${id}`);
                 if (!res.ok) {
                     navigate('/community');
                     return;
@@ -98,9 +101,9 @@ export default function DiscussionDetail() {
 
         setSubmitting(true);
         try {
-            const res = await fetch(`${BACKEND_URL}/api/discussions/${discussion._id}/reply`, {
+            const res = await apiFetch(`${BACKEND_URL}/api/discussions/${discussion._id}/reply`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({
                     userId: user.id,
                     userName: user.name,
@@ -142,9 +145,9 @@ export default function DiscussionDetail() {
         if (!user || !discussion) return;
 
         try {
-            const res = await fetch(`${BACKEND_URL}/api/discussions/${discussion._id}/like`, {
+            const res = await apiFetch(`${BACKEND_URL}/api/discussions/${discussion._id}/like`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({ userId: user.id, userName: user.name })
             });
 
@@ -167,9 +170,9 @@ export default function DiscussionDetail() {
         if (!user || !discussion) return;
 
         try {
-            const res = await fetch(`${BACKEND_URL}/api/discussions/${discussion._id}/reply/${replyId}/like`, {
+            const res = await apiFetch(`${BACKEND_URL}/api/discussions/${discussion._id}/reply/${replyId}/like`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({ userId: user.id, userName: user.name })
             });
 
@@ -191,9 +194,9 @@ export default function DiscussionDetail() {
         if (!user || !discussion) return;
 
         try {
-            const res = await fetch(`${BACKEND_URL}/api/discussions/${discussion._id}/reply/${replyId}`, {
+            const res = await apiFetch(`${BACKEND_URL}/api/discussions/${discussion._id}/reply/${replyId}`, {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({ userId: user.id, isAdmin: user.isAdmin })
             });
 
@@ -212,9 +215,9 @@ export default function DiscussionDetail() {
         if (!confirm('Yakin ingin menghapus diskusi ini?')) return;
 
         try {
-            const res = await fetch(`${BACKEND_URL}/api/discussions/${discussion._id}`, {
+            const res = await apiFetch(`${BACKEND_URL}/api/discussions/${discussion._id}`, {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({ userId: user.id, isAdmin: user.isAdmin })
             });
 
@@ -247,8 +250,24 @@ export default function DiscussionDetail() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#0F0F1A] pt-24 flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-[#6C5DD3] border-t-transparent rounded-full animate-spin" />
+            <div className="min-h-screen bg-[#0F0F1A] pt-24 pb-12">
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="bg-white/5 rounded-2xl border border-white/10 p-6 animate-pulse">
+                        <div className="flex items-start gap-4 mb-4">
+                            <SafeAvatar
+                                loading
+                                className="w-12 h-12 rounded-full"
+                                skeletonClassName="bg-white/10"
+                            />
+                            <div className="flex-1 space-y-2">
+                                <div className="h-4 bg-white/10 rounded w-1/2" />
+                                <div className="h-3 bg-white/10 rounded w-1/3" />
+                            </div>
+                        </div>
+                        <div className="h-4 bg-white/10 rounded w-5/6 mb-2" />
+                        <div className="h-4 bg-white/10 rounded w-4/5" />
+                    </div>
+                </div>
             </div>
         );
     }
@@ -308,17 +327,12 @@ export default function DiscussionDetail() {
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4">
                         <div className="flex items-start gap-4">
-                            {discussion.userAvatar ? (
-                                <img
-                                    src={discussion.userAvatar}
-                                    alt={discussion.userName}
-                                    className="w-12 h-12 rounded-full object-cover"
-                                />
-                            ) : (
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center text-white font-bold text-lg">
-                                    {discussion.userName.charAt(0).toUpperCase()}
-                                </div>
-                            )}
+                            <SafeAvatar
+                                src={discussion.userAvatar}
+                                name={discussion.userName}
+                                className="w-12 h-12 rounded-full"
+                                fallbackClassName="text-lg"
+                            />
                             <div>
                                 <div className="flex items-center gap-2 flex-wrap">
                                     {discussion.isPinned && <Pin className="w-4 h-4 text-yellow-400" />}
@@ -385,17 +399,11 @@ export default function DiscussionDetail() {
                         className="bg-white/5 rounded-2xl border border-white/10 p-4 mb-8"
                     >
                         <div className="flex gap-3">
-                            {user.avatar ? (
-                                <img
-                                    src={user.avatar}
-                                    alt={user.name}
-                                    className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                                />
-                            ) : (
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center text-white font-bold flex-shrink-0">
-                                    {user.name.charAt(0).toUpperCase()}
-                                </div>
-                            )}
+                            <SafeAvatar
+                                src={user.avatar}
+                                name={user.name}
+                                className="w-10 h-10 rounded-full flex-shrink-0"
+                            />
                             <div className="flex-1">
                                 <textarea
                                     ref={replyInputRef}
@@ -471,17 +479,12 @@ export default function DiscussionDetail() {
                                 className="bg-white/5 rounded-xl border border-white/10 p-4"
                             >
                                 <div className="flex gap-3">
-                                    {reply.userAvatar ? (
-                                        <img
-                                            src={reply.userAvatar}
-                                            alt={reply.userName}
-                                            className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                                        />
-                                    ) : (
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#6C5DD3]/50 to-[#00C2FF]/50 flex items-center justify-center text-white font-bold flex-shrink-0">
-                                            {reply.userName.charAt(0).toUpperCase()}
-                                        </div>
-                                    )}
+                                    <SafeAvatar
+                                        src={reply.userAvatar}
+                                        name={reply.userName}
+                                        className="w-10 h-10 rounded-full flex-shrink-0"
+                                        fallbackClassName="from-[#6C5DD3]/50 to-[#00C2FF]/50"
+                                    />
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2 text-sm flex-wrap">

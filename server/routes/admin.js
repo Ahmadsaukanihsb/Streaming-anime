@@ -5,6 +5,12 @@ const { CustomAnime } = require('../models/CustomAnime');
 const Comment = require('../models/Comment');
 const BannedWord = require('../models/BannedWord');
 const Activity = require('../models/Activity');
+const Badge = require('../models/Badge');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { validateBody } = require('../middleware/validate');
+
+router.use(requireAuth);
+router.use(requireAdmin);
 
 // Helper function to log activity
 async function logActivity(type, description, itemId, itemTitle, userName = 'System') {
@@ -233,18 +239,25 @@ router.put('/users/:id/demote', async (req, res) => {
 });
 
 // PUT /api/admin/users/:id/badge - Update user badge/communityRole
-router.put('/users/:id/badge', async (req, res) => {
+router.put('/users/:id/badge', validateBody([
+    { field: 'communityRole', required: true, type: 'string', minLength: 2, maxLength: 50 }
+]), async (req, res) => {
     try {
         const { communityRole } = req.body;
-        const allowedRoles = ['member', 'supporter', 'knight', 'guardian', 'legend', 'moderator', 'admin'];
+        const normalizedRole = typeof communityRole === 'string' ? communityRole.trim().toLowerCase() : '';
 
-        if (!allowedRoles.includes(communityRole)) {
+        if (!normalizedRole) {
+            return res.status(400).json({ error: 'Invalid community role' });
+        }
+
+        const badge = await Badge.findOne({ roleId: normalizedRole, isActive: true });
+        if (!badge) {
             return res.status(400).json({ error: 'Invalid community role' });
         }
 
         const user = await User.findByIdAndUpdate(
             req.params.id,
-            { communityRole },
+            { communityRole: normalizedRole },
             { new: true }
         ).select('-password');
 
@@ -294,7 +307,10 @@ router.get('/banned-words', async (req, res) => {
 });
 
 // POST /api/admin/banned-words - Add banned word
-router.post('/banned-words', async (req, res) => {
+router.post('/banned-words', validateBody([
+    { field: 'word', required: true, type: 'string', minLength: 2, maxLength: 50 },
+    { field: 'addedBy', required: false, type: 'string', minLength: 1, maxLength: 80 }
+]), async (req, res) => {
     try {
         const { word, addedBy } = req.body;
 
@@ -339,7 +355,10 @@ router.delete('/banned-words/:id', async (req, res) => {
 });
 
 // POST /api/admin/banned-words/bulk - Add multiple banned words
-router.post('/banned-words/bulk', async (req, res) => {
+router.post('/banned-words/bulk', validateBody([
+    { field: 'words', required: true, type: 'array' },
+    { field: 'addedBy', required: false, type: 'string', minLength: 1, maxLength: 80 }
+]), async (req, res) => {
     try {
         const { words, addedBy } = req.body;
 

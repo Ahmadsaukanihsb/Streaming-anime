@@ -27,6 +27,7 @@ export default function AnimeCard({ anime, variant = 'default', index = 0 }: Ani
             src={anime.poster}
             alt={anime.title}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            loading="lazy"
           />
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             <Play className="w-8 h-8 text-white fill-current" />
@@ -72,11 +73,12 @@ export default function AnimeCard({ anime, variant = 'default', index = 0 }: Ani
             src={anime.poster}
             alt={anime.title}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            loading="lazy"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
 
           {/* Rating Badge */}
-          <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-lg">
+          <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 bg-black/60 backdrop-blur-[2px] sm:backdrop-blur-sm rounded-lg">
             <Star className="w-3 h-3 text-yellow-400 fill-current" />
             <span className="text-xs font-semibold text-white">{anime.rating}</span>
           </div>
@@ -101,7 +103,7 @@ export default function AnimeCard({ anime, variant = 'default', index = 0 }: Ani
 
           {/* Hover Overlay */}
           <div className="absolute inset-0 bg-[#6C5DD3]/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-[2px] sm:backdrop-blur-sm flex items-center justify-center">
               <Play className="w-6 h-6 text-white fill-current" />
             </div>
           </div>
@@ -142,7 +144,7 @@ export default function AnimeCard({ anime, variant = 'default', index = 0 }: Ani
           )}
 
           {/* Rating Badge */}
-          <div className="flex items-center gap-1 px-1.5 py-0.5 bg-black/70 backdrop-blur-md rounded-md border border-white/10 shrink-0">
+          <div className="flex items-center gap-1 px-1.5 py-0.5 bg-black/70 backdrop-blur-[2px] sm:backdrop-blur-md rounded-md border border-white/10 shrink-0">
             <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
             <span className="text-[10px] font-bold text-white">{anime.rating?.toFixed(2) || '0.00'}</span>
           </div>
@@ -155,7 +157,7 @@ export default function AnimeCard({ anime, variant = 'default', index = 0 }: Ani
             e.stopPropagation();
             toggleBookmark(anime.id);
           }}
-          className={`absolute top-12 right-3 p-2 rounded-full backdrop-blur-md transition-all duration-300 ${isBookmarked
+          className={`absolute top-12 right-3 p-2 rounded-full backdrop-blur-[2px] sm:backdrop-blur-md transition-all duration-300 ${isBookmarked
             ? 'bg-[#6C5DD3] text-white opacity-100'
             : 'bg-black/40 text-white hover:bg-white hover:text-black opacity-0 group-hover:opacity-100'
             }`}
@@ -195,7 +197,7 @@ export default function AnimeCard({ anime, variant = 'default', index = 0 }: Ani
 
         {/* Play Icon (Center Hover) */}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-          <div className="w-12 h-12 rounded-full bg-[#6C5DD3]/90 backdrop-blur-sm flex items-center justify-center shadow-lg transform scale-50 group-hover:scale-100 transition-transform">
+          <div className="w-12 h-12 rounded-full bg-[#6C5DD3]/90 backdrop-blur-[2px] sm:backdrop-blur-sm flex items-center justify-center shadow-md sm:shadow-lg transform scale-50 group-hover:scale-100 transition-transform">
             <Play className="w-6 h-6 text-white fill-current ml-1" />
           </div>
         </div>

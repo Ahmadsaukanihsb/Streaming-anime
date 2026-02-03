@@ -14,6 +14,9 @@ import {
     Award
 } from 'lucide-react';
 import { BACKEND_URL } from '@/config/api';
+import { getAuthHeaders } from '@/lib/auth';
+import { apiFetch } from '@/lib/api';
+import SafeAvatar from '@/components/SafeAvatar';
 
 interface User {
     _id: string;
@@ -61,7 +64,7 @@ export default function AdminUsers() {
 
     const fetchBadges = async () => {
         try {
-            const res = await fetch(`${BACKEND_URL}/api/badges`);
+            const res = await apiFetch(`${BACKEND_URL}/api/badges`);
             if (res.ok) {
                 const data = await res.json();
                 setBadges(data);
@@ -80,7 +83,9 @@ export default function AdminUsers() {
                 filter,
                 search
             });
-            const res = await fetch(`${BACKEND_URL}/api/admin/users?${params}`);
+            const res = await apiFetch(`${BACKEND_URL}/api/admin/users?${params}`, {
+                headers: { ...getAuthHeaders() }
+            });
             if (!res.ok) throw new Error('Failed to fetch');
             const data = await res.json();
             setUsers(data.users);
@@ -102,9 +107,9 @@ export default function AdminUsers() {
     const banUser = async (userId: string) => {
         try {
             setActionLoading(userId);
-            const res = await fetch(`${BACKEND_URL}/api/admin/users/${userId}/ban`, {
+            const res = await apiFetch(`${BACKEND_URL}/api/admin/users/${userId}/ban`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({ reason: banReason || 'Pelanggaran aturan' })
             });
             if (!res.ok) throw new Error('Failed to ban');
@@ -122,8 +127,9 @@ export default function AdminUsers() {
     const unbanUser = async (userId: string) => {
         try {
             setActionLoading(userId);
-            const res = await fetch(`${BACKEND_URL}/api/admin/users/${userId}/unban`, {
-                method: 'PUT'
+            const res = await apiFetch(`${BACKEND_URL}/api/admin/users/${userId}/unban`, {
+                method: 'PUT',
+                headers: { ...getAuthHeaders() }
             });
             if (!res.ok) throw new Error('Failed to unban');
             const data = await res.json();
@@ -138,8 +144,9 @@ export default function AdminUsers() {
     const promoteUser = async (userId: string) => {
         try {
             setActionLoading(userId);
-            const res = await fetch(`${BACKEND_URL}/api/admin/users/${userId}/promote`, {
-                method: 'PUT'
+            const res = await apiFetch(`${BACKEND_URL}/api/admin/users/${userId}/promote`, {
+                method: 'PUT',
+                headers: { ...getAuthHeaders() }
             });
             if (!res.ok) throw new Error('Failed to promote');
             const data = await res.json();
@@ -154,8 +161,9 @@ export default function AdminUsers() {
     const demoteUser = async (userId: string) => {
         try {
             setActionLoading(userId);
-            const res = await fetch(`${BACKEND_URL}/api/admin/users/${userId}/demote`, {
-                method: 'PUT'
+            const res = await apiFetch(`${BACKEND_URL}/api/admin/users/${userId}/demote`, {
+                method: 'PUT',
+                headers: { ...getAuthHeaders() }
             });
             if (!res.ok) throw new Error('Failed to demote');
             const data = await res.json();
@@ -172,8 +180,9 @@ export default function AdminUsers() {
 
         try {
             setActionLoading(userId);
-            const res = await fetch(`${BACKEND_URL}/api/admin/users/${userId}`, {
-                method: 'DELETE'
+            const res = await apiFetch(`${BACKEND_URL}/api/admin/users/${userId}`, {
+                method: 'DELETE',
+                headers: { ...getAuthHeaders() }
             });
             if (!res.ok) throw new Error('Failed to delete');
             setUsers(prev => prev.filter(u => u._id !== userId));
@@ -188,9 +197,9 @@ export default function AdminUsers() {
     const updateBadge = async (userId: string, communityRole: string) => {
         try {
             setActionLoading(userId);
-            const res = await fetch(`${BACKEND_URL}/api/admin/users/${userId}/badge`, {
+            const res = await apiFetch(`${BACKEND_URL}/api/admin/users/${userId}/badge`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({ communityRole })
             });
             if (!res.ok) throw new Error('Failed to update badge');
@@ -217,6 +226,21 @@ export default function AdminUsers() {
             legend: 'bg-yellow-500/20 text-yellow-400',
             moderator: 'bg-cyan-500/20 text-cyan-400',
             admin: 'bg-red-500/20 text-red-400'
+        };
+        return colors[role] || colors.member;
+    };
+
+    const getAvatarFallbackBg = (user: User) => {
+        if (user.isAdmin) return 'bg-gradient-to-br from-red-500 to-rose-600';
+        const role = user.communityRole || 'member';
+        const colors: Record<string, string> = {
+            member: 'bg-gradient-to-br from-gray-500 to-gray-700',
+            supporter: 'bg-gradient-to-br from-green-500 to-emerald-600',
+            knight: 'bg-gradient-to-br from-blue-500 to-sky-600',
+            guardian: 'bg-gradient-to-br from-purple-500 to-indigo-600',
+            legend: 'bg-gradient-to-br from-yellow-500 to-amber-600',
+            moderator: 'bg-gradient-to-br from-cyan-500 to-teal-600',
+            admin: 'bg-gradient-to-br from-red-500 to-rose-600'
         };
         return colors[role] || colors.member;
     };
@@ -258,8 +282,26 @@ export default function AdminUsers() {
 
             {/* Users List */}
             {loading ? (
-                <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 text-[#6C5DD3] animate-spin" />
+                <div className="space-y-3">
+                    {[1, 2, 3, 4].map((i) => (
+                        <div
+                            key={i}
+                            className="bg-white/5 border border-white/10 rounded-xl p-4 animate-pulse"
+                        >
+                            <div className="flex items-center gap-4">
+                                <SafeAvatar
+                                    loading
+                                    className="w-12 h-12 rounded-full flex-shrink-0"
+                                    skeletonClassName="bg-white/10"
+                                />
+                                <div className="flex-1 space-y-2">
+                                    <div className="h-4 bg-white/10 rounded w-1/3" />
+                                    <div className="h-3 bg-white/10 rounded w-1/2" />
+                                </div>
+                                <div className="h-6 bg-white/10 rounded w-20" />
+                            </div>
+                        </div>
+                    ))}
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -271,13 +313,13 @@ export default function AdminUsers() {
                         >
                             <div className="flex items-center gap-4">
                                 {/* Avatar */}
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center flex-shrink-0">
-                                    {user.avatar ? (
-                                        <img src={user.avatar} alt="" className="w-full h-full rounded-full object-cover" />
-                                    ) : (
-                                        <span className="text-white font-bold text-lg">{user.name?.charAt(0).toUpperCase()}</span>
-                                    )}
-                                </div>
+                                <SafeAvatar
+                                    src={user.avatar}
+                                    name={user.name}
+                                    className="w-12 h-12 rounded-full flex-shrink-0"
+                                    fallbackBgClassName={getAvatarFallbackBg(user)}
+                                    fallbackClassName="text-lg"
+                                />
 
                                 {/* Info */}
                                 <div className="flex-1 min-w-0">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Search,
@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { motion, AnimatePresence } from 'framer-motion';
 import NotificationDropdown from './NotificationDropdown';
+import SafeAvatar from '@/components/SafeAvatar';
 
 export default function Navbar() {
   const { user, logout, searchQuery, setSearchQuery, bookmarks, watchlist, animeList } = useApp();
@@ -33,13 +34,26 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const rafId = useRef<number | null>(null);
+  const lastScrolled = useRef(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      if (rafId.current !== null) return;
+      rafId.current = window.requestAnimationFrame(() => {
+        const next = window.scrollY > 50;
+        if (next !== lastScrolled.current) {
+          lastScrolled.current = next;
+          setIsScrolled(next);
+        }
+        rafId.current = null;
+      });
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      if (rafId.current !== null) window.cancelAnimationFrame(rafId.current);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -69,7 +83,7 @@ export default function Navbar() {
         animate={{ y: 0 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled
-          ? 'bg-[#0F0F1A]/90 backdrop-blur-xl shadow-lg shadow-black/20'
+          ? 'bg-[#0F0F1A]/90 backdrop-blur-md md:backdrop-blur-xl shadow-lg shadow-black/20'
           : 'bg-transparent'
           }`}
       >
@@ -123,10 +137,12 @@ export default function Navbar() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-2 p-1.5 pr-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
-                      <img
+                      <SafeAvatar
                         src={user.avatar}
-                        alt={user.name}
+                        name={user.name}
                         className="w-8 h-8 rounded-lg"
+                        fallbackBgClassName={user.isAdmin ? 'bg-gradient-to-br from-red-500 to-rose-600' : undefined}
+                        fallbackClassName="text-sm"
                       />
                       <span className="text-sm font-medium hidden md:block">{user.name}</span>
                     </button>
@@ -269,7 +285,7 @@ export default function Navbar() {
               initial={{ opacity: 0, y: -50 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -50 }}
-              className="max-w-2xl mx-auto mt-32 px-4"
+              className="max-w-2xl mx-auto mt-24 sm:mt-32 px-4"
               onClick={e => e.stopPropagation()}
             >
               <form onSubmit={handleSearch} className="relative">
@@ -296,7 +312,7 @@ export default function Navbar() {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-3 bg-[#1A1A2E] border border-white/10 rounded-xl overflow-hidden"
+                  className="mt-3 bg-[#1A1A2E] border border-white/10 rounded-xl overflow-hidden max-h-[60vh] overflow-y-auto"
                 >
                   {animeList
                     .filter(anime =>
@@ -318,6 +334,7 @@ export default function Navbar() {
                           src={anime.poster}
                           alt={anime.title}
                           className="w-12 h-16 object-cover rounded-lg flex-shrink-0"
+                          loading="lazy"
                         />
                         <div className="flex-1 min-w-0">
                           <p className="text-white font-medium line-clamp-1">{anime.title}</p>

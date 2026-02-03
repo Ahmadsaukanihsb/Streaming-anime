@@ -23,6 +23,9 @@ import {
     Sparkles
 } from 'lucide-react';
 import { BACKEND_URL } from '@/config/api';
+import { getAuthHeaders } from '@/lib/auth';
+import { apiFetch } from '@/lib/api';
+import { useApp } from '@/context/AppContext';
 
 interface Badge {
     _id: string;
@@ -70,6 +73,7 @@ const availableColors = [
 ];
 
 export default function AdminBadges() {
+    const { refreshBadges } = useApp();
     const [badges, setBadges] = useState<Badge[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -90,7 +94,9 @@ export default function AdminBadges() {
     const fetchBadges = async () => {
         try {
             setLoading(true);
-            const res = await fetch(`${BACKEND_URL}/api/badges/all`);
+            const res = await apiFetch(`${BACKEND_URL}/api/badges/all`, {
+                headers: { ...getAuthHeaders() }
+            });
             if (res.ok) {
                 const data = await res.json();
                 setBadges(data);
@@ -107,9 +113,9 @@ export default function AdminBadges() {
 
         try {
             setSaving(true);
-            const res = await fetch(`${BACKEND_URL}/api/badges`, {
+            const res = await apiFetch(`${BACKEND_URL}/api/badges`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({
                     ...newBadge,
                     order: badges.length
@@ -120,6 +126,7 @@ export default function AdminBadges() {
                 setBadges(prev => [...prev, badge]);
                 setNewBadge({ roleId: '', name: '', icon: 'Award', bgColor: 'bg-gray-500/20', textColor: 'text-gray-400' });
                 setIsCreating(false);
+                refreshBadges();
             }
         } catch (err) {
             console.error('Failed to create badge:', err);
@@ -133,9 +140,9 @@ export default function AdminBadges() {
 
         try {
             setSaving(true);
-            const res = await fetch(`${BACKEND_URL}/api/badges/${editingBadge._id}`, {
+            const res = await apiFetch(`${BACKEND_URL}/api/badges/${editingBadge._id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({
                     name: editingBadge.name,
                     icon: editingBadge.icon,
@@ -148,6 +155,7 @@ export default function AdminBadges() {
                 const updated = await res.json();
                 setBadges(prev => prev.map(b => b._id === updated._id ? updated : b));
                 setEditingBadge(null);
+                refreshBadges();
             }
         } catch (err) {
             console.error('Failed to update badge:', err);
@@ -161,11 +169,13 @@ export default function AdminBadges() {
         if (!confirm(`Hapus badge "${badge.name}"?`)) return;
 
         try {
-            const res = await fetch(`${BACKEND_URL}/api/badges/${badge._id}`, {
-                method: 'DELETE'
+            const res = await apiFetch(`${BACKEND_URL}/api/badges/${badge._id}`, {
+                method: 'DELETE',
+                headers: { ...getAuthHeaders() }
             });
             if (res.ok) {
                 setBadges(prev => prev.filter(b => b._id !== badge._id));
+                refreshBadges();
             }
         } catch (err) {
             console.error('Failed to delete badge:', err);
@@ -187,11 +197,12 @@ export default function AdminBadges() {
         setBadges(newBadges);
 
         try {
-            await fetch(`${BACKEND_URL}/api/badges/reorder`, {
+            await apiFetch(`${BACKEND_URL}/api/badges/reorder`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({ orders })
             });
+            refreshBadges();
         } catch (err) {
             console.error('Failed to reorder badges:', err);
         }

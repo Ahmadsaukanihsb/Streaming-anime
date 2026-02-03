@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Settings = require('../models/Settings');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 // Get a setting by key
 router.get('/:key', async (req, res) => {
@@ -17,7 +18,7 @@ router.get('/:key', async (req, res) => {
 });
 
 // Save or update a setting (using atomic upsert to prevent duplicates)
-router.post('/:key', async (req, res) => {
+router.post('/:key', requireAuth, requireAdmin, async (req, res) => {
     try {
         const { key } = req.params;
         const { value } = req.body;
@@ -41,7 +42,7 @@ router.post('/:key', async (req, res) => {
 });
 
 // Delete a setting
-router.delete('/:key', async (req, res) => {
+router.delete('/:key', requireAuth, requireAdmin, async (req, res) => {
     try {
         const result = await Settings.deleteOne({ key: req.params.key });
         if (result.deletedCount === 0) {
@@ -55,7 +56,7 @@ router.delete('/:key', async (req, res) => {
 });
 
 // Get all settings (optional, for debugging)
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, requireAdmin, async (req, res) => {
     try {
         const settings = await Settings.find();
         const result = {};

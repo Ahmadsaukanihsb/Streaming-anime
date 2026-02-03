@@ -1,5 +1,22 @@
 // Backend API URL
-export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+const resolveBackendUrl = () => {
+    const envUrl = import.meta.env.VITE_BACKEND_URL;
+    if (envUrl && typeof envUrl === 'string' && envUrl.trim().length > 0) {
+        return envUrl;
+    }
+
+    if (typeof window !== 'undefined') {
+        const { protocol, hostname } = window.location;
+        if (hostname.startsWith('test.')) {
+            return `${protocol}//backend.${hostname.slice(5)}`;
+        }
+        return `${protocol}//${hostname}`;
+    }
+
+    return 'http://localhost:5000';
+};
+
+export const BACKEND_URL = resolveBackendUrl();
 
 export const API_CONFIG = {
     // DramaBos API - Working video streams!

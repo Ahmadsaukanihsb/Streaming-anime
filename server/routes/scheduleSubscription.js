@@ -1,15 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const ScheduleSubscription = require('../models/ScheduleSubscription');
+const { requireAuth } = require('../middleware/auth');
+const { validateBody } = require('../middleware/validate');
+
+router.use(requireAuth);
 
 // Get user's subscriptions
 router.get('/', async (req, res) => {
     try {
-        const { userId } = req.query;
-
-        if (!userId) {
-            return res.status(400).json({ error: 'userId required' });
-        }
+        const userId = req.user.id;
 
         const subscriptions = await ScheduleSubscription.find({ userId, isActive: true })
             .sort({ createdAt: -1 })
@@ -25,11 +25,7 @@ router.get('/', async (req, res) => {
 // Get subscribed anime IDs only (for quick lookup)
 router.get('/ids', async (req, res) => {
     try {
-        const { userId } = req.query;
-
-        if (!userId) {
-            return res.status(400).json({ error: 'userId required' });
-        }
+        const userId = req.user.id;
 
         const subscriptions = await ScheduleSubscription.find({ userId, isActive: true })
             .select('animeId')
@@ -44,11 +40,18 @@ router.get('/ids', async (req, res) => {
 });
 
 // Toggle subscription (subscribe/unsubscribe)
-router.post('/toggle', async (req, res) => {
+router.post('/toggle', validateBody([
+    { field: 'animeId', required: true, type: 'string', minLength: 1, maxLength: 200 },
+    { field: 'animeTitle', required: false, type: 'string', minLength: 1, maxLength: 200 },
+    { field: 'animePoster', required: false, type: 'string', minLength: 1, maxLength: 500 },
+    { field: 'scheduleDay', required: false, type: 'string', minLength: 1, maxLength: 20 },
+    { field: 'scheduleTime', required: false, type: 'string', minLength: 1, maxLength: 20 }
+]), async (req, res) => {
     try {
-        const { userId, animeId, animeTitle, animePoster, scheduleDay, scheduleTime } = req.body;
+        const { animeId, animeTitle, animePoster, scheduleDay, scheduleTime } = req.body;
+        const userId = req.user.id;
 
-        if (!userId || !animeId) {
+        if (!animeId) {
             return res.status(400).json({ error: 'userId and animeId required' });
         }
 
@@ -82,9 +85,10 @@ router.post('/toggle', async (req, res) => {
 // Check if subscribed to specific anime
 router.get('/check', async (req, res) => {
     try {
-        const { userId, animeId } = req.query;
+        const { animeId } = req.query;
+        const userId = req.user.id;
 
-        if (!userId || !animeId) {
+        if (!animeId) {
             return res.status(400).json({ error: 'userId and animeId required' });
         }
 
@@ -99,14 +103,9 @@ router.get('/check', async (req, res) => {
 // Unsubscribe from specific anime
 router.delete('/:animeId', async (req, res) => {
     try {
-        const { userId } = req.body;
         const { animeId } = req.params;
 
-        if (!userId) {
-            return res.status(400).json({ error: 'userId required' });
-        }
-
-        await ScheduleSubscription.findOneAndDelete({ userId, animeId });
+        await ScheduleSubscription.findOneAndDelete({ userId: req.user.id, animeId });
         res.json({ success: true });
     } catch (err) {
         console.error('[Schedule Subscription] Delete error:', err.message);

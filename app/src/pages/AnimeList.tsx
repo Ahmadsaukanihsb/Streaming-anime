@@ -283,6 +283,7 @@ export default function AnimeList() {
                       src={anime.poster}
                       alt={anime.title}
                       className="w-24 h-32 object-cover rounded-lg flex-shrink-0"
+                      loading="lazy"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4">

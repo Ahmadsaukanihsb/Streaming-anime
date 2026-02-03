@@ -1,11 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const WatchProgress = require('../models/WatchProgress');
+const { requireAuth } = require('../middleware/auth');
+const { validateBody } = require('../middleware/validate');
+
+router.use(requireAuth);
 
 // Get all watch progress for a user (for Continue Watching feature)
 router.get('/user/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
+        if (userId !== req.user.id) {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
 
         const progressList = await WatchProgress.find({
             userId,
@@ -24,7 +31,7 @@ router.get('/user/:userId', async (req, res) => {
 router.get('/:animeId/:episodeNumber', async (req, res) => {
     try {
         const { animeId, episodeNumber } = req.params;
-        const userId = req.query.userId || 'anonymous';
+        const userId = req.user.id;
 
         const progress = await WatchProgress.findOne({
             animeId,
@@ -49,10 +56,15 @@ router.get('/:animeId/:episodeNumber', async (req, res) => {
 });
 
 // Save watch progress
-router.post('/:animeId/:episodeNumber', async (req, res) => {
+router.post('/:animeId/:episodeNumber', validateBody([
+    { field: 'currentTime', required: true, type: 'number', min: 0 },
+    { field: 'duration', required: false, type: 'number', min: 0 },
+    { field: 'completed', required: false, type: 'boolean' }
+]), async (req, res) => {
     try {
         const { animeId, episodeNumber } = req.params;
-        const { currentTime, duration, completed, userId = 'anonymous' } = req.body;
+        const { currentTime, duration, completed } = req.body;
+        const userId = req.user.id;
 
         let progress = await WatchProgress.findOne({
             animeId,
@@ -90,7 +102,7 @@ router.post('/:animeId/:episodeNumber', async (req, res) => {
 router.delete('/:animeId/:episodeNumber', async (req, res) => {
     try {
         const { animeId, episodeNumber } = req.params;
-        const userId = req.query.userId || 'anonymous';
+        const userId = req.user.id;
 
         await WatchProgress.deleteOne({
             animeId,

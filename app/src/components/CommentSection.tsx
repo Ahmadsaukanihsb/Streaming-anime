@@ -5,12 +5,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { BACKEND_URL } from '@/config/api';
+import { getAuthHeaders } from '@/lib/auth';
+import { apiFetch } from '@/lib/api';
+import SafeAvatar from '@/components/SafeAvatar';
+import RoleBadge from '@/components/RoleBadge';
 
 interface Comment {
     _id: string;
     userId: string;
     userName: string;
     userAvatar: string;
+    userRole?: string;
     content: string;
     likes: string[];
     likeCount: number;
@@ -48,7 +53,7 @@ export default function CommentSection({ animeId, episodeNumber, title }: Commen
                 ? `${BACKEND_URL}/api/comments/${animeId}/episode/${episodeNumber}`
                 : `${BACKEND_URL}/api/comments/${animeId}`;
 
-            const response = await fetch(endpoint, {
+            const response = await apiFetch(endpoint, {
                 method: 'GET',
                 headers: { 'Accept': 'application/json' },
             });
@@ -79,11 +84,12 @@ export default function CommentSection({ animeId, episodeNumber, title }: Commen
                 content: newComment.trim()
             };
 
-            const response = await fetch(`${BACKEND_URL}/api/comments`, {
+            const response = await apiFetch(`${BACKEND_URL}/api/comments`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    ...getAuthHeaders()
                 },
                 body: JSON.stringify(requestBody)
             });
@@ -108,9 +114,9 @@ export default function CommentSection({ animeId, episodeNumber, title }: Commen
 
         setSubmitting(true);
         try {
-            const response = await fetch(`${BACKEND_URL}/api/comments`, {
+            const response = await apiFetch(`${BACKEND_URL}/api/comments`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({
                     userId: user.id,
                     userName: user.name,
@@ -138,9 +144,9 @@ export default function CommentSection({ animeId, episodeNumber, title }: Commen
         if (!user) return;
 
         try {
-            const response = await fetch(`${BACKEND_URL}/api/comments/${commentId}/like`, {
+            const response = await apiFetch(`${BACKEND_URL}/api/comments/${commentId}/like`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({ userId: user.id })
             });
 
@@ -157,9 +163,9 @@ export default function CommentSection({ animeId, episodeNumber, title }: Commen
         if (!confirm('Hapus komentar ini?')) return;
 
         try {
-            const response = await fetch(`${BACKEND_URL}/api/comments/${commentId}`, {
+            const response = await apiFetch(`${BACKEND_URL}/api/comments/${commentId}`, {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({
                     userId: user.id,
                     isAdmin: user.isAdmin === true
@@ -214,18 +220,18 @@ export default function CommentSection({ animeId, episodeNumber, title }: Commen
             >
                 <div className="flex gap-3">
                     {/* Avatar */}
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center flex-shrink-0 text-white font-bold text-sm overflow-hidden">
-                        {comment.userAvatar ? (
-                            <img src={comment.userAvatar} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                            comment.userName.charAt(0).toUpperCase()
-                        )}
-                    </div>
+                    <SafeAvatar
+                        src={comment.userAvatar}
+                        name={comment.userName}
+                        className="w-10 h-10 rounded-full flex-shrink-0 text-sm"
+                        fallbackClassName="text-sm"
+                    />
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-medium text-white text-sm">{comment.userName}</span>
+                            {comment.userRole && <RoleBadge role={comment.userRole} size="sm" />}
                             <span className="text-white/30 text-xs">{formatTimeAgo(comment.createdAt)}</span>
                         </div>
                         <p className="text-white/70 text-sm mt-1 break-words">{comment.content}</p>
@@ -353,13 +359,12 @@ export default function CommentSection({ animeId, episodeNumber, title }: Commen
             {user ? (
                 <form onSubmit={handleSubmitComment} className="mb-6">
                     <div className="flex gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center flex-shrink-0 text-white font-bold text-sm overflow-hidden">
-                            {user.avatar ? (
-                                <img src={user.avatar} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                                user.name.charAt(0).toUpperCase()
-                            )}
-                        </div>
+                        <SafeAvatar
+                            src={user.avatar}
+                            name={user.name}
+                            className="w-10 h-10 rounded-full flex-shrink-0 text-sm"
+                            fallbackClassName="text-sm"
+                        />
                         <div className="flex-1">
                             <textarea
                                 value={newComment}
@@ -400,7 +405,11 @@ export default function CommentSection({ animeId, episodeNumber, title }: Commen
                 <div className="space-y-4">
                     {[1, 2, 3].map((i) => (
                         <div key={i} className="flex gap-3 animate-pulse">
-                            <div className="w-10 h-10 rounded-full bg-white/10" />
+                            <SafeAvatar
+                                loading
+                                className="w-10 h-10 rounded-full flex-shrink-0"
+                                skeletonClassName="bg-white/10"
+                            />
                             <div className="flex-1 space-y-2">
                                 <div className="h-4 bg-white/10 rounded w-24" />
                                 <div className="h-4 bg-white/10 rounded w-3/4" />

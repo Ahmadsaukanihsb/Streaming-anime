@@ -14,6 +14,12 @@ const commentSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    userRole: {
+        type: String,
+        default: 'member',
+        trim: true,
+        lowercase: true
+    },
     animeId: {
         type: String,
         required: true,
