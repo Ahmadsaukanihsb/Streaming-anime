@@ -25,7 +25,7 @@ export default defineConfig({
           // Animation
           'animation-vendor': ['framer-motion'],
           // Utilities
-          'utils-vendor': ['axios', 'date-fns'],
+          'utils-vendor': ['date-fns'],
         },
         // Ensure small chunks for better loading
         chunkFileNames: 'assets/js/[name]-[hash].js',
