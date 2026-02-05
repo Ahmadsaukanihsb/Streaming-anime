@@ -94,7 +94,10 @@ export default function Admin() {
       // Get presigned URL from backend (logo endpoint)
       const response = await apiFetch(`${BACKEND_URL}/api/upload/logo`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           filename: file.name,
           contentType: file.type
