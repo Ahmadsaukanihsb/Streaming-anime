@@ -13,6 +13,15 @@
   <link rel="canonical" href="https://animeku.xyz/" />
   <meta name="theme-color" content="#0F0F1A" />
 
+  <!-- Performance: Preconnect to critical origins -->
+  <link rel="preconnect" href="https://api.animeku.xyz" crossorigin />
+  <link rel="preconnect" href="https://pub-d4bee725ba584e789e4f2261d976dfb4.r2.dev" crossorigin />
+  <link rel="dns-prefetch" href="https://api.animeku.xyz" />
+  <link rel="dns-prefetch" href="https://pub-d4bee725ba584e789e4f2261d976dfb4.r2.dev" />
+
+  <!-- Preload critical hero image -->
+  <link rel="preload" as="image" href="/images/hero/hero-jujutsu.jpg" fetchpriority="high" />
+
   <meta property="og:title" content="Animeku — Nonton Anime Sub Indo Terbaru & Terlengkap" />
   <meta property="og:description"
     content="Animeku menawarkan koleksi nonton anime sub indo terbaru dan terlengkap. Nikmati streaming anime ataupun download dengan kualitas HD secara gratis." />
@@ -27,6 +36,31 @@
   <meta name="twitter:description"
     content="Animeku menawarkan koleksi nonton anime sub indo terbaru dan terlengkap. Nikmati streaming anime ataupun download dengan kualitas HD secara gratis." />
   <meta name="twitter:image" content="https://animeku.xyz/images/hero/hero-jujutsu.jpg" />
+
+  <!-- Critical CSS for above-the-fold content -->
+  <style>
+    /* Critical CSS - Prevent layout shift */
+    html {
+      background-color: #0F0F1A;
+    }
+    body {
+      margin: 0;
+      background-color: #0F0F1A;
+      color: #ffffff;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    #root {
+      min-height: 100vh;
+    }
+    /* Prevent FOUC */
+    .loading {
+      opacity: 0;
+      animation: fadeIn 0.3s ease-in forwards;
+    }
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+  </style>
 
   <script type="application/ld+json">
     {
