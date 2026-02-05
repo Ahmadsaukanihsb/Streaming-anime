@@ -17,7 +17,9 @@ app.use(cors({
         'http://localhost:5173',
         'http://localhost:3000',
         'https://test.aavpanel.my.id',
-        'https://aavpanel.my.id'
+        'https://aavpanel.my.id',
+        'https://animeku.xyz',
+        'https://www.animeku.xyz'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

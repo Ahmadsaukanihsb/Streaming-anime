@@ -1,18 +1,17 @@
-name: Deploy to R2
+name: Deploy Frontend to R2
 
 on:
   push:
     branches: [ main, master ]
-    paths:
-      - 'app/**'
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -25,7 +24,7 @@ jobs:
       working-directory: ./app
       run: npm ci
     
-    - name: Build
+    - name: Build project
       working-directory: ./app
       run: npm run build
       env:
@@ -35,10 +34,10 @@ jobs:
       run: |
         curl https://rclone.org/install.sh | sudo bash
     
-    - name: Configure rclone
+    - name: Configure rclone for R2
       run: |
         mkdir -p ~/.config/rclone
-        cat > ~/.config/rclone/rclone.conf << EOF
+        cat > ~/.config/rclone/rclone.conf << 'EOF'
         [r2]
         type = s3
         provider = Cloudflare
@@ -48,16 +47,12 @@ jobs:
         acl = public-read
         EOF
     
-    - name: Deploy to R2 (Frontend Bucket)
+    - name: Deploy to R2 Bucket
       run: |
-        # ✅ Deploy ke bucket 'front-end' (terpisah dari video)
-        # Video tetap aman di bucket 'streaminganime'
+        echo "Deploying to bucket: ${{ secrets.R2_BUCKET_NAME }}"
         rclone sync ./app/dist r2:${{ secrets.R2_BUCKET_NAME }} --delete-during --progress
+        echo "✅ Deploy completed!"
     
-    - name: Purge Cloudflare Cache (Optional)
-      if: secrets.CLOUDFLARE_ZONE_ID != ''
+    - name: Verify Deployment
       run: |
-        curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE_ID }}/purge_cache" \
-          -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
-          -H "Content-Type: application/json" \
-          --data '{"purge_everything":true}'
+        echo "🌐 Frontend URL: https://${{ secrets.R2_BUCKET_NAME }}.${{ secrets.R2_ENDPOINT }}"

@@ -179,27 +179,34 @@ router.post('/confirm', validateBody([
                     anime.episodes = maxEpisode;
                     console.log(`[Upload] Updated episodes count to ${anime.episodes}`);
 
-                    // Update jadwalRilis based on current upload time
+                    // Track last upload time
                     const now = new Date();
-                    const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-                    const currentDay = dayNames[now.getDay()];
-                    const currentTime = now.toLocaleTimeString('id-ID', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false,
-                        timeZone: 'Asia/Jakarta'
-                    });
-
-                    anime.jadwalRilis = {
-                        hari: currentDay,
-                        jam: currentTime
-                    };
                     anime.lastEpisodeUpload = now;
-                    console.log(`[Upload] Updated jadwalRilis: ${currentDay} ${currentTime}`);
+
+                    // Only set jadwalRilis if it has not been set before
+                    const hasSchedule = Boolean(anime.jadwalRilis && anime.jadwalRilis.hari);
+                    if (!hasSchedule) {
+                        const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                        const currentDay = dayNames[now.getDay()];
+                        const currentTime = now.toLocaleTimeString('id-ID', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false,
+                            timeZone: 'Asia/Jakarta'
+                        });
+
+                        anime.jadwalRilis = {
+                            hari: currentDay,
+                            jam: currentTime
+                        };
+                        anime.markModified('jadwalRilis');
+                        console.log(`[Upload] Set jadwalRilis: ${currentDay} ${currentTime}`);
+                    } else {
+                        console.log('[Upload] JadwalRilis already set, skipping update');
+                    }
 
                     // Mark as modified for Mongoose
                     anime.markModified('episodeData');
-                    anime.markModified('jadwalRilis');
                     await anime.save();
                     console.log(`[Upload] Saved episodeData for ${animeTitle} - Episode ${episodeNum} now has ${anime.episodeData[epIndex].streams.length} streams`);
 
@@ -341,25 +348,31 @@ router.post('/video', upload.single('video'), async (req, res) => {
                     anime.episodes = maxEpisode;
                     console.log(`[Upload] Updated episodes count to ${anime.episodes}`);
 
-                    // Update jadwalRilis based on current upload time
+                    // Track last upload time
                     const now = new Date();
-                    const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-                    const currentDay = dayNames[now.getDay()];
-                    const currentTime = now.toLocaleTimeString('id-ID', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false,
-                        timeZone: 'Asia/Jakarta'
-                    });
-
-                    anime.jadwalRilis = {
-                        hari: currentDay,
-                        jam: currentTime
-                    };
                     anime.lastEpisodeUpload = now;
-                    console.log(`[Upload] Updated jadwalRilis: ${currentDay} ${currentTime}`);
 
-                    anime.markModified('jadwalRilis');
+                    // Only set jadwalRilis if it has not been set before
+                    const hasSchedule = Boolean(anime.jadwalRilis && anime.jadwalRilis.hari);
+                    if (!hasSchedule) {
+                        const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                        const currentDay = dayNames[now.getDay()];
+                        const currentTime = now.toLocaleTimeString('id-ID', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false,
+                            timeZone: 'Asia/Jakarta'
+                        });
+
+                        anime.jadwalRilis = {
+                            hari: currentDay,
+                            jam: currentTime
+                        };
+                        anime.markModified('jadwalRilis');
+                        console.log(`[Upload] Set jadwalRilis: ${currentDay} ${currentTime}`);
+                    } else {
+                        console.log('[Upload] JadwalRilis already set, skipping update');
+                    }
                     await anime.save();
                     console.log(`[Upload] Updated episodeData for ${animeTitle}`);
                 }

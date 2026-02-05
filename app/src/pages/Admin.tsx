@@ -111,6 +111,12 @@ export default function Admin() {
     enabled: boolean;
     order: number;
   }
+  interface HomeSection {
+    id: string;
+    name: string;
+    description?: string;
+    enabled: boolean;
+  }
   const defaultWidgets: SidebarWidget[] = [
     { id: 'random', name: 'Tombol Anime Random', enabled: true, order: 0 },
     { id: 'stats', name: 'Statistik User', enabled: true, order: 1 },
@@ -118,8 +124,18 @@ export default function Admin() {
     { id: 'topRating', name: 'Top Rating', enabled: true, order: 3 },
     { id: 'genres', name: 'Genre Populer', enabled: true, order: 4 },
   ];
+  const defaultHomeSections: HomeSection[] = [
+    { id: 'trending', name: 'Trending Minggu Ini', description: 'Anime terpopuler minggu ini', enabled: true },
+    { id: 'continue', name: 'Lanjutkan Menonton', description: 'Riwayat tontonan user', enabled: true },
+    { id: 'ongoing', name: 'Anime Ongoing', description: 'Anime yang sedang tayang', enabled: true },
+    { id: 'latest', name: 'Update Terbaru', description: 'Anime yang baru ditambahkan', enabled: true },
+    { id: 'explore', name: 'Jelajahi Anime', description: 'Koleksi rekomendasi', enabled: true },
+    { id: 'completed', name: 'Anime Selesai', description: 'Anime yang sudah tamat', enabled: false },
+  ];
   const [sidebarWidgets, setSidebarWidgets] = useState<SidebarWidget[]>(defaultWidgets);
   const [, setIsLoadingWidgets] = useState(true);
+  const [homeSections, setHomeSections] = useState<HomeSection[]>(defaultHomeSections);
+  const [, setIsLoadingHomeSections] = useState(true);
 
   // Hero Settings State
   const [heroAnimeIds, setHeroAnimeIds] = useState<string[]>([]);
@@ -193,6 +209,67 @@ export default function Admin() {
     updated[newIdx] = { ...temp, order: newIdx };
 
     saveSidebarWidgets(updated.sort((a, b) => a.order - b.order));
+  };
+
+  const mergeHomeSections = (data: HomeSection[]) => {
+    const map = new Map(defaultHomeSections.map(section => [section.id, section]));
+    data.forEach(section => {
+      if (section?.id && map.has(section.id)) {
+        map.set(section.id, { ...map.get(section.id)!, ...section });
+      }
+    });
+    return Array.from(map.values());
+  };
+
+  // Load home sections config from database on mount
+  useEffect(() => {
+    const loadHomeSections = async () => {
+      try {
+        const res = await apiFetch(`${BACKEND_URL}/api/settings/homeSections`, {
+          headers: { ...getAuthHeaders() }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setHomeSections(mergeHomeSections(data));
+          }
+        } else if (res.status === 404) {
+          await apiFetch(`${BACKEND_URL}/api/settings/homeSections`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({ value: defaultHomeSections }),
+          });
+        }
+      } catch (err) {
+        console.warn('Failed to load home sections, using defaults');
+      } finally {
+        setIsLoadingHomeSections(false);
+      }
+    };
+    loadHomeSections();
+  }, []);
+
+  // Save home sections to database
+  const saveHomeSections = async (sections: HomeSection[]) => {
+    setHomeSections(sections);
+    try {
+      await apiFetch(`${BACKEND_URL}/api/settings/homeSections`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ value: sections }),
+      });
+    } catch (err) {
+      console.error('Failed to save home sections to DB:', err);
+      showToast('Gagal menyimpan home sections!', 'error');
+    }
+  };
+
+  const toggleHomeSection = (id: string) => {
+    const updated = homeSections.map(section =>
+      section.id === id ? { ...section, enabled: !section.enabled } : section
+    );
+    saveHomeSections(updated);
+    showToast('Home section berhasil diupdate!', 'success');
   };
 
   // Load hero settings from database on mount
@@ -2714,6 +2791,78 @@ export default function Admin() {
               <div className="p-4 bg-blue-500/10 border-t border-blue-500/20">
                 <p className="text-sm text-blue-300">
                   💡 Perubahan akan langsung diterapkan di halaman Home. Refresh Home untuk melihat perubahan.
+                </p>
+              </div>
+            </div>
+
+            {/* Home Sections Management */}
+            <div className="bg-gradient-to-br from-[#1A1A2E] to-[#12121F] rounded-2xl border border-white/10 overflow-hidden">
+              <div className="p-6 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B6B] to-[#FF8E53] flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-white">Home Sections</h2>
+                    <p className="text-sm text-white/50">Tampilkan atau sembunyikan section di halaman Home</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 space-y-2">
+                {homeSections.map((section) => {
+                  const iconMap: Record<string, any> = {
+                    trending: TrendingUp,
+                    continue: PlaySquare,
+                    ongoing: Film,
+                    latest: Search,
+                    explore: Shuffle,
+                    completed: CheckCircle2,
+                  };
+                  const SectionIcon = iconMap[section.id] || TrendingUp;
+
+                  return (
+                    <motion.div
+                      key={section.id}
+                      layout
+                      className={`flex items-center gap-4 p-4 rounded-xl transition-all ${section.enabled
+                        ? 'bg-white/5 border border-white/10'
+                        : 'bg-white/[0.02] border border-white/5 opacity-60'
+                        }`}
+                    >
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${section.enabled ? 'bg-[#6C5DD3]/20' : 'bg-white/5'
+                        }`}>
+                        <SectionIcon className={`w-5 h-5 ${section.enabled ? 'text-[#6C5DD3]' : 'text-white/30'}`} />
+                      </div>
+
+                      <div className="flex-1">
+                        <h3 className={`font-medium ${section.enabled ? 'text-white' : 'text-white/50'}`}>
+                          {section.name}
+                        </h3>
+                        {section.description && (
+                          <p className="text-xs text-white/40">{section.description}</p>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => toggleHomeSection(section.id)}
+                        className={`relative w-12 h-7 rounded-full transition-colors ${section.enabled ? 'bg-[#6C5DD3]' : 'bg-white/10'
+                          }`}
+                      >
+                        <motion.div
+                          layout
+                          className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-md ${section.enabled ? 'left-6' : 'left-1'
+                            }`}
+                        />
+                      </button>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              <div className="p-4 bg-blue-500/10 border-t border-blue-500/20">
+                <p className="text-sm text-blue-300">
+                  💡 Home akan mengikuti pengaturan ini secara otomatis.
                 </p>
               </div>
             </div>

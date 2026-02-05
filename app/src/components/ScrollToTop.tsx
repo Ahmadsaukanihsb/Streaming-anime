@@ -10,12 +10,19 @@ export default function ScrollToTop() {
     const { pathname } = useLocation();
 
     useEffect(() => {
-        // Scroll to top immediately on route change
+        const lenis = (window as any).__lenis as { scrollTo?: (target: number, options?: any) => void } | undefined;
+        if (lenis?.scrollTo) {
+            lenis.scrollTo(0, { immediate: true });
+            return;
+        }
+
         window.scrollTo({
             top: 0,
             left: 0,
-            behavior: 'instant' // Use 'instant' for immediate scroll, 'smooth' for animated
+            behavior: 'auto'
         });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
     }, [pathname]);
 
     return null; // This component doesn't render anything

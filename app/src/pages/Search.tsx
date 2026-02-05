@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import AnimeCard from '@/components/AnimeCard';
 import { BACKEND_URL } from '@/config/api';
+import Seo from '@/components/Seo';
 
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -133,6 +134,11 @@ export default function SearchPage() {
 
   return (
     <main className="min-h-screen bg-[#0F0F1A] pt-20">
+      <Seo
+        title={searchQuery ? `Pencarian: ${searchQuery}` : 'Pencarian Anime'}
+        description="Cari anime sub indo favoritmu di Animeku. Temukan judul, genre, dan rekomendasi terbaik."
+        noIndex
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <motion.div

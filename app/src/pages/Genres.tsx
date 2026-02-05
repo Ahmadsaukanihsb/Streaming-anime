@@ -4,6 +4,7 @@ import { Search, Grid3X3, Sparkles, Film, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import AnimeCard from '@/components/AnimeCard';
+import Seo from '@/components/Seo';
 
 // Genre icons/colors mapping
 const genreStyles: Record<string, { color: string; gradient: string }> = {
@@ -90,6 +91,10 @@ export default function Genres() {
 
     return (
         <main className="min-h-screen bg-[#0F0F1A] pt-20">
+            <Seo
+                title="Genre Anime"
+                description="Jelajahi anime berdasarkan genre favoritmu di Animeku. Action, romance, fantasy, dan banyak lagi."
+            />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
                 {/* Show genre grid if no genre selected */}

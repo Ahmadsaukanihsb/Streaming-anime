@@ -27,10 +27,12 @@ interface CommentSectionProps {
     animeId: string;
     episodeNumber?: number;
     title?: string;
+    size?: 'sm' | 'md';
 }
 
-export default function CommentSection({ animeId, episodeNumber, title }: CommentSectionProps) {
+export default function CommentSection({ animeId, episodeNumber, title, size = 'md' }: CommentSectionProps) {
     const { user } = useApp();
+    const isSm = size === 'sm';
     const [comments, setComments] = useState<Comment[]>([]);
     const [loading, setLoading] = useState(true);
     const [newComment, setNewComment] = useState('');
@@ -216,43 +218,43 @@ export default function CommentSection({ animeId, episodeNumber, title }: Commen
             <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`${isReply ? 'ml-12 mt-3' : ''}`}
+                className={`${isReply ? (isSm ? 'ml-10 mt-2' : 'ml-12 mt-3') : ''}`}
             >
-                <div className="flex gap-3">
+                <div className={`flex ${isSm ? 'gap-2' : 'gap-3'}`}>
                     {/* Avatar */}
                     <SafeAvatar
                         src={comment.userAvatar}
                         name={comment.userName}
-                        className="w-10 h-10 rounded-full flex-shrink-0 text-sm"
-                        fallbackClassName="text-sm"
+                        className={`${isSm ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm'} rounded-full flex-shrink-0`}
+                        fallbackClassName={isSm ? 'text-xs' : 'text-sm'}
                     />
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium text-white text-sm">{comment.userName}</span>
+                            <span className={`font-medium text-white ${isSm ? 'text-xs' : 'text-sm'}`}>{comment.userName}</span>
                             {comment.userRole && <RoleBadge role={comment.userRole} size="sm" />}
-                            <span className="text-white/30 text-xs">{formatTimeAgo(comment.createdAt)}</span>
+                            <span className={`text-white/30 ${isSm ? 'text-[11px]' : 'text-xs'}`}>{formatTimeAgo(comment.createdAt)}</span>
                         </div>
-                        <p className="text-white/70 text-sm mt-1 break-words">{comment.content}</p>
+                        <p className={`text-white/70 ${isSm ? 'text-xs' : 'text-sm'} mt-1 break-words`}>{comment.content}</p>
 
                         {/* Actions */}
-                        <div className="flex items-center gap-4 mt-2">
+                        <div className={`flex items-center ${isSm ? 'gap-3 mt-2' : 'gap-4 mt-2'}`}>
                             <button
                                 onClick={() => handleLike(comment._id)}
-                                className={`flex items-center gap-1 text-xs transition-colors ${isLiked ? 'text-red-400' : 'text-white/40 hover:text-red-400'
+                                className={`flex items-center gap-1 ${isSm ? 'text-[11px]' : 'text-xs'} transition-colors ${isLiked ? 'text-red-400' : 'text-white/40 hover:text-red-400'
                                     }`}
                             >
-                                <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+                                <Heart className={`${isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} ${isLiked ? 'fill-current' : ''}`} />
                                 {comment.likeCount > 0 && comment.likeCount}
                             </button>
 
                             {!isReply && user && (
                                 <button
                                     onClick={() => setReplyingTo(replyingTo === comment._id ? null : comment._id)}
-                                    className="flex items-center gap-1 text-xs text-white/40 hover:text-[#6C5DD3] transition-colors"
+                                    className={`flex items-center gap-1 ${isSm ? 'text-[11px]' : 'text-xs'} text-white/40 hover:text-[#6C5DD3] transition-colors`}
                                 >
-                                    <Reply className="w-4 h-4" />
+                                    <Reply className={isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
                                     Balas
                                 </button>
                             )}
@@ -260,9 +262,9 @@ export default function CommentSection({ animeId, episodeNumber, title }: Commen
                             {(isOwner || isAdmin) && (
                                 <button
                                     onClick={() => handleDelete(comment._id)}
-                                    className="flex items-center gap-1 text-xs text-white/40 hover:text-red-400 transition-colors"
+                                    className={`flex items-center gap-1 ${isSm ? 'text-[11px]' : 'text-xs'} text-white/40 hover:text-red-400 transition-colors`}
                                 >
-                                    <Trash2 className="w-4 h-4" />
+                                    <Trash2 className={isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
                                 </button>
                             )}
                         </div>
@@ -274,7 +276,7 @@ export default function CommentSection({ animeId, episodeNumber, title }: Commen
                                     initial={{ opacity: 0, height: 0 }}
                                     animate={{ opacity: 1, height: 'auto' }}
                                     exit={{ opacity: 0, height: 0 }}
-                                    className="mt-3"
+                                    className={isSm ? 'mt-2' : 'mt-3'}
                                 >
                                     <div className="flex gap-2">
                                         <input
@@ -282,15 +284,15 @@ export default function CommentSection({ animeId, episodeNumber, title }: Commen
                                             value={replyContent}
                                             onChange={(e) => setReplyContent(e.target.value)}
                                             placeholder="Tulis balasan..."
-                                            className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder-white/30 focus:outline-none focus:border-[#6C5DD3]"
+                                            className={`flex-1 ${isSm ? 'px-3 py-1.5 text-xs' : 'px-3 py-2 text-sm'} bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-[#6C5DD3]`}
                                         />
                                         <Button
                                             onClick={() => handleSubmitReply(comment._id)}
                                             disabled={!replyContent.trim() || submitting}
                                             size="sm"
-                                            className="bg-[#6C5DD3] hover:bg-[#5a4eb8]"
+                                            className={`bg-[#6C5DD3] hover:bg-[#5a4eb8] ${isSm ? 'h-8 px-3' : ''}`}
                                         >
-                                            <Send className="w-4 h-4" />
+                                            <Send className={isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
                                         </Button>
                                     </div>
                                 </motion.div>
@@ -301,16 +303,16 @@ export default function CommentSection({ animeId, episodeNumber, title }: Commen
                         {comment.replies && comment.replies.length > 0 && (
                             <button
                                 onClick={() => toggleReplies(comment._id)}
-                                className="flex items-center gap-1 mt-3 text-xs text-[#6C5DD3] hover:text-[#8677e0] transition-colors"
+                                className={`flex items-center gap-1 ${isSm ? 'mt-2 text-[11px]' : 'mt-3 text-xs'} text-[#6C5DD3] hover:text-[#8677e0] transition-colors`}
                             >
                                 {expandedReplies.has(comment._id) ? (
                                     <>
-                                        <ChevronUp className="w-4 h-4" />
+                                        <ChevronUp className={isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
                                         Sembunyikan {comment.replies.length} balasan
                                     </>
                                 ) : (
                                     <>
-                                        <ChevronDown className="w-4 h-4" />
+                                        <ChevronDown className={isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
                                         Lihat {comment.replies.length} balasan
                                     </>
                                 )}
@@ -338,14 +340,14 @@ export default function CommentSection({ animeId, episodeNumber, title }: Commen
     };
 
     return (
-        <div className="bg-white/5 rounded-2xl border border-white/10 p-4 md:p-6">
+        <div className={`bg-white/5 rounded-2xl border border-white/10 ${isSm ? 'p-3 md:p-4' : 'p-4 md:p-6'}`}>
             {/* Header */}
-            <div className="flex items-center gap-2 mb-6">
-                <MessageCircle className="w-5 h-5 text-[#6C5DD3]" />
-                <h3 className="font-semibold text-white">
+            <div className={`flex items-center gap-2 ${isSm ? 'mb-4' : 'mb-6'}`}>
+                <MessageCircle className={`${isSm ? 'w-4 h-4' : 'w-5 h-5'} text-[#6C5DD3]`} />
+                <h3 className={`font-semibold text-white ${isSm ? 'text-sm' : 'text-base'}`}>
                     {title || (episodeNumber ? `Komentar Episode ${episodeNumber}` : 'Komentar')}
                 </h3>
-                <span className="text-white/50 text-sm">({comments.length})</span>
+                <span className={`text-white/50 ${isSm ? 'text-xs' : 'text-sm'}`}>({comments.length})</span>
             </div>
 
             {/* Error Message */}
@@ -357,13 +359,13 @@ export default function CommentSection({ animeId, episodeNumber, title }: Commen
 
             {/* Comment Form */}
             {user ? (
-                <form onSubmit={handleSubmitComment} className="mb-6">
-                    <div className="flex gap-3">
+                <form onSubmit={handleSubmitComment} className={isSm ? 'mb-4' : 'mb-6'}>
+                    <div className={`flex ${isSm ? 'gap-2' : 'gap-3'}`}>
                         <SafeAvatar
                             src={user.avatar}
                             name={user.name}
-                            className="w-10 h-10 rounded-full flex-shrink-0 text-sm"
-                            fallbackClassName="text-sm"
+                            className={`${isSm ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm'} rounded-full flex-shrink-0`}
+                            fallbackClassName={isSm ? 'text-xs' : 'text-sm'}
                         />
                         <div className="flex-1">
                             <textarea
@@ -372,16 +374,16 @@ export default function CommentSection({ animeId, episodeNumber, title }: Commen
                                 placeholder="Tulis komentar..."
                                 rows={2}
                                 maxLength={1000}
-                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-white/30 focus:outline-none focus:border-[#6C5DD3] resize-none"
+                                className={`w-full ${isSm ? 'px-3 py-2 text-xs' : 'px-4 py-3 text-sm'} bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-[#6C5DD3] resize-none`}
                             />
                             <div className="flex items-center justify-between mt-2">
-                                <span className="text-white/30 text-xs">{newComment.length}/1000</span>
+                                <span className={`text-white/30 ${isSm ? 'text-[11px]' : 'text-xs'}`}>{newComment.length}/1000</span>
                                 <Button
                                     type="submit"
                                     disabled={!newComment.trim() || submitting}
-                                    className="bg-gradient-to-r from-[#6C5DD3] to-[#00C2FF] hover:opacity-90 min-h-[44px] min-w-[100px] touch-manipulation"
+                                    className={`bg-gradient-to-r from-[#6C5DD3] to-[#00C2FF] hover:opacity-90 ${isSm ? 'min-h-[36px] min-w-[88px] text-xs' : 'min-h-[44px] min-w-[100px]'} touch-manipulation`}
                                 >
-                                    <Send className="w-4 h-4 mr-2" />
+                                    <Send className={`${isSm ? 'w-3.5 h-3.5 mr-1.5' : 'w-4 h-4 mr-2'}`} />
                                     {submitting ? 'Mengirim...' : 'Kirim'}
                                 </Button>
                             </div>
@@ -389,11 +391,11 @@ export default function CommentSection({ animeId, episodeNumber, title }: Commen
                     </div>
                 </form>
             ) : (
-                <div className="mb-6 p-4 bg-white/5 rounded-xl text-center">
-                    <p className="text-white/50 text-sm mb-2">Login untuk berkomentar</p>
+                <div className={`${isSm ? 'mb-4 p-3' : 'mb-6 p-4'} bg-white/5 rounded-xl text-center`}>
+                    <p className={`text-white/50 ${isSm ? 'text-xs' : 'text-sm'} mb-2`}>Login untuk berkomentar</p>
                     <Link
                         to="/login"
-                        className="inline-block px-4 py-2 bg-[#6C5DD3] hover:bg-[#5a4eb8] rounded-lg text-white text-sm transition-colors"
+                        className={`inline-block ${isSm ? 'px-3 py-1.5 text-xs' : 'px-4 py-2 text-sm'} bg-[#6C5DD3] hover:bg-[#5a4eb8] rounded-lg text-white transition-colors`}
                     >
                         Login
                     </Link>
@@ -402,32 +404,32 @@ export default function CommentSection({ animeId, episodeNumber, title }: Commen
 
             {/* Comments List */}
             {loading ? (
-                <div className="space-y-4">
+                <div className={isSm ? 'space-y-3' : 'space-y-4'}>
                     {[1, 2, 3].map((i) => (
-                        <div key={i} className="flex gap-3 animate-pulse">
+                        <div key={i} className={`flex ${isSm ? 'gap-2' : 'gap-3'} animate-pulse`}>
                             <SafeAvatar
                                 loading
-                                className="w-10 h-10 rounded-full flex-shrink-0"
+                                className={`${isSm ? 'w-8 h-8' : 'w-10 h-10'} rounded-full flex-shrink-0`}
                                 skeletonClassName="bg-white/10"
                             />
                             <div className="flex-1 space-y-2">
-                                <div className="h-4 bg-white/10 rounded w-24" />
-                                <div className="h-4 bg-white/10 rounded w-3/4" />
+                                <div className={`${isSm ? 'h-3' : 'h-4'} bg-white/10 rounded w-24`} />
+                                <div className={`${isSm ? 'h-3' : 'h-4'} bg-white/10 rounded w-3/4`} />
                             </div>
                         </div>
                     ))}
                 </div>
             ) : comments.length > 0 ? (
-                <div className="space-y-6">
+                <div className={isSm ? 'space-y-4' : 'space-y-6'}>
                     {comments.map((comment) => (
                         <CommentItem key={comment._id} comment={comment} />
                     ))}
                 </div>
             ) : (
-                <div className="text-center py-8">
-                    <MessageCircle className="w-12 h-12 text-white/10 mx-auto mb-3" />
+                <div className={`text-center ${isSm ? 'py-6' : 'py-8'}`}>
+                    <MessageCircle className={`${isSm ? 'w-10 h-10' : 'w-12 h-12'} text-white/10 mx-auto mb-3`} />
                     <p className="text-white/40">Belum ada komentar</p>
-                    <p className="text-white/30 text-sm">Jadilah yang pertama berkomentar!</p>
+                    <p className={`text-white/30 ${isSm ? 'text-xs' : 'text-sm'}`}>Jadilah yang pertama berkomentar!</p>
                 </div>
             )}
         </div>

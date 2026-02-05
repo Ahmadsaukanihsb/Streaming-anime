@@ -8,8 +8,7 @@ import {
     ShieldCheck,
     Ban,
     TrendingUp,
-    Star,
-    Loader2
+    Star
 } from 'lucide-react';
 import { BACKEND_URL } from '@/config/api';
 import { getAuthHeaders } from '@/lib/auth';

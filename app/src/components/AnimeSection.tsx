@@ -24,11 +24,11 @@ const icons = {
 };
 
 // Gradient colors for each icon type
-const iconGradients = {
-  flame: 'from-[#FF6B6B] to-[#FF8E53]',      // Orange-red gradient
-  clock: 'from-[#00C2FF] to-[#6C5DD3]',      // Cyan to purple
-  star: 'from-[#FFD93D] to-[#FF8E53]',       // Yellow to orange
-  trending: 'from-[#FF6B6B] to-[#C73659]',   // Pink-red gradient
+const iconBadge = {
+  flame: 'bg-[#FF6B6B]',    // Solid warm
+  clock: 'bg-[#00C2FF]',    // Solid cyan
+  star: 'bg-[#F59E0B]',     // Solid amber
+  trending: 'bg-[#C73659]', // Solid crimson
 };
 
 export default function AnimeSection({
@@ -43,7 +43,7 @@ export default function AnimeSection({
 }: AnimeSectionProps) {
   const sliderRef = useRef<HTMLDivElement>(null);
   const Icon = icons[icon];
-  const iconGradient = iconGradients[icon];
+  const iconBadgeClass = iconBadge[icon];
 
   const scroll = (direction: 'left' | 'right') => {
     if (sliderRef.current) {
@@ -56,12 +56,12 @@ export default function AnimeSection({
 
   if (variant === 'slider') {
     return (
-      <section className="py-4 sm:py-8 lg:py-12">
-        <div className="max-w-7xl mx-auto">
+      <section className="py-4 sm:py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-3 sm:mb-6">
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br ${iconGradient} flex items-center justify-center shadow-md sm:shadow-lg`}>
+              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl ${iconBadgeClass} flex items-center justify-center border border-white/10 shadow-md`}>
                 <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <div>
@@ -69,23 +69,25 @@ export default function AnimeSection({
                 {subtitle && <p className="text-xs sm:text-sm text-white/50 hidden sm:block">{subtitle}</p>}
               </div>
             </div>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <button
-                onClick={() => scroll('left')}
-                className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-white/70" />
-              </button>
-              <button
-                onClick={() => scroll('right')}
-                className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
-              >
-                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-white/70" />
-              </button>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-1 sm:gap-2 rounded-full bg-white/5 border border-white/10 p-1">
+                <button
+                  onClick={() => scroll('left')}
+                  className="p-1.5 sm:p-2 rounded-full hover:bg-white/10 transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-white/70" />
+                </button>
+                <button
+                  onClick={() => scroll('right')}
+                  className="p-1.5 sm:p-2 rounded-full hover:bg-white/10 transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-white/70" />
+                </button>
+              </div>
               {viewAllLink && (
                 <Link
                   to={viewAllLink}
-                  className="ml-2 sm:ml-4 text-xs sm:text-sm text-[#6C5DD3] hover:text-[#00C2FF] transition-colors"
+                  className="px-3 py-1.5 rounded-full text-xs sm:text-sm text-white/70 border border-white/10 hover:text-white hover:bg-white/10 transition-colors"
                 >
                   Lihat Semua
                 </Link>
@@ -96,10 +98,13 @@ export default function AnimeSection({
           {/* Slider */}
           <div
             ref={sliderRef}
-            className="flex gap-2 sm:gap-4 overflow-x-auto scrollbar-hide pb-2 sm:pb-4 -mx-3 px-3 sm:-mx-4 sm:px-4"
+            className="flex gap-2 sm:gap-4 overflow-x-auto scrollbar-hide pb-2 sm:pb-4"
           >
             {displayAnime.map((anime, index) => (
-              <div key={anime.id} className="flex-shrink-0 w-[calc(50%-8px)] sm:w-[calc(50%-8px)] md:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)]">
+              <div
+                key={anime.id}
+                className="flex-shrink-0 w-[calc(50%-8px)] sm:w-[calc(33.333%-10px)] md:w-[calc(25%-12px)] lg:w-[calc(20%-14px)] xl:w-[calc(16.666%-14px)]"
+              >
                 <AnimeCard anime={anime} index={index} />
               </div>
             ))}
@@ -116,7 +121,7 @@ export default function AnimeSection({
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${iconGradients.clock} flex items-center justify-center shadow-md sm:shadow-lg`}>
+              <div className={`w-10 h-10 rounded-xl ${iconBadge.clock} flex items-center justify-center border border-white/10 shadow-md`}>
                 <Clock className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -195,7 +200,7 @@ export default function AnimeSection({
       <section className="py-8 bg-white/5 rounded-2xl p-6 border border-white/10 h-fit">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${iconGradient} flex items-center justify-center shadow-md sm:shadow-lg`}>
+          <div className={`w-8 h-8 rounded-lg ${iconBadgeClass} flex items-center justify-center border border-white/10 shadow-md`}>
             <Icon className="w-4 h-4 text-white fill-current" />
           </div>
           <div>
@@ -248,7 +253,7 @@ export default function AnimeSection({
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${iconGradients.star} flex items-center justify-center shadow-md sm:shadow-lg`}>
+              <div className={`w-10 h-10 rounded-xl ${iconBadge.star} flex items-center justify-center border border-white/10 shadow-md`}>
                 <Star className="w-5 h-5 text-white fill-current" />
               </div>
               <div>
@@ -330,12 +335,12 @@ export default function AnimeSection({
 
   // Default Grid
   return (
-    <section className="py-4 sm:py-8 lg:py-12">
-      <div className="max-w-7xl mx-auto">
+    <section className="py-4 sm:py-6">
+      <div className="px-4 sm:px-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-3 sm:mb-6">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br ${iconGradient} flex items-center justify-center shadow-md sm:shadow-lg`}>
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl ${iconBadgeClass} flex items-center justify-center border border-white/10 shadow-md`}>
               <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
             <div>
@@ -346,7 +351,7 @@ export default function AnimeSection({
           {viewAllLink && (
             <Link
               to={viewAllLink}
-              className="text-xs sm:text-sm text-[#6C5DD3] hover:text-[#00C2FF] transition-colors"
+              className="px-3 py-1 rounded-full text-xs sm:text-sm text-white/70 border border-white/10 hover:text-white hover:bg-white/10 transition-colors"
             >
               Lihat Semua
             </Link>
@@ -354,7 +359,7 @@ export default function AnimeSection({
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-1.5 sm:gap-3 lg:gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
           {displayAnime.map((anime, index) => (
             <AnimeCard key={anime.id} anime={anime} index={index} />
           ))}

@@ -19,12 +19,14 @@ import {
   MessageCircle,
   Copy,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Search
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import AnimeCard from '@/components/AnimeCard';
 import CommentSection from '@/components/CommentSection';
+import Seo from '@/components/Seo';
 import {
   Dialog,
   DialogContent,
@@ -57,6 +59,8 @@ export default function AnimeDetail() {
     toggleEpisodeWatched,
   } = useApp();
   const [episodeView, setEpisodeView] = useState<'compact' | 'comfy'>('comfy');
+  const [episodeFilter, setEpisodeFilter] = useState<'all' | 'unwatched' | 'watched' | 'latest'>('all');
+  const [episodeSearch, setEpisodeSearch] = useState('');
   const [isMobile, setIsMobile] = useState(false);
   const [notifyEnabled, setNotifyEnabled] = useState(false);
   const [notifyLoading, setNotifyLoading] = useState(false);
@@ -72,6 +76,16 @@ export default function AnimeDetail() {
   // Get database-backed data
   const userRating = id ? getUserRating(id) : 0;
   const watchedEpisodes = id ? getWatchedEpisodes(id) : [];
+
+  const seoDescription = anime?.synopsis
+    ? (anime.synopsis.length > 180 ? `${anime.synopsis.slice(0, 177)}...` : anime.synopsis)
+    : undefined;
+  const seoImage = anime?.banner || anime?.poster;
+  const seoUrl = anime ? `https://animeku.xyz/anime/${anime.id}` : undefined;
+  const seoKeywords = anime
+    ? [anime.title, 'nonton anime sub indo', 'streaming anime', ...(anime.genres || [])]
+      .join(', ')
+    : undefined;
 
   // UI state only
   const [hoverRating, setHoverRating] = useState<number>(0);
@@ -183,6 +197,22 @@ export default function AnimeDetail() {
     : [];
   const latestEpisode = episodeNumbers.length > 0 ? episodeNumbers[episodeNumbers.length - 1] : null;
 
+  const filteredEpisodes = episodeNumbers.filter((epNum) => {
+    if (episodeFilter === 'latest') {
+      return epNum === latestEpisode;
+    }
+    if (episodeFilter === 'watched') {
+      return watchedEpisodes.includes(epNum);
+    }
+    if (episodeFilter === 'unwatched') {
+      return !watchedEpisodes.includes(epNum);
+    }
+    return true;
+  }).filter((epNum) => {
+    if (!episodeSearch.trim()) return true;
+    return String(epNum).includes(episodeSearch.trim());
+  });
+
   useEffect(() => {
     const update = () => setIsMobile(window.matchMedia('(max-width: 640px)').matches);
     update();
@@ -222,6 +252,14 @@ export default function AnimeDetail() {
 
   return (
     <main className="min-h-screen bg-[#0F0F1A]">
+      <Seo
+        title={anime ? `Nonton ${anime.title} Sub Indo` : 'Detail Anime'}
+        description={seoDescription}
+        image={seoImage}
+        url={seoUrl}
+        type="video.other"
+        keywords={seoKeywords}
+      />
       {/* Hero Banner */}
       <div className="relative">
         {/* Background - absolute positioned */}
@@ -260,14 +298,17 @@ export default function AnimeDetail() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex-shrink-0 w-24 sm:w-40 lg:w-56 aspect-[3/4] rounded-lg sm:rounded-xl overflow-hidden shadow-2xl shadow-black/50"
+              className="relative flex-shrink-0 w-24 sm:w-40 lg:w-56 aspect-[3/4]"
             >
-              <img
-                src={anime.poster}
-                alt={anime.title}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
+              <div className="absolute -inset-2 sm:-inset-3 rounded-2xl bg-gradient-to-br from-[#6C5DD3]/35 via-[#00C2FF]/20 to-transparent blur-2xl opacity-90" />
+              <div className="relative w-full h-full rounded-lg sm:rounded-xl overflow-hidden shadow-2xl shadow-black/50 border border-white/10">
+                <img
+                  src={anime.poster}
+                  alt={anime.title}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              </div>
             </motion.div>
 
             {/* Info */}
@@ -286,7 +327,7 @@ export default function AnimeDetail() {
               )}
 
               {/* Meta */}
-              <div className="flex flex-wrap items-center gap-1.5 sm:gap-3 mb-2 sm:mb-4">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-3 mb-2 sm:mb-3">
                 <span className="flex items-center gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-yellow-500/20 text-yellow-400 text-[10px] sm:text-xs font-bold rounded-full">
                   <Star className="w-2.5 sm:w-3 h-2.5 sm:h-3 fill-current" />
                   {anime.rating}
@@ -297,29 +338,61 @@ export default function AnimeDetail() {
                   }`}>
                   {anime.status}
                 </span>
-                <span className="hidden sm:flex items-center gap-1 text-white/60 text-sm">
-                  <Calendar className="w-4 h-4" />
-                  {anime.releasedYear}
-                </span>
-                <span className="hidden sm:block w-1 h-1 bg-white/30 rounded-full" />
-                <span className="flex items-center gap-1 text-white/60 text-[10px] sm:text-sm">
-                  <Film className="w-3 sm:w-4 h-3 sm:h-4" />
-                  {anime.episodes} Eps
-                </span>
-                <span className="hidden sm:block w-1 h-1 bg-white/30 rounded-full" />
-                <span className="hidden sm:flex items-center gap-1 text-white/60 text-sm">
-                  <Clock className="w-4 h-4" />
-                  {anime.duration}
-                </span>
               </div>
 
-              {/* Studio & Genres - hidden on mobile to save space */}
-              <div className="hidden sm:flex flex-wrap items-center gap-2 mb-4 lg:mb-6">
-                <span className="flex items-center gap-1 text-white/70 text-sm">
-                  <Building2 className="w-4 h-4" />
-                  {anime.studio}
-                </span>
-                <span className="text-white/30">•</span>
+              {/* Highlight Info Bar - Clean Grid */}
+              <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10">
+                  <Star className="w-4 h-4 text-yellow-400" />
+                  <div className="text-xs">
+                    <p className="text-white/40">Rating</p>
+                    <p className="text-white font-semibold">{anime.rating}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10">
+                  <Film className="w-4 h-4 text-blue-400" />
+                  <div className="text-xs">
+                    <p className="text-white/40">Episode</p>
+                    <p className="text-white font-semibold">{anime.episodes}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10">
+                  <Calendar className="w-4 h-4 text-white/70" />
+                  <div className="text-xs">
+                    <p className="text-white/40">Rilis</p>
+                    <p className="text-white font-semibold">{anime.releasedYear}</p>
+                  </div>
+                </div>
+                {anime.duration && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10">
+                    <Clock className="w-4 h-4 text-white/70" />
+                    <div className="text-xs">
+                      <p className="text-white/40">Durasi</p>
+                      <p className="text-white font-semibold">{anime.duration}</p>
+                    </div>
+                  </div>
+                )}
+                {anime.studio && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10">
+                    <Building2 className="w-4 h-4 text-white/70" />
+                    <div className="text-xs">
+                      <p className="text-white/40">Studio</p>
+                      <p className="text-white font-semibold line-clamp-1">{anime.studio}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Schedule + Genres Row */}
+              <div className="mt-3 flex flex-wrap items-center gap-2 mb-4 lg:mb-6">
+                {jadwalRilis && (
+                  <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/30 text-green-200 text-xs">
+                    <Calendar className="w-3.5 h-3.5 text-green-400" />
+                    <span className="whitespace-nowrap">Tayang {jadwalRilis.hari}</span>
+                    <span className="text-green-300/70">•</span>
+                    <span className="font-semibold whitespace-nowrap">{jadwalRilis.jam}</span>
+                  </span>
+                )}
                 {anime.genres.slice(0, 4).map((genre) => (
                   <Link
                     key={genre}
@@ -332,7 +405,7 @@ export default function AnimeDetail() {
               </div>
 
               {/* Actions */}
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3" ref={actionsRef}>
+              <div className="mt-4 flex flex-wrap items-center gap-2 sm:gap-3 rounded-2xl bg-white/5 border border-white/10 p-2 sm:p-3" ref={actionsRef}>
                 <Link
                   to={`/watch/${anime.id}/${lastWatched?.episodeNumber || 1}`}
                   className="btn-primary flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm px-3 sm:px-4 py-2 sm:py-2.5"
@@ -426,7 +499,7 @@ export default function AnimeDetail() {
               </div>
 
               {/* User Rating - Compact on mobile */}
-              <div className="mt-3 flex sm:hidden items-center gap-2 flex-wrap">
+              <div className="mt-4 flex sm:hidden items-center gap-2 flex-wrap">
                 <span className="text-white/50 text-xs">Rating Anda:</span>
                 <div className="flex gap-0.5">
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
@@ -451,7 +524,7 @@ export default function AnimeDetail() {
               </div>
 
               {/* User Rating - hidden on very small screens */}
-              <div className="hidden sm:flex mt-3 sm:mt-4 items-center gap-2 sm:gap-4 flex-wrap">
+              <div className="hidden sm:flex mt-4 items-center gap-2 sm:gap-4 flex-wrap">
                 <span className="text-white/50 text-xs sm:text-sm">Rating Anda:</span>
                 <div className="flex gap-0.5 sm:gap-1">
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
@@ -476,15 +549,7 @@ export default function AnimeDetail() {
                 )}
               </div>
 
-              {/* Jadwal Rilis for Ongoing - smaller on mobile */}
-              {jadwalRilis && (
-                <div className="hidden sm:flex mt-3 sm:mt-4 items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-green-500/10 border border-green-500/30 rounded-lg sm:rounded-xl w-fit">
-                  <Calendar className="w-3 sm:w-4 h-3 sm:h-4 text-green-400" />
-                  <span className="text-green-400 text-xs sm:text-sm">
-                    Tayang setiap <strong>{jadwalRilis.hari}</strong> pukul <strong>{jadwalRilis.jam}</strong>
-                  </span>
-                </div>
-              )}
+              {/* Jadwal moved above - remove duplicate */}
             </motion.div>
           </div>
         </div>
@@ -517,7 +582,7 @@ export default function AnimeDetail() {
           {/* Episodes Tab */}
           <TabsContent value="episodes">
             {/* Progress Counter */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
               <div className="flex items-center gap-2 text-white/70">
                 <Eye className="w-4 h-4" />
                 <span className="text-sm">
@@ -567,8 +632,47 @@ export default function AnimeDetail() {
                 </div>
               </div>
             </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+              <div className="flex items-center gap-2 rounded-full bg-white/5 border border-white/10 p-1 text-xs">
+                {(['all', 'unwatched', 'watched', 'latest'] as const).map((key) => (
+                  <button
+                    key={key}
+                    onClick={() => setEpisodeFilter(key)}
+                    className={`px-3 py-1 rounded-full transition-colors ${episodeFilter === key ? 'bg-[#6C5DD3] text-white' : 'text-white/60 hover:text-white'}`}
+                  >
+                    {key === 'all' && 'Semua'}
+                    {key === 'unwatched' && 'Belum Ditonton'}
+                    {key === 'watched' && 'Ditonton'}
+                    {key === 'latest' && 'Terbaru'}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                  <input
+                    type="text"
+                    placeholder="Cari episode..."
+                    value={episodeSearch}
+                    onChange={(e) => setEpisodeSearch(e.target.value)}
+                    className="w-44 sm:w-56 pl-9 pr-3 py-2 rounded-full bg-white/5 border border-white/10 text-xs text-white placeholder-white/40 focus:outline-none focus:border-[#6C5DD3]"
+                  />
+                </div>
+                {(episodeFilter !== 'all' || episodeSearch) && (
+                  <button
+                    onClick={() => {
+                      setEpisodeFilter('all');
+                      setEpisodeSearch('');
+                    }}
+                    className="text-xs text-white/50 hover:text-white transition-colors"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
             <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 ${episodeView === 'compact' ? 'gap-2' : 'gap-3'}`}>
-              {episodeNumbers.map((epNum) => {
+              {filteredEpisodes.map((epNum) => {
                 const isWatched = watchedEpisodes.includes(epNum);
                 const isLatest = epNum === latestEpisode;
                 return (
@@ -692,7 +796,9 @@ export default function AnimeDetail() {
       {/* Comment Section */}
       <section className="py-12 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <CommentSection animeId={anime.id} title="Komentar Anime" />
+          <div className="max-w-5xl">
+            <CommentSection animeId={anime.id} title="Komentar Anime" size="sm" />
+          </div>
         </div>
       </section>
 

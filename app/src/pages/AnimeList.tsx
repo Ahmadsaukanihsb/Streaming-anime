@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import AnimeCard from '@/components/AnimeCard';
 import { Button } from '@/components/ui/button';
+import Seo from '@/components/Seo';
 
 export default function AnimeList() {
   const { animeList } = useApp();
@@ -112,6 +113,10 @@ export default function AnimeList() {
 
   return (
     <main className="min-h-screen bg-[#0F0F1A] pt-20">
+      <Seo
+        title={searchQuery ? `Hasil Pencarian: ${searchQuery}` : 'Daftar Anime Sub Indo'}
+        description="Jelajahi daftar anime sub indo terbaru dan terlengkap di Animeku. Filter genre, status, tahun, dan temukan anime favoritmu."
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <motion.div

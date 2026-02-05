@@ -32,9 +32,9 @@ export default function ContinueWatching() {
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center shadow-md sm:shadow-lg shadow-[#6C5DD3]/20 sm:shadow-[#6C5DD3]/30">
-                        <Play className="w-5 h-5 text-white" />
-                    </div>
+                <div className="w-10 h-10 rounded-xl bg-[#6C5DD3] flex items-center justify-center border border-white/10 shadow-md">
+                    <Play className="w-5 h-5 text-white" />
+                </div>
                     <div>
                         <h2 className="text-xl lg:text-2xl font-bold font-heading text-white">Lanjutkan Menonton</h2>
                         <p className="text-sm text-white/50">Tonton dari terakhir kali</p>

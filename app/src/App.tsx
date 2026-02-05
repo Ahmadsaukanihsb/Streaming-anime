@@ -26,6 +26,7 @@ import Contact from '@/pages/Contact';
 import Privacy from '@/pages/Privacy';
 import Terms from '@/pages/Terms';
 import FAQ from '@/pages/FAQ';
+import Donate from '@/pages/Donate';
 import NotFound from '@/pages/NotFound';
 
 // Lenis Smooth Scroll Component
@@ -40,6 +41,9 @@ function SmoothScroll({ children }: { children: React.ReactNode }) {
       touchMultiplier: 2,
     });
 
+    // Expose Lenis instance for ScrollToTop
+    (window as any).__lenis = lenis;
+
     let rafId = 0;
 
     function raf(time: number) {
@@ -51,6 +55,7 @@ function SmoothScroll({ children }: { children: React.ReactNode }) {
 
     return () => {
       cancelAnimationFrame(rafId);
+      delete (window as any).__lenis;
       lenis.destroy();
     };
   }, []);
@@ -90,6 +95,7 @@ function App() {
               {/* Info pages */}
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/donate" element={<Donate />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/faq" element={<FAQ />} />
