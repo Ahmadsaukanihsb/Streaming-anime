@@ -52,7 +52,7 @@ export default function Contact() {
                     </div>
                     <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">Hubungi Kami</h1>
                     <p className="text-white/50 max-w-2xl mx-auto">
-                        Ada pertanyaan, saran, atau masalah? Kami siap membantu!
+                        Ada pertanyaan, saran, atau masalah seputar {siteName}? Kami siap membantu!
                     </p>
                 </motion.div>
 
