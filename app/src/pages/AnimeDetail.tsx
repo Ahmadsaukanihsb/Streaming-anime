@@ -27,6 +27,7 @@ import { useApp } from '@/context/AppContext';
 import AnimeCard from '@/components/AnimeCard';
 import CommentSection from '@/components/CommentSection';
 import Seo from '@/components/Seo';
+import { AnimeSchema, BreadcrumbSchema } from '@/components/SchemaOrg';
 import {
   Dialog,
   DialogContent,
@@ -250,6 +251,11 @@ export default function AnimeDetail() {
     );
   }
 
+  const breadcrumbItems = [
+    { name: 'Home', url: 'https://animeku.xyz/' },
+    { name: anime?.title || 'Detail Anime', url: `https://animeku.xyz/anime/${id}` }
+  ];
+
   return (
     <main className="min-h-screen bg-[#0F0F1A]">
       <Seo
@@ -260,6 +266,27 @@ export default function AnimeDetail() {
         type="video.other"
         keywords={seoKeywords}
       />
+      
+      {/* Schema.org JSON-LD */}
+      {anime && (
+        <>
+          <AnimeSchema
+            title={anime.title}
+            description={anime.synopsis}
+            poster={anime.poster}
+            banner={anime.banner}
+            rating={anime.rating}
+            status={anime.status}
+            episodes={anime.episodes}
+            genres={anime.genre}
+            studio={anime.studio}
+            releaseYear={anime.tahunRilis}
+            url={`https://animeku.xyz/anime/${id}`}
+            episodeData={anime.episodeData}
+          />
+          <BreadcrumbSchema items={breadcrumbItems} />
+        </>
+      )}
       {/* Hero Banner */}
       <div className="relative">
         {/* Background - absolute positioned */}

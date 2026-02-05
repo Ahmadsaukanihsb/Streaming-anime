@@ -28,6 +28,7 @@ import Terms from '@/pages/Terms';
 import FAQ from '@/pages/FAQ';
 import Donate from '@/pages/Donate';
 import NotFound from '@/pages/NotFound';
+import { WebsiteSchema } from '@/components/SchemaOrg';
 
 // Lenis Smooth Scroll Component
 function SmoothScroll({ children }: { children: React.ReactNode }) {
@@ -69,6 +70,7 @@ function App() {
       <Router>
         <SmoothScroll>
           <ScrollToTop />
+          <WebsiteSchema />
           <div className="min-h-screen bg-[#0F0F1A]">
             <Navbar />
             <Routes>

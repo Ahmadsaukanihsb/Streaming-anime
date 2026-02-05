@@ -30,6 +30,8 @@ import { BACKEND_URL } from '@/config/api';
 import AnimeCard from '@/components/AnimeCard';
 import CommentSection from '@/components/CommentSection';
 import { apiFetch } from '@/lib/api';
+import Seo from '@/components/Seo';
+import { VideoSchema, BreadcrumbSchema } from '@/components/SchemaOrg';
 
 
 export default function Watch() {
@@ -638,8 +640,39 @@ export default function Watch() {
     );
   }
 
+  const seoTitle = anime ? `Nonton ${anime.title} Episode ${currentEpisode} Sub Indo` : 'Nonton Anime';
+  const seoDescription = anime ? `Streaming ${anime.title} Episode ${currentEpisode} subtitle Indonesia kualitas HD` : 'Streaming anime subtitle Indonesia';
+  const seoImage = anime?.poster || anime?.banner;
+  const seoUrl = `https://animeku.xyz/watch/${id}/${currentEpisode}`;
+  
+  const breadcrumbItems = [
+    { name: 'Home', url: 'https://animeku.xyz/' },
+    { name: anime?.title || 'Anime', url: `https://animeku.xyz/anime/${id}` },
+    { name: `Episode ${currentEpisode}`, url: seoUrl }
+  ];
+
   return (
-    <main className="min-h-screen bg-[#0F0F1A]">
+    <>
+      <Seo
+        title={seoTitle}
+        description={seoDescription}
+        image={seoImage}
+        url={seoUrl}
+        type="video.other"
+      />
+      {anime && videoUrl && (
+        <>
+          <VideoSchema
+            title={`${anime.title} Episode ${currentEpisode}`}
+            description={anime.synopsis}
+            thumbnailUrl={anime.poster}
+            videoUrl={videoUrl}
+            duration={anime.duration ? `PT${parseInt(anime.duration)}M` : undefined}
+          />
+          <BreadcrumbSchema items={breadcrumbItems} />
+        </>
+      )}
+      <main className="min-h-screen bg-[#0F0F1A]">
       {!user && (
         <div className="px-4 sm:px-6 lg:px-8 pt-20">
           <div className="mx-auto max-w-3xl bg-white/5 border border-white/10 rounded-xl p-4 text-center text-white/70">
@@ -1104,6 +1137,7 @@ export default function Watch() {
         </div>
       </section>
     </main>
+    </>
   );
 }
 
