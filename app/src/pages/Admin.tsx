@@ -66,6 +66,7 @@ export default function Admin() {
   const [siteName, setSiteName] = useState(() => localStorage.getItem('siteName') || DEFAULT_SITE_NAME);
   const [siteDescription, setSiteDescription] = useState(() => localStorage.getItem('siteDescription') || 'Platform streaming anime terbaik');
   const [siteEmail, setSiteEmail] = useState(() => localStorage.getItem('siteEmail') || 'support@animeku.xyz');
+  const [siteLogo, setSiteLogo] = useState(() => localStorage.getItem('siteLogo') || '');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Ongoing' | 'Completed'>('all');
@@ -1023,8 +1024,12 @@ export default function Admin() {
         <div className="flex-1 overflow-y-auto p-6 pb-2 admin-sidebar-scroll">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 mb-8 group">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center shadow-lg shadow-[#6C5DD3]/20 group-hover:shadow-[#6C5DD3]/40 transition-shadow">
-              <Film className="w-6 h-6 text-white" />
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center shadow-lg shadow-[#6C5DD3]/20 group-hover:shadow-[#6C5DD3]/40 transition-shadow overflow-hidden">
+              {siteLogo ? (
+                <img src={siteLogo} alt={siteName} className="w-full h-full object-cover" />
+              ) : (
+                <Film className="w-6 h-6 text-white" />
+              )}
             </div>
             <div>
               <span className="text-lg font-bold font-heading text-white">{siteName}</span>
@@ -2712,6 +2717,29 @@ export default function Admin() {
               </div>
 
               <div className="p-6 space-y-6">
+                {/* Site Logo */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Logo Website (URL)
+                  </label>
+                  <input
+                    type="text"
+                    value={siteLogo}
+                    onChange={(e) => setSiteLogo(e.target.value)}
+                    className="w-full px-4 py-3 bg-[#0F0F1A] border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#6C5DD3] transition-colors"
+                    placeholder="https://example.com/logo.png"
+                  />
+                  <p className="text-xs text-white/40 mt-1">URL gambar logo (biarkan kosong untuk pakai default icon)</p>
+                  {siteLogo && (
+                    <div className="mt-3 flex items-center gap-3">
+                      <span className="text-xs text-white/40">Preview:</span>
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center overflow-hidden">
+                        <img src={siteLogo} alt="Preview" className="w-full h-full object-cover" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Site Name */}
                 <div>
                   <label className="block text-sm font-medium text-white mb-2">
@@ -2766,6 +2794,7 @@ export default function Admin() {
                       localStorage.setItem('siteName', siteName);
                       localStorage.setItem('siteDescription', siteDescription);
                       localStorage.setItem('siteEmail', siteEmail);
+                      localStorage.setItem('siteLogo', siteLogo);
                       
                       // Save to backend
                       apiFetch(`${BACKEND_URL}/api/settings/siteName`, {
@@ -2784,6 +2813,12 @@ export default function Admin() {
                         method: 'POST',
                         headers: getAuthHeaders(),
                         body: JSON.stringify({ value: siteEmail })
+                      }).catch(() => {});
+                      
+                      apiFetch(`${BACKEND_URL}/api/settings/siteLogo`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({ value: siteLogo })
                       }).catch(() => {});
                       
                       setTimeout(() => {

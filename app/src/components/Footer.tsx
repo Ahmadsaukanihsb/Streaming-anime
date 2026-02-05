@@ -6,10 +6,13 @@ import { DEFAULT_SITE_NAME } from '../config/api';
 export default function Footer() {
   const currentYear = new Date().getFullYear();
   const [siteName, setSiteName] = useState(DEFAULT_SITE_NAME);
+  const [siteLogo, setSiteLogo] = useState('');
   
   useEffect(() => {
-    const stored = localStorage.getItem('siteName');
-    if (stored) setSiteName(stored);
+    const storedName = localStorage.getItem('siteName');
+    const storedLogo = localStorage.getItem('siteLogo');
+    if (storedName) setSiteName(storedName);
+    if (storedLogo) setSiteLogo(storedLogo);
   }, []);
 
   const footerLinks = {
@@ -49,12 +52,15 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center">
-                <Film className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center overflow-hidden">
+                {siteLogo ? (
+                  <img src={siteLogo} alt={siteName} className="w-full h-full object-cover" />
+                ) : (
+                  <Film className="w-5 h-5 text-white" />
+                )}
               </div>
-              <span className="text-xl font-bold font-heading">
-                <span className="text-white">Anime</span>
-                <span className="text-gradient">Stream</span>
+              <span className="text-xl font-bold font-heading text-white">
+                {siteName}
               </span>
             </Link>
             <p className="text-white/50 text-sm leading-relaxed max-w-sm mb-6">

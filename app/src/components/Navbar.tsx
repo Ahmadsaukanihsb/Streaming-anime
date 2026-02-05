@@ -15,6 +15,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
+import { DEFAULT_SITE_NAME } from '../config/api';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -34,8 +35,29 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [siteName, setSiteName] = useState(DEFAULT_SITE_NAME);
+  const [siteLogo, setSiteLogo] = useState('');
   const rafId = useRef<number | null>(null);
   const lastScrolled = useRef(false);
+  
+  // Load site settings from localStorage
+  useEffect(() => {
+    const storedName = localStorage.getItem('siteName');
+    const storedLogo = localStorage.getItem('siteLogo');
+    if (storedName) setSiteName(storedName);
+    if (storedLogo) setSiteLogo(storedLogo);
+    
+    // Listen for storage changes (from admin panel)
+    const handleStorageChange = () => {
+      const name = localStorage.getItem('siteName');
+      const logo = localStorage.getItem('siteLogo');
+      if (name) setSiteName(name);
+      if (logo) setSiteLogo(logo);
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -91,12 +113,15 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center">
-                <Film className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center overflow-hidden">
+                {siteLogo ? (
+                  <img src={siteLogo} alt={siteName} className="w-full h-full object-cover" />
+                ) : (
+                  <Film className="w-5 h-5 text-white" />
+                )}
               </div>
-              <span className="text-xl font-bold font-heading hidden sm:block">
-                <span className="text-white">Anime</span>
-                <span className="text-gradient">Stream</span>
+              <span className="text-xl font-bold font-heading hidden sm:block text-white">
+                {siteName}
               </span>
             </Link>
 
