@@ -6,7 +6,7 @@ export default function Terms() {
     const sections = [
         {
             title: 'Ketentuan Umum',
-            content: `Dengan menggunakan layanan AnimeStream, Anda menyetujui syarat dan ketentuan berikut. 
+            content: `Dengan menggunakan layanan kami, Anda menyetujui syarat dan ketentuan berikut. 
       Layanan kami ditujukan untuk hiburan dan tujuan non-komersial. Anda harus berusia minimal 
       13 tahun untuk menggunakan layanan ini, atau dengan pengawasan orang tua jika di bawah umur tersebut.`,
         },

@@ -24,7 +24,7 @@ export default function Contact() {
 
     const contactInfo = [
         { icon: Mail, label: 'Email', value: 'support@animestream.id' },
-        { icon: MessageCircle, label: 'Discord', value: 'AnimeStream Community' },
+        { icon: MessageCircle, label: 'Discord', value: 'Animeku Community' },
         { icon: Clock, label: 'Jam Operasional', value: '24/7 Online Support' },
     ];
 

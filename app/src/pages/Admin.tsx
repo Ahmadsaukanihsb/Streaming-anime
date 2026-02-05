@@ -40,6 +40,7 @@ import { useApp } from '@/context/AppContext';
 import { API_CONFIG, getApiUrl, BACKEND_URL } from '../config/api';
 import { getAuthHeaders } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
+import { DEFAULT_SITE_NAME } from '../config/api';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -60,6 +61,11 @@ export default function Admin() {
   const { user, logout, animeList, addAnime, updateAnime, deleteAnime } = useApp();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Site Settings State
+  const [siteName, setSiteName] = useState(() => localStorage.getItem('siteName') || DEFAULT_SITE_NAME);
+  const [siteDescription, setSiteDescription] = useState(() => localStorage.getItem('siteDescription') || 'Platform streaming anime terbaik');
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Ongoing' | 'Completed'>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -1020,7 +1026,7 @@ export default function Admin() {
               <Film className="w-6 h-6 text-white" />
             </div>
             <div>
-              <span className="text-lg font-bold font-heading text-white">AnimeStream</span>
+              <span className="text-lg font-bold font-heading text-white">{siteName}</span>
               <span className="block text-xs text-white/40">Admin Panel</span>
             </div>
           </Link>
@@ -2677,7 +2683,7 @@ export default function Admin() {
           </motion.div>
         )}
 
-        {/* Settings Tab - Sidebar Widget Management */}
+        {/* Settings Tab - Website & Sidebar Widget Management */}
         {activeTab === 'settings' && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -2687,7 +2693,98 @@ export default function Admin() {
             {/* Header */}
             <div>
               <h1 className="text-2xl font-bold text-white mb-2">Pengaturan</h1>
-              <p className="text-white/50">Kelola tampilan dan widget sidebar Home</p>
+              <p className="text-white/50">Kelola nama website, deskripsi, dan widget sidebar</p>
+            </div>
+
+            {/* Website Settings */}
+            <div className="bg-gradient-to-br from-[#1A1A2E] to-[#12121F] rounded-2xl border border-white/10 overflow-hidden">
+              <div className="p-6 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center">
+                    <Settings className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-white">Pengaturan Website</h2>
+                    <p className="text-sm text-white/50">Ubah nama dan deskripsi website</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Site Name */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Nama Website
+                  </label>
+                  <input
+                    type="text"
+                    value={siteName}
+                    onChange={(e) => setSiteName(e.target.value)}
+                    className="w-full px-4 py-3 bg-[#0F0F1A] border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#6C5DD3] transition-colors"
+                    placeholder="Nama website..."
+                  />
+                  <p className="text-xs text-white/40 mt-1">Nama akan muncul di header, footer, dan meta tag</p>
+                </div>
+
+                {/* Site Description */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Deskripsi Website
+                  </label>
+                  <textarea
+                    value={siteDescription}
+                    onChange={(e) => setSiteDescription(e.target.value)}
+                    rows={3}
+                    className="w-full px-4 py-3 bg-[#0F0F1A] border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#6C5DD3] transition-colors resize-none"
+                    placeholder="Deskripsi singkat website..."
+                  />
+                  <p className="text-xs text-white/40 mt-1">Deskripsi untuk SEO dan meta tag</p>
+                </div>
+
+                {/* Save Button */}
+                <div className="flex justify-end pt-4 border-t border-white/10">
+                  <button
+                    onClick={() => {
+                      setIsSavingSettings(true);
+                      // Save to localStorage
+                      localStorage.setItem('siteName', siteName);
+                      localStorage.setItem('siteDescription', siteDescription);
+                      
+                      // Save to backend
+                      apiFetch(`${BACKEND_URL}/api/settings/siteName`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({ value: siteName })
+                      }).catch(() => {});
+                      
+                      apiFetch(`${BACKEND_URL}/api/settings/siteDescription`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({ value: siteDescription })
+                      }).catch(() => {});
+                      
+                      setTimeout(() => {
+                        setIsSavingSettings(false);
+                        alert('Pengaturan berhasil disimpan!');
+                      }, 500);
+                    }}
+                    disabled={isSavingSettings}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#6C5DD3] to-[#00C2FF] text-white rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    {isSavingSettings ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Menyimpan...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" />
+                        Simpan Perubahan
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Sidebar Widget Management */}

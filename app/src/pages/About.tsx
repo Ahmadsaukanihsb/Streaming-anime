@@ -30,7 +30,7 @@ export default function About() {
                     </div>
                     <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">Tentang Kami</h1>
                     <p className="text-white/50 max-w-2xl mx-auto">
-                        AnimeStream adalah platform streaming anime terbaik untuk penggemar anime Indonesia
+                        Website ini adalah platform streaming anime terbaik untuk penggemar anime Indonesia
                     </p>
                 </motion.div>
 
@@ -47,7 +47,7 @@ export default function About() {
                     </h2>
                     <div className="space-y-4 text-white/70 leading-relaxed">
                         <p>
-                            AnimeStream didirikan oleh para penggemar anime yang ingin memberikan pengalaman menonton
+                            Kami didirikan oleh para penggemar anime yang ingin memberikan pengalaman menonton
                             terbaik untuk komunitas wibu Indonesia. Kami memahami betapa frustrasinya mencari situs
                             streaming yang aman, cepat, dan berkualitas.
                         </p>
@@ -56,7 +56,7 @@ export default function About() {
                             dengan koleksi lengkap, subtitle berkualitas, dan tanpa iklan yang mengganggu.
                         </p>
                         <p>
-                            Terima kasih telah menjadi bagian dari keluarga AnimeStream! 🎉
+                            Terima kasih telah menjadi bagian dari keluarga kami! 🎉
                         </p>
                     </div>
                 </motion.div>

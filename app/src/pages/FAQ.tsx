@@ -12,13 +12,13 @@ interface FAQItem {
 const faqData: FAQItem[] = [
     {
         category: 'Umum',
-        question: 'Apa itu AnimeStream?',
-        answer: 'AnimeStream adalah platform streaming anime dengan koleksi lengkap, subtitle Indonesia berkualitas, dan pengalaman menonton tanpa iklan yang mengganggu.',
+        question: 'Apa itu website ini?',
+        answer: 'Kami adalah platform streaming anime dengan koleksi lengkap, subtitle Indonesia berkualitas, dan pengalaman menonton tanpa iklan yang mengganggu.',
     },
     {
         category: 'Umum',
-        question: 'Apakah AnimeStream gratis?',
-        answer: 'Ya! AnimeStream sepenuhnya gratis untuk digunakan. Kami menyediakan layanan streaming anime tanpa biaya berlangganan.',
+        question: 'Apakah website ini gratis?',
+        answer: 'Ya! Kami sepenuhnya gratis untuk digunakan. Kami menyediakan layanan streaming anime tanpa biaya berlangganan.',
     },
     {
         category: 'Akun',
@@ -43,7 +43,7 @@ const faqData: FAQItem[] = [
     {
         category: 'Streaming',
         question: 'Apakah bisa download anime?',
-        answer: 'Saat ini AnimeStream hanya menyediakan layanan streaming. Fitur download belum tersedia untuk mematuhi kebijakan hak cipta.',
+        answer: 'Saat ini kami hanya menyediakan layanan streaming. Fitur download belum tersedia untuk mematuhi kebijakan hak cipta.',
     },
     {
         category: 'Konten',

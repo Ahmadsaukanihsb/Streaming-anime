@@ -1,8 +1,16 @@
 import { Link } from 'react-router-dom';
 import { Film, Heart, Github, Mail } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { DEFAULT_SITE_NAME } from '../config/api';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const [siteName, setSiteName] = useState(DEFAULT_SITE_NAME);
+  
+  useEffect(() => {
+    const stored = localStorage.getItem('siteName');
+    if (stored) setSiteName(stored);
+  }, []);
 
   const footerLinks = {
     navigasi: [
@@ -127,7 +135,7 @@ export default function Footer() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-white/40 text-sm text-center sm:text-left">
-              &copy; {currentYear} AnimeStream. All rights reserved.
+              &copy; {currentYear} {siteName}. All rights reserved.
             </p>
             <p className="flex items-center gap-1 text-white/40 text-sm">
               Dibuat dengan <Heart className="w-4 h-4 text-red-500 fill-current" /> untuk para wibu

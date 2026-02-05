@@ -44,3 +44,21 @@ export const API_CONFIG = {
 
 export const getApiUrl = (endpoint: string) => `${API_CONFIG.BASE_URL}${endpoint}`;
 
+// Site Configuration
+export const DEFAULT_SITE_NAME = 'Animeku';
+export const DEFAULT_SITE_DESCRIPTION = 'Platform streaming anime terbaik untuk penggemar anime Indonesia';
+
+// Helper to get site name from settings (will be used with React state)
+export const getStoredSiteName = (): string => {
+    if (typeof window !== 'undefined') {
+        return localStorage.getItem('siteName') || DEFAULT_SITE_NAME;
+    }
+    return DEFAULT_SITE_NAME;
+};
+
+export const setStoredSiteName = (name: string) => {
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('siteName', name);
+    }
+};
+
