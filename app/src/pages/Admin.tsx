@@ -65,6 +65,7 @@ export default function Admin() {
   // Site Settings State
   const [siteName, setSiteName] = useState(() => localStorage.getItem('siteName') || DEFAULT_SITE_NAME);
   const [siteDescription, setSiteDescription] = useState(() => localStorage.getItem('siteDescription') || 'Platform streaming anime terbaik');
+  const [siteEmail, setSiteEmail] = useState(() => localStorage.getItem('siteEmail') || 'support@animeku.xyz');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Ongoing' | 'Completed'>('all');
@@ -2741,6 +2742,21 @@ export default function Admin() {
                   <p className="text-xs text-white/40 mt-1">Deskripsi untuk SEO dan meta tag</p>
                 </div>
 
+                {/* Site Email */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Email Kontak
+                  </label>
+                  <input
+                    type="email"
+                    value={siteEmail}
+                    onChange={(e) => setSiteEmail(e.target.value)}
+                    className="w-full px-4 py-3 bg-[#0F0F1A] border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#6C5DD3] transition-colors"
+                    placeholder="support@domain.com"
+                  />
+                  <p className="text-xs text-white/40 mt-1">Email yang ditampilkan di halaman kontak</p>
+                </div>
+
                 {/* Save Button */}
                 <div className="flex justify-end pt-4 border-t border-white/10">
                   <button
@@ -2749,6 +2765,7 @@ export default function Admin() {
                       // Save to localStorage
                       localStorage.setItem('siteName', siteName);
                       localStorage.setItem('siteDescription', siteDescription);
+                      localStorage.setItem('siteEmail', siteEmail);
                       
                       // Save to backend
                       apiFetch(`${BACKEND_URL}/api/settings/siteName`, {
@@ -2761,6 +2778,12 @@ export default function Admin() {
                         method: 'POST',
                         headers: getAuthHeaders(),
                         body: JSON.stringify({ value: siteDescription })
+                      }).catch(() => {});
+                      
+                      apiFetch(`${BACKEND_URL}/api/settings/siteEmail`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({ value: siteEmail })
                       }).catch(() => {});
                       
                       setTimeout(() => {

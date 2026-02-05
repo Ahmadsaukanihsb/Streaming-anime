@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Mail, MessageCircle, Send, Clock, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { DEFAULT_SITE_NAME } from '../config/api';
 
 export default function Contact() {
     const [formData, setFormData] = useState({
@@ -11,6 +12,15 @@ export default function Contact() {
         message: '',
     });
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [siteName, setSiteName] = useState(DEFAULT_SITE_NAME);
+    const [siteEmail, setSiteEmail] = useState('support@animeku.xyz');
+    
+    useEffect(() => {
+        const storedName = localStorage.getItem('siteName');
+        const storedEmail = localStorage.getItem('siteEmail');
+        if (storedName) setSiteName(storedName);
+        if (storedEmail) setSiteEmail(storedEmail);
+    }, []);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -23,7 +33,7 @@ export default function Contact() {
     };
 
     const contactInfo = [
-        { icon: Mail, label: 'Email', value: 'support@animestream.id' },
+        { icon: Mail, label: 'Email', value: siteEmail },
         { icon: MessageCircle, label: 'Discord', value: 'Animeku Community' },
         { icon: Clock, label: 'Jam Operasional', value: '24/7 Online Support' },
     ];
