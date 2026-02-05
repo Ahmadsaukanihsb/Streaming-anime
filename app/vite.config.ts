@@ -41,8 +41,8 @@ export default defineConfig({
         },
       },
     },
-    // Minification with Terser
-    minify: 'terser',
+    // Minification (gunakan esbuild yang built-in)
+    minify: 'esbuild',
     // Target modern browsers for smaller bundles
     target: 'es2020',
   },
