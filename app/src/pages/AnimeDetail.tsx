@@ -278,11 +278,11 @@ export default function AnimeDetail() {
             rating={anime.rating}
             status={anime.status}
             episodes={anime.episodes}
-            genres={anime.genre}
+            genres={(anime as any).genres || (anime as any).genre}
             studio={anime.studio}
-            releaseYear={anime.tahunRilis}
+            releaseYear={(anime as any).tahunRilis || (anime as any).releaseYear}
             url={`https://animeku.xyz/anime/${id}`}
-            episodeData={anime.episodeData}
+            episodeData={anime.episodeData?.map((ep: any) => ({ ep: ep.ep || 1, subtitle: ep.subtitle }))}
           />
           <BreadcrumbSchema items={breadcrumbItems} />
         </>
