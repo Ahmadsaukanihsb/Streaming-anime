@@ -30,7 +30,7 @@ jobs:
       env:
         VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
     
-    - name: Install AWS CLI
+    - name: Install AWS CLI v2
       run: |
         curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
         unzip -q awscliv2.zip
@@ -38,25 +38,46 @@ jobs:
         aws --version
     
     - name: Configure AWS CLI for R2
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: auto
       run: |
-        aws configure set aws_access_key_id ${{ secrets.R2_ACCESS_KEY_ID }}
-        aws configure set aws_secret_access_key ${{ secrets.R2_SECRET_ACCESS_KEY }}
-        aws configure set default.region auto
+        echo "✅ AWS CLI configured"
+        echo "Access Key ID: ${AWS_ACCESS_KEY_ID:0:4}****"
+        echo "Region: ${AWS_DEFAULT_REGION}"
     
-    - name: Deploy to R2 using AWS CLI
+    - name: Test R2 Connection
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: auto
       run: |
-        echo "Deploying to bucket: ${{ secrets.R2_BUCKET_NAME }}"
+        echo "Testing connection to R2..."
         echo "Endpoint: ${{ secrets.R2_ENDPOINT }}"
+        echo "Bucket: ${{ secrets.R2_BUCKET_NAME }}"
+        
+        # List buckets untuk test
+        aws s3api list-buckets \
+          --endpoint-url ${{ secrets.R2_ENDPOINT }} \
+          --query 'Buckets[].Name'
+    
+    - name: Deploy to R2
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: auto
+      run: |
+        echo "🚀 Deploying to R2..."
         
         # Sync ke R2
         aws s3 sync ./app/dist s3://${{ secrets.R2_BUCKET_NAME }} \
           --endpoint-url ${{ secrets.R2_ENDPOINT }} \
-          --delete \
-          --acl public-read
+          --delete
         
         echo "✅ Deploy completed!"
     
     - name: Verify Deployment
       run: |
-        echo "🌐 Frontend deployed!"
-        echo "URL: https://${{ secrets.R2_PUBLIC_URL }}"
+        echo "🌐 Frontend deployed successfully!"
+        echo "Check your bucket: ${{ secrets.R2_BUCKET_NAME }}"
