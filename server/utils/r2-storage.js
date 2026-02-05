@@ -1,6 +1,10 @@
 /**
  * Cloudflare R2 Storage Utility
  * Uses AWS S3 SDK (R2 is S3-compatible)
+ * 
+ * Dua bucket:
+ * - R2_BUCKET_NAME: Bucket untuk video (streaminganime)
+ * - R2_BUCKET_FRONTEND: Bucket untuk frontend (front-end) - optional
  */
 
 const { S3Client, PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
@@ -17,20 +21,31 @@ const s3Client = new S3Client({
     }
 });
 
-const BUCKET_NAME = process.env.R2_BUCKET_NAME;
-const PUBLIC_URL = process.env.R2_PUBLIC_URL;
+// Bucket untuk video (streaming)
+const VIDEO_BUCKET_NAME = process.env.R2_BUCKET_NAME || 'streaminganime';
+
+// Bucket untuk frontend (optional, jika terpisah)
+const FRONTEND_BUCKET_NAME = process.env.R2_BUCKET_FRONTEND || process.env.R2_BUCKET_NAME;
+
+// Public URLs
+const VIDEO_PUBLIC_URL = process.env.R2_PUBLIC_URL || process.env.R2_VIDEO_PUBLIC_URL;
+const FRONTEND_PUBLIC_URL = process.env.R2_FRONTEND_PUBLIC_URL || process.env.R2_PUBLIC_URL;
 
 /**
  * Upload file to R2 from buffer
  * @param {Buffer} fileBuffer - File data
  * @param {string} key - File path/name in bucket (e.g., "anime/one-piece/ep-1.mp4")
  * @param {string} contentType - MIME type (e.g., "video/mp4")
+ * @param {string} bucketType - 'video' atau 'frontend' (default: 'video')
  * @returns {Promise<{success: boolean, url: string, key: string}>}
  */
-async function uploadFile(fileBuffer, key, contentType = 'video/mp4') {
+async function uploadFile(fileBuffer, key, contentType = 'video/mp4', bucketType = 'video') {
     try {
+        const bucket = bucketType === 'frontend' ? FRONTEND_BUCKET_NAME : VIDEO_BUCKET_NAME;
+        const publicUrlBase = bucketType === 'frontend' ? FRONTEND_PUBLIC_URL : VIDEO_PUBLIC_URL;
+        
         const command = new PutObjectCommand({
-            Bucket: BUCKET_NAME,
+            Bucket: bucket,
             Key: key,
             Body: fileBuffer,
             ContentType: contentType
@@ -38,9 +53,9 @@ async function uploadFile(fileBuffer, key, contentType = 'video/mp4') {
 
         await s3Client.send(command);
 
-        const publicUrl = `${PUBLIC_URL}/${key}`;
+        const publicUrl = `${publicUrlBase}/${key}`;
 
-        console.log(`[R2] Uploaded: ${key}`);
+        console.log(`[R2] Uploaded to ${bucket}: ${key}`);
 
         return {
             success: true,
@@ -61,15 +76,19 @@ async function uploadFile(fileBuffer, key, contentType = 'video/mp4') {
  * @param {string} filePath - Path to the file
  * @param {string} key - File path/name in bucket
  * @param {string} contentType - MIME type
+ * @param {string} bucketType - 'video' atau 'frontend' (default: 'video')
  * @returns {Promise<{success: boolean, url: string, key: string}>}
  */
-async function uploadFromPath(filePath, key, contentType = 'video/mp4') {
+async function uploadFromPath(filePath, key, contentType = 'video/mp4', bucketType = 'video') {
     try {
+        const bucket = bucketType === 'frontend' ? FRONTEND_BUCKET_NAME : VIDEO_BUCKET_NAME;
+        const publicUrlBase = bucketType === 'frontend' ? FRONTEND_PUBLIC_URL : VIDEO_PUBLIC_URL;
+        
         const fileStream = fs.createReadStream(filePath);
         const stats = fs.statSync(filePath);
 
         const command = new PutObjectCommand({
-            Bucket: BUCKET_NAME,
+            Bucket: bucket,
             Key: key,
             Body: fileStream,
             ContentType: contentType,
@@ -78,9 +97,9 @@ async function uploadFromPath(filePath, key, contentType = 'video/mp4') {
 
         await s3Client.send(command);
 
-        const publicUrl = `${PUBLIC_URL}/${key}`;
+        const publicUrl = `${publicUrlBase}/${key}`;
 
-        console.log(`[R2] Uploaded from path: ${key} (${(stats.size / 1024 / 1024).toFixed(2)}MB)`);
+        console.log(`[R2] Uploaded from path to ${bucket}: ${key} (${(stats.size / 1024 / 1024).toFixed(2)}MB)`);
 
         return {
             success: true,
@@ -99,18 +118,21 @@ async function uploadFromPath(filePath, key, contentType = 'video/mp4') {
 /**
  * Delete file from R2
  * @param {string} key - File path/name in bucket
+ * @param {string} bucketType - 'video' atau 'frontend' (default: 'video')
  * @returns {Promise<{success: boolean}>}
  */
-async function deleteFile(key) {
+async function deleteFile(key, bucketType = 'video') {
     try {
+        const bucket = bucketType === 'frontend' ? FRONTEND_BUCKET_NAME : VIDEO_BUCKET_NAME;
+        
         const command = new DeleteObjectCommand({
-            Bucket: BUCKET_NAME,
+            Bucket: bucket,
             Key: key
         });
 
         await s3Client.send(command);
 
-        console.log(`[R2] Deleted: ${key}`);
+        console.log(`[R2] Deleted from ${bucket}: ${key}`);
 
         return { success: true };
     } catch (error) {
@@ -125,12 +147,16 @@ async function deleteFile(key) {
 /**
  * List files in a folder
  * @param {string} prefix - Folder path (e.g., "anime/one-piece/")
+ * @param {string} bucketType - 'video' atau 'frontend' (default: 'video')
  * @returns {Promise<Array>}
  */
-async function listFiles(prefix = '') {
+async function listFiles(prefix = '', bucketType = 'video') {
     try {
+        const bucket = bucketType === 'frontend' ? FRONTEND_BUCKET_NAME : VIDEO_BUCKET_NAME;
+        const publicUrlBase = bucketType === 'frontend' ? FRONTEND_PUBLIC_URL : VIDEO_PUBLIC_URL;
+        
         const command = new ListObjectsV2Command({
-            Bucket: BUCKET_NAME,
+            Bucket: bucket,
             Prefix: prefix
         });
 
@@ -140,7 +166,7 @@ async function listFiles(prefix = '') {
             key: item.Key,
             size: item.Size,
             lastModified: item.LastModified,
-            url: `${PUBLIC_URL}/${item.Key}`
+            url: `${publicUrlBase}/${item.Key}`
         }));
     } catch (error) {
         console.error('[R2] List error:', error);
@@ -151,10 +177,12 @@ async function listFiles(prefix = '') {
 /**
  * Generate public URL for a file
  * @param {string} key - File path/name
+ * @param {string} bucketType - 'video' atau 'frontend' (default: 'video')
  * @returns {string}
  */
-function getPublicUrl(key) {
-    return `${PUBLIC_URL}/${key}`;
+function getPublicUrl(key, bucketType = 'video') {
+    const publicUrlBase = bucketType === 'frontend' ? FRONTEND_PUBLIC_URL : VIDEO_PUBLIC_URL;
+    return `${publicUrlBase}/${key}`;
 }
 
 /**
@@ -178,20 +206,24 @@ function generateVideoKey(animeTitle, episode, quality = '720p') {
  * @param {string} key - File path/name in bucket
  * @param {string} contentType - MIME type
  * @param {number} expiresIn - URL expiry in seconds (default 1 hour)
+ * @param {string} bucketType - 'video' atau 'frontend' (default: 'video')
  * @returns {Promise<{success: boolean, uploadUrl: string, publicUrl: string, key: string}>}
  */
-async function getPresignedUploadUrl(key, contentType = 'video/mp4', expiresIn = 3600) {
+async function getPresignedUploadUrl(key, contentType = 'video/mp4', expiresIn = 3600, bucketType = 'video') {
     try {
+        const bucket = bucketType === 'frontend' ? FRONTEND_BUCKET_NAME : VIDEO_BUCKET_NAME;
+        const publicUrlBase = bucketType === 'frontend' ? FRONTEND_PUBLIC_URL : VIDEO_PUBLIC_URL;
+        
         const command = new PutObjectCommand({
-            Bucket: BUCKET_NAME,
+            Bucket: bucket,
             Key: key,
             ContentType: contentType
         });
 
         const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn });
-        const publicUrl = `${PUBLIC_URL}/${key}`;
+        const publicUrl = `${publicUrlBase}/${key}`;
 
-        console.log(`[R2] Generated presigned URL for: ${key}`);
+        console.log(`[R2] Generated presigned URL for ${bucket}: ${key}`);
 
         return {
             success: true,
@@ -217,5 +249,6 @@ module.exports = {
     generateVideoKey,
     getPresignedUploadUrl,
     s3Client,
-    BUCKET_NAME
+    VIDEO_BUCKET_NAME,
+    FRONTEND_BUCKET_NAME
 };

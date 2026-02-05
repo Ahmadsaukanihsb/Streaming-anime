@@ -45,14 +45,14 @@ jobs:
         access_key_id = ${{ secrets.R2_ACCESS_KEY_ID }}
         secret_access_key = ${{ secrets.R2_SECRET_ACCESS_KEY }}
         endpoint = ${{ secrets.R2_ENDPOINT }}
-        acl = private
+        acl = public-read
         EOF
     
-    - name: Deploy to R2 (Frontend Only)
+    - name: Deploy to R2 (Frontend Bucket)
       run: |
-        # ⚠️ PENTING: Deploy ke subfolder 'frontend/' agar file MP4 tidak terhapus
-        # File MP4 streaming tetap aman di root atau folder 'videos/'
-        rclone sync ./app/dist r2:${{ secrets.R2_BUCKET_NAME }}/frontend --delete-during --progress
+        # ✅ Deploy ke bucket 'front-end' (terpisah dari video)
+        # Video tetap aman di bucket 'streaminganime'
+        rclone sync ./app/dist r2:${{ secrets.R2_BUCKET_NAME }} --delete-during --progress
     
     - name: Purge Cloudflare Cache (Optional)
       if: secrets.CLOUDFLARE_ZONE_ID != ''
