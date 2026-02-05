@@ -30,29 +30,33 @@ jobs:
       env:
         VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
     
-    - name: Install rclone
+    - name: Install AWS CLI
       run: |
-        curl https://rclone.org/install.sh | sudo bash
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip -q awscliv2.zip
+        sudo ./aws/install --update
+        aws --version
     
-    - name: Configure rclone for R2
+    - name: Configure AWS CLI for R2
       run: |
-        mkdir -p ~/.config/rclone
-        cat > ~/.config/rclone/rclone.conf << 'EOF'
-        [r2]
-        type = s3
-        provider = Cloudflare
-        access_key_id = ${{ secrets.R2_ACCESS_KEY_ID }}
-        secret_access_key = ${{ secrets.R2_SECRET_ACCESS_KEY }}
-        endpoint = ${{ secrets.R2_ENDPOINT }}
-        acl = public-read
-        EOF
+        aws configure set aws_access_key_id ${{ secrets.R2_ACCESS_KEY_ID }}
+        aws configure set aws_secret_access_key ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        aws configure set default.region auto
     
-    - name: Deploy to R2 Bucket
+    - name: Deploy to R2 using AWS CLI
       run: |
         echo "Deploying to bucket: ${{ secrets.R2_BUCKET_NAME }}"
-        rclone sync ./app/dist r2:${{ secrets.R2_BUCKET_NAME }} --delete-during --progress
+        echo "Endpoint: ${{ secrets.R2_ENDPOINT }}"
+        
+        # Sync ke R2
+        aws s3 sync ./app/dist s3://${{ secrets.R2_BUCKET_NAME }} \
+          --endpoint-url ${{ secrets.R2_ENDPOINT }} \
+          --delete \
+          --acl public-read
+        
         echo "✅ Deploy completed!"
     
     - name: Verify Deployment
       run: |
-        echo "🌐 Frontend URL: https://${{ secrets.R2_BUCKET_NAME }}.${{ secrets.R2_ENDPOINT }}"
+        echo "🌐 Frontend deployed!"
+        echo "URL: https://${{ secrets.R2_PUBLIC_URL }}"
