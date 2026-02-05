@@ -100,14 +100,12 @@ export default function Watch() {
 
     // Fetch anime detail if missing from context
     if (id && !contextAnime && !apiAnime) {
-      console.log('[Watch] Anime missing from context, fetching from API:', id);
       apiFetch(`${BACKEND_URL}/api/anime/${id}`)
         .then(res => {
           if (!res.ok) throw new Error('Failed to fetch anime info');
           return res.json();
         })
         .then(data => {
-          console.log('[Watch] Fetched anime info:', data);
           setApiAnime(data);
         })
         .catch(err => console.error('[Watch] Error fetching anime info:', err));
@@ -117,8 +115,6 @@ export default function Watch() {
   // Fetch video URL when episode or quality changes
   useEffect(() => {
     const fetchVideoUrl = async () => {
-      console.log('[Watch] === fetchVideoUrl START ===');
-
       if (!anime) return;
 
       // Reset state
@@ -127,9 +123,6 @@ export default function Watch() {
       setVideoError(null);
 
       try {
-        // === SERVER FETCH ===
-        console.log(`[Watch] Fetching from Server: ${selectedServer} | ${anime.title} Episode ${currentEpisode}`);
-
         const response = await apiFetch(
           `${BACKEND_URL}/api/anime/stream/${encodeURIComponent(anime.title)}/${currentEpisode}?server=${selectedServer}`
         );
@@ -141,7 +134,6 @@ export default function Watch() {
         }
 
         const data = await response.json();
-        console.log('[Watch] Stream Response:', data);
 
         if (!data.streams || data.streams.length === 0) {
           throw new Error('Video tidak tersedia untuk episode ini');
@@ -189,14 +181,12 @@ export default function Watch() {
           }
 
           setIsEmbed(false);
-          console.log('[Watch] Using R2 Direct Stream:', selectedStream);
           setVideoUrl(selectedStream.url);
         } else if (embedStreams.length > 0) {
           // Use embed (Desustream etc) - no quality selection for embeds
           selectedStream = embedStreams[0];
           setIsEmbed(true);
           setAvailableQualities([]); // No quality options for embed
-          console.log('[Watch] Using Embed Stream:', selectedStream);
           setVideoUrl(selectedStream.url);
         } else {
           throw new Error('Video tidak tersedia untuk episode ini');
@@ -701,7 +691,7 @@ export default function Watch() {
                       onLoadedMetadata={handleLoadedMetadata}
                       onProgress={handleProgress}
                       onEnded={handleVideoEnd}
-                      onCanPlay={() => console.log('[Watch] Video CAN PLAY:', videoUrl)}
+                      onCanPlay={() => {}}
                       onError={(e) => {
                         const video = e.target as HTMLVideoElement;
                         console.error('[Watch] Video Error:', video.error?.message, video.error?.code);

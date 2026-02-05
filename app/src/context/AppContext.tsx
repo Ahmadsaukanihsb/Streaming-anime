@@ -224,9 +224,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           deletedPromise
         ]);
 
-        console.log('[AppContext] Custom animes from DB:', customAnimes.length, customAnimes);
-        console.log('[AppContext] Deleted IDs:', deletedIds);
-
         // Filter out deleted anime
         const filteredAnime = (customAnimes as Anime[]).filter(a => !deletedIds.includes(a.id));
 
