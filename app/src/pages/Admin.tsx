@@ -70,7 +70,6 @@ export default function Admin() {
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   
   // Logo Upload State
-  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [logoUploadError, setLogoUploadError] = useState('');
   
@@ -92,9 +91,8 @@ export default function Admin() {
     setIsUploadingLogo(true);
     
     try {
-      // Generate key for logo
+      // Generate timestamp for unique filename
       const timestamp = Date.now();
-      const key = `assets/logo/site-logo-${timestamp}.${file.name.split('.').pop()}`;
       
       // Get presigned URL from backend
       const response = await apiFetch(`${BACKEND_URL}/api/upload/presign`, {
@@ -124,7 +122,6 @@ export default function Admin() {
       
       // Set the logo URL
       setSiteLogo(publicUrl);
-      setLogoFile(null);
       alert('Logo berhasil diupload!');
     } catch (error) {
       console.error('Logo upload error:', error);
