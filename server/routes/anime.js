@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const https = require('https');
+const http = require('http');
 const { CustomAnime, DeletedAnime } = require('../models/CustomAnime');
 const ViewHistory = require('../models/ViewHistory');
 const otakudesu = require('../utils/otakudesu-scraper');
@@ -437,8 +439,8 @@ router.post('/video-token', async (req, res) => {
     }
 });
 
-// Stream video through proxy
-router.get('/video-proxy/:token', async (req, res) => {
+// Stream video through proxy using native https
+router.get('/video-proxy/:token', (req, res) => {
     try {
         const { token } = req.params;
         const tokenData = videoTokens.get(token);
@@ -454,70 +456,57 @@ router.get('/video-proxy/:token', async (req, res) => {
 
         // Get the original video URL
         const videoUrl = tokenData.url;
+        const parsedUrl = new URL(videoUrl);
+        const client = parsedUrl.protocol === 'https:' ? https : http;
         
-        // Handle range requests for video streaming
-        const range = req.headers.range;
-        
-        if (range) {
-            // Parse range header
-            const parts = range.replace(/bytes=/, "").split("-");
-            const start = parseInt(parts[0], 10);
-            const end = parts[1] ? parseInt(parts[1], 10) : start + 1024 * 1024; // 1MB chunks
-
-            // Fetch with range from origin
-            const response = await fetch(videoUrl, {
-                headers: {
-                    'Range': `bytes=${start}-${end}`
-                }
-            });
-
-            if (!response.ok && response.status !== 206) {
-                throw new Error('Failed to fetch video range');
-            }
-
-            // Set response headers
-            res.status(206);
-            res.set({
-                'Content-Type': response.headers.get('content-type') || 'video/mp4',
-                'Accept-Ranges': 'bytes',
-                'Content-Range': response.headers.get('content-range'),
-                'Content-Length': response.headers.get('content-length'),
-                'Cache-Control': 'private, no-cache, no-store'
-            });
-
-            // Stream the response
-            const reader = response.body.getReader();
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                res.write(Buffer.from(value));
-            }
-            res.end();
-
-        } else {
-            // Full video request - stream through
-            const response = await fetch(videoUrl);
-            
-            if (!response.ok) {
-                throw new Error('Failed to fetch video');
-            }
-
-            res.set({
-                'Content-Type': response.headers.get('content-type') || 'video/mp4',
-                'Accept-Ranges': 'bytes',
-                'Content-Length': response.headers.get('content-length'),
-                'Cache-Control': 'private, no-cache, no-store'
-            });
-
-            // Stream the response
-            const reader = response.body.getReader();
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                res.write(Buffer.from(value));
-            }
-            res.end();
+        // Prepare headers
+        const headers = {};
+        if (req.headers.range) {
+            headers['Range'] = req.headers.range;
         }
+        
+        // Proxy request options
+        const options = {
+            hostname: parsedUrl.hostname,
+            port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
+            path: parsedUrl.pathname + parsedUrl.search,
+            method: 'GET',
+            headers: headers
+        };
+
+        // Make proxy request
+        const proxyReq = client.request(options, (proxyRes) => {
+            // Set response status
+            res.status(proxyRes.statusCode);
+            
+            // Set headers
+            const responseHeaders = {
+                'Content-Type': proxyRes.headers['content-type'] || 'video/mp4',
+                'Accept-Ranges': proxyRes.headers['accept-ranges'] || 'bytes',
+                'Cache-Control': 'private, no-cache, no-store'
+            };
+            
+            if (proxyRes.headers['content-length']) {
+                responseHeaders['Content-Length'] = proxyRes.headers['content-length'];
+            }
+            if (proxyRes.headers['content-range']) {
+                responseHeaders['Content-Range'] = proxyRes.headers['content-range'];
+            }
+            
+            res.set(responseHeaders);
+            
+            // Pipe the response
+            proxyRes.pipe(res);
+        });
+
+        proxyReq.on('error', (err) => {
+            console.error('[VideoProxy] Proxy request error:', err);
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'Failed to stream video' });
+            }
+        });
+
+        proxyReq.end();
 
     } catch (err) {
         console.error('[VideoProxy] Stream error:', err);
