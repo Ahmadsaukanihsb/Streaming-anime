@@ -28,10 +28,7 @@ const aspectRatios = {
   custom: '',                  // Custom aspect ratio
 };
 
-// Generate blur hash placeholder (simple version)
-function generateBlurPlaceholder(): string {
-  return 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48cmVjdCB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9IiMxQTFBMkUiLz48L3N2Zz4=';
-}
+
 
 export default function OptimizedImage({
   src,
@@ -231,9 +228,4 @@ export function preloadImage(src: string): Promise<void> {
   });
 }
 
-// Generate blur hash from image (simplified version)
-export async function generateBlurHash(imageUrl: string): Promise<string | null> {
-  // This is a placeholder - in production, you'd use a library like blurhash
-  // or generate it on the server
-  return null;
-}
+
