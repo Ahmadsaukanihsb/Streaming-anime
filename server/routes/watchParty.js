@@ -1,10 +1,10 @@
 const express = require('express');
-const router = express.Router();
+const watchPartyRouter = express.Router();
 const WatchParty = require('../models/WatchParty');
 const { authenticateToken } = require('../middleware/auth');
 
 // Get all active public rooms
-router.get('/rooms', async (req, res) => {
+watchPartyRouter.get('/rooms', async (req, res) => {
   try {
     const rooms = await WatchParty.find({ 
       isActive: true, 
@@ -30,7 +30,7 @@ router.get('/rooms', async (req, res) => {
 });
 
 // Get room by ID (validate if exists and active)
-router.get('/rooms/:roomId', async (req, res) => {
+watchPartyRouter.get('/rooms/:roomId', async (req, res) => {
   try {
     const { roomId } = req.params;
     
@@ -60,7 +60,7 @@ router.get('/rooms/:roomId', async (req, res) => {
 });
 
 // Create new room
-router.post('/rooms', authenticateToken, async (req, res) => {
+watchPartyRouter.post('/rooms', authenticateToken, async (req, res) => {
   try {
     const { animeId, episodeId, animeTitle, episodeNumber, isPublic, maxParticipants } = req.body;
 
@@ -111,7 +111,7 @@ router.post('/rooms', authenticateToken, async (req, res) => {
 });
 
 // Close room (host only)
-router.delete('/rooms/:roomId', authenticateToken, async (req, res) => {
+watchPartyRouter.delete('/rooms/:roomId', authenticateToken, async (req, res) => {
   try {
     const { roomId } = req.params;
 
@@ -136,7 +136,7 @@ router.delete('/rooms/:roomId', authenticateToken, async (req, res) => {
 });
 
 // Get user's active room
-router.get('/my-room', authenticateToken, async (req, res) => {
+watchPartyRouter.get('/my-room', authenticateToken, async (req, res) => {
   try {
     const room = await WatchParty.findOne({
       'participants.userId': req.user.id,
@@ -160,4 +160,4 @@ router.get('/my-room', authenticateToken, async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = watchPartyRouter;
