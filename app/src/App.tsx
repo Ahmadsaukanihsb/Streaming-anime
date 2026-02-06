@@ -11,6 +11,7 @@ import ScrollToTop from '@/components/ScrollToTop';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { ToastProvider } from '@/components/ui/toast';
 import PageLoader from '@/components/PageLoader';
+import GlobalChat from '@/components/GlobalChat';
 
 // ==========================================
 // CRITICAL PAGES (Eager Loaded)
@@ -238,6 +239,7 @@ function App() {
                   <AppRoutes />
                   <Footer />
                   <BottomNav />
+                  <GlobalChat />
                 </div>
               </SmoothScroll>
             </Router>
