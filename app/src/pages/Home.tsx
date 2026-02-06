@@ -326,7 +326,7 @@ export default function Home() {
       <div className="relative z-10 bg-[#0F0F1A]">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-12">
 
-          <section className="relative mt-6 sm:mt-8 mb-6 sm:mb-8">
+          <section className="relative z-20 mt-6 sm:mt-8 mb-6 sm:mb-8">
             <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/10 via-white/5 to-transparent p-4 sm:p-5 shadow-xl shadow-black/20 backdrop-blur">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
@@ -342,7 +342,7 @@ export default function Home() {
               </div>
 
               <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-                <form onSubmit={handleSearch} className="relative">
+                <form onSubmit={handleSearch} className="relative z-30">
                   <div className="relative group">
                     <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 sm:w-5 h-4 sm:h-5 text-white/40 group-focus-within:text-[#6C5DD3] transition-colors z-10" />
                     <input
@@ -365,7 +365,7 @@ export default function Home() {
                     )}
 
                     {isSearchFocused && searchSuggestions.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-[#1A1A2E] border border-white/10 rounded-xl overflow-hidden shadow-lg sm:shadow-xl z-50">
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-[#1A1A1E] border border-white/10 rounded-xl shadow-2xl z-[100] max-h-[60vh] overflow-y-auto">
                         {searchSuggestions.map((anime) => (
                           <Link
                             key={anime.id}
@@ -457,7 +457,7 @@ export default function Home() {
           </section>
 
           {isSectionEnabled('trending') && trendingAnime.length > 0 && !selectedGenre && (
-            <section className="mb-6 sm:mb-8" style={sectionStyle}>
+            <section className="relative z-10 mb-6 sm:mb-8" style={sectionStyle}>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg bg-[#FF6B6B] flex items-center justify-center border border-white/10 shadow-md">
