@@ -44,6 +44,8 @@ interface UseWatchPartyReturn {
   participants: Participant[];
   isHost: boolean;
   error: string | null;
+  currentUserId: string | null;
+  videoState: VideoState | null;
   joinRoom: (params: JoinRoomParams) => void;
   leaveRoom: () => void;
   sendMessage: (message: string) => void;
@@ -51,6 +53,8 @@ interface UseWatchPartyReturn {
   seekVideo: (currentTime: number) => void;
   toggleReady: () => void;
   transferHost: (newHostId: string) => void;
+  kickParticipant: (userId: string) => void;
+  sendReaction: (emoji: string) => void;
 }
 
 interface JoinRoomParams {
@@ -72,6 +76,7 @@ export function useWatchParty(): UseWatchPartyReturn {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [isHost, setIsHost] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [videoState, setVideoState] = useState<VideoState | null>(null);
 
   // Initialize socket connection
   useEffect(() => {
@@ -94,8 +99,17 @@ export function useWatchParty(): UseWatchPartyReturn {
     });
 
     socket.on('disconnect', () => {
-      console.log('[WatchParty] Disconnected');
+      console.log('[WatchParty] Disconnected, will attempt to reconnect...');
       setIsConnected(false);
+    });
+    
+    // Auto-rejoin on reconnect
+    socket.on('reconnect', () => {
+      console.log('[WatchParty] Reconnected');
+      if (roomData?.roomId) {
+        console.log('[WatchParty] Rejoining room:', roomData.roomId);
+        socket.emit('rejoin-room', { roomId: roomData.roomId });
+      }
     });
 
     socket.on('connect_error', (err: Error) => {
@@ -124,21 +138,33 @@ export function useWatchParty(): UseWatchPartyReturn {
     });
 
     socket.on('user-ready', ({ userId, isReady }: { userId: string; isReady: boolean }) => {
+      console.log('[WatchParty] User ready:', userId, isReady);
       setParticipants(prev =>
         prev.map(p => (p.userId === userId ? { ...p, isReady } : p))
       );
     });
 
     socket.on('new-message', (message: ChatMessage) => {
+      console.log('[WatchParty] New message:', message);
       setMessages(prev => [...prev, message]);
     });
 
-    socket.on('video-state-update', (_state: VideoState) => {
-      // Handled in WatchPartyRoom component
+    // Store reactions separately with auto-remove
+    socket.on('new-reaction', ({ name, emoji }: { name: string; emoji: string }) => {
+      console.log('[WatchParty] New reaction:', name, emoji);
+      const reaction = { name, emoji, id: Date.now() };
+      // Add to reactions state (will be managed in component)
+      window.dispatchEvent(new CustomEvent('watchparty-reaction', { detail: reaction }));
     });
 
-    socket.on('video-seek', (_data: { currentTime: number }) => {
-      // Handled in WatchPartyRoom component
+    socket.on('video-state-update', (state: VideoState) => {
+      console.log('[WatchParty] Video state update:', state);
+      setVideoState(state);
+    });
+
+    socket.on('video-seek', (data: { currentTime: number }) => {
+      console.log('[WatchParty] Video seek:', data);
+      setVideoState(prev => prev ? { ...prev, currentTime: data.currentTime } : { isPlaying: false, currentTime: data.currentTime, lastUpdate: new Date() });
     });
 
     socket.on('host-transferred', ({ newHostId }: { newHostId: string }) => {
@@ -157,11 +183,20 @@ export function useWatchParty(): UseWatchPartyReturn {
       setIsHost(true);
     });
 
-    socket.on('kicked', () => {
+    socket.on('kicked', (data?: { reason?: string }) => {
+      console.log('[WatchParty] You were kicked:', data);
+      // Disconnect socket
+      socket.disconnect();
       setRoomData(null);
       setMessages([]);
       setParticipants([]);
-      setError('You were kicked from the room');
+      setIsHost(false);
+      setError(data?.reason || 'You were kicked from the room');
+    });
+    
+    socket.on('participant-kicked', ({ userId, name }: { userId: string; name: string }) => {
+      console.log('[WatchParty] Participant kicked:', name);
+      setParticipants(prev => prev.filter(p => p.userId !== userId));
     });
 
     return () => {
@@ -184,8 +219,10 @@ export function useWatchParty(): UseWatchPartyReturn {
   }, []);
 
   const sendMessage = useCallback((message: string) => {
+    console.log('[WatchParty] Sending message:', message);
     if (!socketRef.current || !message.trim()) return;
     socketRef.current.emit('send-message', { message: message.trim() });
+    console.log('[WatchParty] Message emitted');
   }, []);
 
   const sendVideoState = useCallback((isPlaying: boolean, currentTime: number) => {
@@ -208,6 +245,22 @@ export function useWatchParty(): UseWatchPartyReturn {
     socketRef.current.emit('transfer-host', { newHostId });
   }, []);
 
+  const kickParticipant = useCallback((userId: string) => {
+    console.log('[WatchParty] Emitting kick-participant for:', userId);
+    if (!socketRef.current) {
+      console.log('[WatchParty] Cannot kick: socket not connected');
+      return;
+    }
+    socketRef.current.emit('kick-participant', { userId }, (response: any) => {
+      console.log('[WatchParty] Kick response:', response);
+    });
+  }, []);
+
+  const sendReaction = useCallback((emoji: string) => {
+    if (!socketRef.current) return;
+    socketRef.current.emit('send-reaction', { emoji });
+  }, []);
+
   return {
     socket: socketRef.current,
     isConnected,
@@ -216,6 +269,8 @@ export function useWatchParty(): UseWatchPartyReturn {
     participants,
     isHost,
     error,
+    currentUserId: user?.id || null,
+    videoState,
     joinRoom,
     leaveRoom,
     sendMessage,
@@ -223,6 +278,8 @@ export function useWatchParty(): UseWatchPartyReturn {
     seekVideo,
     toggleReady,
     transferHost,
+    kickParticipant,
+    sendReaction,
   };
 }
 

@@ -732,7 +732,7 @@ export default function Watch() {
       <div className={`mx-auto px-4 sm:px-6 lg:px-8 pt-20 transition-all duration-300 ${isTheaterMode ? 'max-w-full' : 'max-w-7xl'}`}>
         <div className={`grid gap-4 ${isTheaterMode ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-4'}`}>
           {/* Video Player - 3 columns (or full width in theater mode) */}
-          <div className={isTheaterMode ? 'w-full' : 'lg:col-span-3'}>
+          <div className={`${isTheaterMode ? 'w-full' : 'lg:col-span-3'} ${showWatchParty ? 'hidden' : ''}`}>
             <div className="relative bg-black rounded-xl overflow-hidden">
               {/* Back Button */}
               <Link

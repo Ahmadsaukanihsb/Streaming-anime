@@ -7,11 +7,13 @@ import {
   LogOut, 
   CheckCircle2,
   Copy,
-  MessageSquare
+  MessageSquare,
+  Maximize
 } from 'lucide-react';
 import { useWatchParty } from '@/hooks/useWatchParty';
 import SafeAvatar from '@/components/SafeAvatar';
 import { Button } from '@/components/ui/button';
+import WatchPartyVideoPlayer from './WatchPartyVideoPlayer';
 
 interface WatchPartyRoomProps {
   roomId?: string;
@@ -41,6 +43,8 @@ export default function WatchPartyRoom({
     participants,
     isHost,
     error,
+    currentUserId,
+    videoState,
     joinRoom,
     leaveRoom,
     sendMessage,
@@ -48,26 +52,51 @@ export default function WatchPartyRoom({
     seekVideo,
     toggleReady,
     transferHost,
+    kickParticipant,
+    sendReaction,
   } = useWatchParty();
 
   const [messageInput, setMessageInput] = useState('');
   const [showParticipants, setShowParticipants] = useState(false);
+  const [joinRoomCode, setJoinRoomCode] = useState('');
+  const [hasJoined, setHasJoined] = useState(false);
+  const [roomIdToJoin, setRoomIdToJoin] = useState<string | undefined>(roomId);
+  const [syncVideoState, setSyncVideoState] = useState<{ isPlaying?: boolean; currentTime?: number }>({});
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [floatingReactions, setFloatingReactions] = useState<{name: string; emoji: string; id: number}[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   // const wasPlayingRef = useRef(false);
 
-  // Join room on mount
+  const reactions = ['👍', '❤️', '😂', '😮', '👏', '🔥'];
+
+  // Listen for reactions
   useEffect(() => {
-    if (!roomData && isConnected) {
+    const handleReaction = (e: CustomEvent) => {
+      const reaction = e.detail;
+      setFloatingReactions(prev => [...prev, reaction]);
+      // Remove after animation (4 seconds)
+      setTimeout(() => {
+        setFloatingReactions(prev => prev.filter(r => r.id !== reaction.id));
+      }, 4000);
+    };
+    
+    window.addEventListener('watchparty-reaction', handleReaction as EventListener);
+    return () => window.removeEventListener('watchparty-reaction', handleReaction as EventListener);
+  }, []);
+
+  // Join room only after user clicks button
+  useEffect(() => {
+    if (!roomData && isConnected && hasJoined) {
       joinRoom({
-        roomId,
+        roomId: roomIdToJoin,
         animeId,
         episodeId,
         animeTitle,
         episodeNumber,
-        isHost: initialHost,
+        isHost: !roomIdToJoin, // Host if no roomId
       });
     }
-  }, [isConnected, roomData, joinRoom, roomId, animeId, episodeId, animeTitle, episodeNumber, initialHost]);
+  }, [isConnected, roomData, joinRoom, roomIdToJoin, animeId, episodeId, animeTitle, episodeNumber, hasJoined]);
 
   // Auto-scroll messages
   useEffect(() => {
@@ -127,6 +156,9 @@ export default function WatchPartyRoom({
 
   const readyCount = participants.filter(p => p.isReady).length;
   const totalCount = participants.length;
+  
+  console.log('[WatchPartyRoom] Participants:', participants);
+  console.log('[WatchPartyRoom] Messages:', messages);
 
   if (error) {
     return (
@@ -145,6 +177,72 @@ export default function WatchPartyRoom({
     );
   }
 
+  if (!roomData && !hasJoined) {
+    // Show join/create room options
+    return (
+      <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div className="bg-[#1A1A2E] rounded-2xl p-8 max-w-md w-full">
+          <h2 className="text-2xl font-bold text-white mb-2 text-center">Watch Party</h2>
+          <p className="text-white/60 text-center mb-6">Create a room or join existing one</p>
+          
+          <div className="space-y-4">
+            {/* Join Room Section */}
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={joinRoomCode}
+                onChange={(e) => setJoinRoomCode(e.target.value.toUpperCase())}
+                placeholder="Enter room code (e.g., ABC123)"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white text-center text-lg uppercase tracking-wider focus:outline-none focus:border-[#6C5DD3]"
+                maxLength={6}
+              />
+              <Button
+                onClick={() => {
+                  if (joinRoomCode.trim()) {
+                    setRoomIdToJoin(joinRoomCode.trim().toUpperCase());
+                    setHasJoined(true);
+                  }
+                }}
+                disabled={!joinRoomCode.trim()}
+                className="w-full bg-[#6C5DD3] hover:bg-[#5B4EC2]"
+              >
+                Join Room
+              </Button>
+            </div>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-white/10"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-[#1A1A2E] text-white/40">or</span>
+              </div>
+            </div>
+            
+            {/* Create Room Section */}
+            <Button
+              onClick={() => {
+                setHasJoined(true);
+              }}
+              variant="outline"
+              className="w-full border-white/20 text-white hover:bg-white/10"
+            >
+              Create New Room
+            </Button>
+            
+            <Button
+              variant="ghost"
+              onClick={onClose}
+              className="w-full text-white/40 hover:text-white"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!roomData) {
     return (
       <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
@@ -157,11 +255,11 @@ export default function WatchPartyRoom({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex">
+    <div className="fixed inset-0 bg-[#0F0F1A] z-50 flex flex-col lg:flex-row">
       {/* Main Content - Video Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10 bg-[#0F0F1A]">
+        <div className="flex items-center justify-between p-4 border-b border-white/10 bg-[#0F0F1A] shrink-0">
           <div className="flex items-center gap-4">
             <div>
               <h2 className="text-white font-semibold">{roomData.animeTitle}</h2>
@@ -181,10 +279,20 @@ export default function WatchPartyRoom({
             </button>
 
             {/* Ready Status */}
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
-              <CheckCircle2 className="w-4 h-4 text-green-400" />
-              <span className="text-white/60 text-sm">{readyCount}/{totalCount} Ready</span>
-            </div>
+            <button
+              onClick={toggleReady}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
+                participants.find(p => p.userId === currentUserId)?.isReady
+                  ? 'bg-green-500/20 text-green-400'
+                  : 'bg-white/5 text-white/60 hover:bg-white/10'
+              }`}
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span className="text-sm">{readyCount}/{totalCount} Ready</span>
+              {isHost && readyCount === totalCount && totalCount > 0 && (
+                <span className="text-xs text-green-400 ml-1">Everyone ready!</span>
+              )}
+            </button>
 
             {/* Participants Toggle */}
             <button
@@ -193,6 +301,21 @@ export default function WatchPartyRoom({
             >
               <Users className="w-4 h-4 text-white/60" />
               <span className="text-white text-sm">{participants.length}</span>
+            </button>
+
+            {/* Fullscreen Toggle */}
+            <button
+              onClick={() => {
+                if (!document.fullscreenElement) {
+                  document.documentElement.requestFullscreen();
+                } else {
+                  document.exitFullscreen();
+                }
+              }}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              title="Toggle Fullscreen"
+            >
+              <Maximize className="w-5 h-5 text-white/60" />
             </button>
 
             {/* Close */}
@@ -208,8 +331,49 @@ export default function WatchPartyRoom({
           </div>
         </div>
 
-        {/* Video Container - Transparent to show video player from parent */}
-        <div className="flex-1 bg-transparent pointer-events-none" />
+        {/* Video Player Container */}
+        <div className="flex-1 min-h-0 relative overflow-hidden">
+          {/* Floating Reactions */}
+          <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
+            {floatingReactions.map((reaction) => (
+              <motion.div
+                key={reaction.id}
+                initial={{ opacity: 0, y: 100, x: Math.random() * 80 + 10 + '%' }}
+                animate={{ opacity: 1, y: -100 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 4, ease: 'easeOut' }}
+                className="absolute bottom-20 text-4xl"
+                style={{ left: `${Math.random() * 80 + 10}%` }}
+              >
+                {reaction.emoji}
+              </motion.div>
+            ))}
+          </div>
+          <WatchPartyVideoPlayer
+          animeId={animeId}
+          animeTitle={animeTitle}
+          episodeNumber={episodeNumber}
+          videoRef={videoRef}
+          isHost={isHost}
+          isPlaying={videoState?.isPlaying}
+          currentTime={videoState?.currentTime}
+          onPlay={() => {
+            if (videoRef.current && isHost) {
+              sendVideoState(true, videoRef.current.currentTime);
+            }
+          }}
+          onPause={() => {
+            if (videoRef.current && isHost) {
+              sendVideoState(false, videoRef.current.currentTime);
+            }
+          }}
+          onSeek={(time) => {
+            if (isHost) {
+              seekVideo(time);
+            }
+          }}
+        />
+        </div>
       </div>
 
       {/* Sidebar - Chat & Participants */}
@@ -223,7 +387,7 @@ export default function WatchPartyRoom({
           {/* Tabs */}
           <div className="flex border-b border-white/10">
             <button
-              onClick={() => setShowParticipants(false)}
+              onClick={() => { console.log('[WatchPartyRoom] Switch to Chat'); setShowParticipants(false); }}
               className={`flex-1 py-3 text-sm font-medium transition-colors ${!showParticipants ? 'text-[#6C5DD3] border-b-2 border-[#6C5DD3]' : 'text-white/60 hover:text-white'}`}
             >
               <div className="flex items-center justify-center gap-2">
@@ -232,7 +396,7 @@ export default function WatchPartyRoom({
               </div>
             </button>
             <button
-              onClick={() => setShowParticipants(true)}
+              onClick={() => { console.log('[WatchPartyRoom] Switch to Participants'); setShowParticipants(true); }}
               className={`flex-1 py-3 text-sm font-medium transition-colors ${showParticipants ? 'text-[#6C5DD3] border-b-2 border-[#6C5DD3]' : 'text-white/60 hover:text-white'}`}
             >
               <div className="flex items-center justify-center gap-2">
@@ -244,8 +408,10 @@ export default function WatchPartyRoom({
 
           {/* Content */}
           <div className="flex-1 overflow-hidden">
+            {console.log('[WatchPartyRoom] Rendering, showParticipants:', showParticipants)}
             {showParticipants ? (
               <div className="p-4 space-y-3">
+                {console.log('[WatchPartyRoom] Rendering participants:', participants.length)}
                 {participants.map((participant) => (
                   <div
                     key={participant.userId}
@@ -261,8 +427,9 @@ export default function WatchPartyRoom({
                         <span className="text-white text-sm font-medium truncate">
                           {participant.name}
                         </span>
-                        {participant.isHost && (
-                          <Crown className="w-4 h-4 text-yellow-400" />
+                        {console.log('[WatchPartyRoom] isHost check:', participant.isHost, typeof participant.isHost, 'for', participant.name)}
+                        {participant.isHost === true && (
+                          <Crown className="w-4 h-4 text-yellow-400 flex-shrink-0" />
                         )}
                       </div>
                       <div className="flex items-center gap-2">
@@ -274,20 +441,20 @@ export default function WatchPartyRoom({
                       </div>
                     </div>
                     {isHost && !participant.isHost && (
-                      <button
-                        onClick={() => transferHost(participant.userId)}
-                        className="text-xs text-[#6C5DD3] hover:text-white"
-                      >
-                        Make Host
-                      </button>
-                    )}
-                    {!isHost && participant.userId === roomData.participants.find(p => p.userId === participant.userId)?.userId && (
-                      <button
-                        onClick={toggleReady}
-                        className={`text-xs px-2 py-1 rounded ${participant.isReady ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-white/60'}`}
-                      >
-                        {participant.isReady ? 'Ready' : 'Ready?'}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => transferHost(participant.userId)}
+                          className="text-xs text-[#6C5DD3] hover:text-white"
+                        >
+                          Make Host
+                        </button>
+                        <button
+                          onClick={() => kickParticipant(participant.userId)}
+                          className="text-xs text-red-400 hover:text-red-300"
+                        >
+                          Kick
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -312,6 +479,19 @@ export default function WatchPartyRoom({
 
                 {/* Input */}
                 <form onSubmit={handleSendMessage} className="p-4 border-t border-white/10">
+                  {/* Emoji Picker */}
+                  <div className="flex justify-center gap-2 mb-3">
+                    {reactions.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => sendReaction(emoji)}
+                        className="text-xl hover:scale-125 transition-transform"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
                   <div className="flex gap-2">
                     <input
                       type="text"
