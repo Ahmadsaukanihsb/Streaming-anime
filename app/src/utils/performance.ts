@@ -50,16 +50,17 @@ export const deferScript = (src: string) => {
   document.body.appendChild(script);
 };
 
-// Measure Core Web Vitals
+// Measure Core Web Vitals (for analytics, not console logging)
 export const measureWebVitals = () => {
-  // LCP
+  // LCP - Largest Contentful Paint
   new PerformanceObserver((list) => {
     const entries = list.getEntries();
     const lastEntry = entries[entries.length - 1];
-    console.log('LCP:', lastEntry.startTime);
+    // Send to analytics or store for later use
+    (window as any).webVitals = { ...(window as any).webVitals, LCP: lastEntry.startTime };
   }).observe({ entryTypes: ['largest-contentful-paint'] });
 
-  // CLS
+  // CLS - Cumulative Layout Shift
   let cls = 0;
   new PerformanceObserver((list) => {
     for (const entry of list.getEntries()) {
@@ -67,14 +68,16 @@ export const measureWebVitals = () => {
         cls += (entry as any).value;
       }
     }
-    console.log('CLS:', cls);
+    // Store for analytics
+    (window as any).webVitals = { ...(window as any).webVitals, CLS: cls };
   }).observe({ entryTypes: ['layout-shift'] });
 
-  // FID
+  // FID - First Input Delay
   new PerformanceObserver((list) => {
     for (const entry of list.getEntries()) {
       const delay = (entry as any).processingStart - entry.startTime;
-      console.log('FID:', delay);
+      // Store for analytics
+      (window as any).webVitals = { ...(window as any).webVitals, FID: delay };
     }
   }).observe({ entryTypes: ['first-input'] });
 };

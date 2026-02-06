@@ -148,6 +148,7 @@ export default function AnimeCard({ anime, variant = 'default', index = 0 }: Ani
 
         {/* Bookmark (Hover Only) */}
         <button
+          type="button"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -157,6 +158,7 @@ export default function AnimeCard({ anime, variant = 'default', index = 0 }: Ani
             ? 'bg-[#6C5DD3] text-white opacity-100'
             : 'bg-black/40 text-white hover:bg-white hover:text-black opacity-0 group-hover:opacity-100'
             }`}
+          aria-label={isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
         >
           {isBookmarked ? <Check className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
         </button>
