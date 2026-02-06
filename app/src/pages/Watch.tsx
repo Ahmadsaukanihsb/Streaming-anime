@@ -63,8 +63,8 @@ export default function Watch() {
   const videoContainerRef = useRef<HTMLDivElement>(null);
 
   // Refs for keyboard shortcuts (to avoid stale closure)
-  const togglePlayRef = useRef<() => void>();
-  const toggleFullscreenRef = useRef<() => void>();
+  const togglePlayRef = useRef<(() => void) | undefined>(undefined);
+  const toggleFullscreenRef = useRef<(() => void) | undefined>(undefined);
 
   // Fallback state for anime data (if not found in context/props)
   // This handles direct navigation or refresh
