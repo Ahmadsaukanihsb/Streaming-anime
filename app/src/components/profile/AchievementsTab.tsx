@@ -206,11 +206,17 @@ export default function AchievementsTab({
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value as AchievementCategory | 'all')}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white"
+            className="bg-[#1A1A2E] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white appearance-none cursor-pointer hover:bg-[#252542] transition-colors"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 10px center',
+              paddingRight: '32px'
+            }}
           >
-            <option value="all">Semua Kategori</option>
+            <option value="all" className="bg-[#1A1A2E] text-white">Semua Kategori</option>
             {Object.entries(categoryLabels).map(([key, label]) => (
-              <option key={key} value={key}>{label}</option>
+              <option key={key} value={key} className="bg-[#1A1A2E] text-white">{label}</option>
             ))}
           </select>
         </div>
