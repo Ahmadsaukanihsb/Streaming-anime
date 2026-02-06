@@ -83,7 +83,7 @@ export const measureWebVitals = () => {
 export const preconnectOrigins = () => {
   const origins = [
     'https://api.animeku.xyz',
-    'https://pub-d4bee725ba584e789e4f2261d976dfb4.r2.dev'
+    'https://cdn.animeku.xyz'
   ];
   
   origins.forEach(origin => {
