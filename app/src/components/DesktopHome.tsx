@@ -63,11 +63,11 @@ function AnimeCard({ anime, index }: { anime: Anime; index: number }) {
             </div>
           </div>
 
-          {/* Status & Type badges */}
-          <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5">
+          {/* Status & Type badges - Horizontal */}
+          <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
             <StatusBadge status={anime.status} variant="solid" />
             {anime.type && (
-              <span className="px-1.5 py-0.5 bg-[#6C5DD3]/90 text-white text-[9px] font-bold rounded">
+              <span className="px-1.5 py-0.5 bg-black/60 backdrop-blur-sm text-white text-[9px] font-bold rounded border border-white/10">
                 {anime.type}
               </span>
             )}
@@ -94,12 +94,12 @@ function AnimeCard({ anime, index }: { anime: Anime; index: number }) {
           animate={{ opacity: 1, scale: 1, x: 0 }}
           exit={{ opacity: 0, scale: 0.9 }}
           transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
-          className={`absolute top-0 ${tooltipPosition === 'right' ? 'left-full ml-3' : 'right-full mr-3'} z-50 w-[320px]`}
+          className={`absolute -top-2 ${tooltipPosition === 'right' ? 'left-full ml-2' : 'right-full mr-2'} z-[100] w-[280px]`}
           style={{ pointerEvents: 'none' }}
         >
           <div className="bg-gradient-to-br from-[#1A1A2E] to-[#0F0F1A] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
             {/* Banner Image */}
-            <div className="relative h-24 overflow-hidden">
+            <div className="relative h-20 overflow-hidden">
               <img 
                 src={anime.banner || anime.poster} 
                 alt="" 
@@ -108,64 +108,64 @@ function AnimeCard({ anime, index }: { anime: Anime; index: number }) {
               <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A2E] via-[#1A1A2E]/50 to-transparent" />
               
               {/* Status badge on banner */}
-              <div className="absolute top-3 left-3">
+              <div className="absolute top-2.5 left-2.5">
                 <StatusBadge status={anime.status} variant="solid" />
               </div>
               
               {/* Play button */}
-              <div className="absolute bottom-3 right-3">
-                <div className="w-12 h-12 rounded-full bg-[#6C5DD3] flex items-center justify-center shadow-lg shadow-[#6C5DD3]/40">
-                  <Play className="w-5 h-5 text-white fill-current ml-0.5" />
+              <div className="absolute bottom-2.5 right-2.5">
+                <div className="w-10 h-10 rounded-full bg-[#6C5DD3] flex items-center justify-center shadow-lg shadow-[#6C5DD3]/40">
+                  <Play className="w-4 h-4 text-white fill-current ml-0.5" />
                 </div>
               </div>
             </div>
 
             {/* Content */}
-            <div className="p-4">
+            <div className="p-3.5">
               {/* Title Section */}
-              <div className="mb-3">
-                <h4 className="text-base font-bold text-white leading-tight mb-0.5">
+              <div className="mb-2">
+                <h4 className="text-sm font-bold text-white leading-tight">
                   {anime.title}
                 </h4>
                 {anime.titleJp && (
-                  <p className="text-xs text-white/40">{anime.titleJp}</p>
+                  <p className="text-[10px] text-white/40 mt-0.5">{anime.titleJp}</p>
                 )}
               </div>
 
               {/* Meta Info Row */}
-              <div className="flex items-center gap-3 mb-3 text-xs">
-                <div className="flex items-center gap-1">
-                  <Star className="w-3.5 h-3.5 text-yellow-400 fill-current" />
+              <div className="flex items-center gap-2.5 mb-2 text-[10px]">
+                <div className="flex items-center gap-0.5">
+                  <Star className="w-3 h-3 text-yellow-400 fill-current" />
                   <span className="font-semibold text-white">{anime.rating}</span>
                 </div>
-                <div className="flex items-center gap-1 text-white/60">
-                  <Calendar className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-0.5 text-white/60">
+                  <Calendar className="w-3 h-3" />
                   <span>{anime.releasedYear}</span>
                 </div>
-                <div className="flex items-center gap-1 text-white/60">
-                  <Clock className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-0.5 text-white/60">
+                  <Clock className="w-3 h-3" />
                   <span>{anime.episodes} EP</span>
                 </div>
               </div>
 
               {/* Studio & Type */}
-              <div className="flex flex-wrap gap-1.5 mb-3">
+              <div className="flex flex-wrap gap-1 mb-2">
                 {anime.type && (
-                  <span className="px-2 py-0.5 rounded-md bg-[#6C5DD3]/20 text-[#B7ABFF] text-[10px] font-medium border border-[#6C5DD3]/30">
+                  <span className="px-1.5 py-0.5 rounded bg-[#6C5DD3]/20 text-[#B7ABFF] text-[9px] font-medium border border-[#6C5DD3]/30">
                     {anime.type}
                   </span>
                 )}
-                <span className="px-2 py-0.5 rounded-md bg-white/5 text-white/60 text-[10px]">
+                <span className="px-1.5 py-0.5 rounded bg-white/5 text-white/60 text-[9px]">
                   {anime.studio}
                 </span>
               </div>
 
               {/* Genres */}
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {anime.genres.slice(0, 4).map((genre) => (
+              <div className="flex flex-wrap gap-1 mb-2.5">
+                {anime.genres.slice(0, 3).map((genre) => (
                   <span 
                     key={genre} 
-                    className="px-2 py-0.5 rounded bg-[#6C5DD3]/10 text-[#B7ABFF] text-[10px] font-medium border border-[#6C5DD3]/20"
+                    className="px-1.5 py-0.5 rounded bg-[#6C5DD3]/10 text-[#B7ABFF] text-[9px] border border-[#6C5DD3]/20"
                   >
                     {genre}
                   </span>
@@ -173,17 +173,17 @@ function AnimeCard({ anime, index }: { anime: Anime; index: number }) {
               </div>
 
               {/* Synopsis */}
-              <p className="text-xs text-white/60 line-clamp-3 mb-4 leading-relaxed">
+              <p className="text-[10px] text-white/60 line-clamp-2 mb-3 leading-relaxed">
                 {anime.synopsis}
               </p>
 
               {/* Action Buttons */}
               <div className="flex items-center gap-2">
-                <span className="flex-1 text-center py-2 bg-[#6C5DD3] hover:bg-[#5a4ec0] text-white text-xs font-semibold rounded-lg transition-colors shadow-lg shadow-[#6C5DD3]/20">
+                <span className="flex-1 text-center py-1.5 bg-[#6C5DD3] hover:bg-[#5a4ec0] text-white text-[10px] font-semibold rounded-md transition-colors">
                   Tonton Sekarang
                 </span>
-                <span className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 transition-colors">
-                  <Bookmark className="w-4 h-4" />
+                <span className="p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-white/70 transition-colors">
+                  <Bookmark className="w-3.5 h-3.5" />
                 </span>
               </div>
             </div>
