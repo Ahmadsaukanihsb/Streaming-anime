@@ -69,6 +69,8 @@ async function requireAdmin(req, res, next) {
 
 module.exports = {
     signAccessToken,
+    authenticate,
     requireAuth,
+    authenticateToken: requireAuth, // Alias for routes using authenticateToken
     requireAdmin
 };
