@@ -29,6 +29,47 @@ app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 app.use(cookieParser());
 
+// ============================================
+// BROWSER REDIRECT PROTECTION
+// Redirect direct browser access to main website
+// ============================================
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://animeku.xyz';
+
+app.use((req, res, next) => {
+    // Skip API endpoints that should be accessible (like health check)
+    if (req.path === '/' || req.path.startsWith('/api/health')) {
+        return next();
+    }
+
+    // Check if request wants HTML (browser access)
+    const acceptHeader = req.headers.accept || '';
+    const wantsHtml = acceptHeader.includes('text/html');
+
+    // Check referer/origin
+    const referer = req.headers.referer || '';
+    const origin = req.headers.origin || '';
+    const allowedOrigins = [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'https://test.aavpanel.my.id',
+        'https://aavpanel.my.id',
+        'https://animeku.xyz',
+        'https://www.animeku.xyz'
+    ];
+
+    const isFromFrontend = allowedOrigins.some(url => 
+        referer.startsWith(url) || origin === url
+    );
+
+    // If browser access without proper referer, redirect to website
+    if (wantsHtml && !isFromFrontend) {
+        console.log(`[Redirect] Blocked direct browser access to ${req.path} from ${req.ip}`);
+        return res.redirect(301, FRONTEND_URL);
+    }
+
+    next();
+});
+
 // Database Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/animestream';
 mongoose.connect(MONGODB_URI)
@@ -51,7 +92,24 @@ app.use('/api/reviews', require('./routes/review'));
 app.use('/api/badges', require('./routes/badge'));
 
 app.get('/', (req, res) => {
+    // Check if request is from browser (wants HTML)
+    const acceptHeader = req.headers.accept || '';
+    if (acceptHeader.includes('text/html')) {
+        return res.redirect(301, FRONTEND_URL);
+    }
     res.send('AnimeStream API is running...');
+});
+
+// Redirect any unknown paths to frontend (for direct browser access)
+app.use((req, res, next) => {
+    const acceptHeader = req.headers.accept || '';
+    // If browser trying to access unknown route, redirect to frontend
+    if (acceptHeader.includes('text/html')) {
+        console.log(`[Redirect] Unknown path ${req.path} accessed from browser, redirecting to frontend`);
+        return res.redirect(301, FRONTEND_URL);
+    }
+    // For API requests, continue to 404 handler
+    next();
 });
 
 // Global error handler middleware
