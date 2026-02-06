@@ -8,7 +8,7 @@ import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('AppContext');
 
-interface User {
+export interface User {
   id: string;
   name: string;
   email: string;
@@ -18,7 +18,7 @@ interface User {
   createdAt?: string;
 }
 
-interface WatchHistory {
+export interface WatchHistory {
   animeId: string;
   episodeId: string;
   episodeNumber: number;
@@ -26,13 +26,13 @@ interface WatchHistory {
   progress: number;
 }
 
-interface Rating {
+export interface Rating {
   animeId: string;
   rating: number;
   ratedAt?: Date;
 }
 
-type NotificationType =
+export type NotificationType =
   | 'like_discussion'
   | 'like_reply'
   | 'reply'
@@ -42,7 +42,7 @@ type NotificationType =
   | 'anime'
   | 'episode';
 
-interface Notification {
+export interface Notification {
   _id: string;
   type: NotificationType;
   message: string;
@@ -60,7 +60,7 @@ interface Notification {
   title?: string;
 }
 
-interface UserSettings {
+export interface UserSettings {
   autoPlayNext: boolean;
   autoSkipIntro: boolean;
   defaultQuality: '480' | '720' | '1080' | 'auto';
