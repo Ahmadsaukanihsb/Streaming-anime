@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useToast } from '@/components/ui/toast';
 import { Link } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -58,6 +59,7 @@ import SafeAvatar from '@/components/SafeAvatar';
 
 
 export default function Admin() {
+  const { toast } = useToast();
   const { user, logout, animeList, addAnime, updateAnime, deleteAnime } = useApp();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -134,7 +136,11 @@ export default function Admin() {
       // Dispatch custom event for same-tab updates
       window.dispatchEvent(new CustomEvent('siteLogoUpdated', { detail: publicUrl }));
       
-      alert('Logo berhasil diupload!');
+      toast({
+        title: 'Berhasil!',
+        description: 'Logo berhasil diupload',
+        variant: 'success',
+      });
     } catch (error) {
       console.error('Logo upload error:', error);
       setLogoUploadError('Gagal upload logo. Coba lagi.');
@@ -767,7 +773,11 @@ export default function Admin() {
     );
 
     if (isDuplicate) {
-      alert('⚠️ Anime dengan judul ini sudah ada!');
+      toast({
+        title: 'Peringatan',
+        description: 'Anime dengan judul ini sudah ada!',
+        variant: 'warning',
+      });
       return;
     }
 
@@ -2936,7 +2946,11 @@ export default function Admin() {
                       
                       setTimeout(() => {
                         setIsSavingSettings(false);
-                        alert('Pengaturan berhasil disimpan!');
+                        toast({
+                          title: 'Berhasil!',
+                          description: 'Pengaturan berhasil disimpan',
+                          variant: 'success',
+                        });
                       }, 500);
                     }}
                     disabled={isSavingSettings}

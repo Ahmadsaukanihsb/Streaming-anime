@@ -5,6 +5,8 @@ import Lenis from 'lenis';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ScrollToTop from '@/components/ScrollToTop';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import { ToastProvider } from '@/components/ui/toast';
 
 // Pages
 import Home from '@/pages/Home';
@@ -66,14 +68,16 @@ function SmoothScroll({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <AppProvider>
-      <Router>
-        <SmoothScroll>
-          <ScrollToTop />
-          <WebsiteSchema />
-          <div className="min-h-screen bg-[#0F0F1A]">
-            <Navbar />
-            <Routes>
+    <ErrorBoundary>
+      <ToastProvider>
+        <AppProvider>
+          <Router>
+            <SmoothScroll>
+              <ScrollToTop />
+              <WebsiteSchema />
+              <div className="min-h-screen bg-[#0F0F1A]">
+                <Navbar />
+                <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/anime/:id" element={<AnimeDetail />} />
               <Route path="/watch/:id/:episode" element={<Watch />} />
@@ -114,6 +118,8 @@ function App() {
         </SmoothScroll>
       </Router>
     </AppProvider>
+    </ToastProvider>
+    </ErrorBoundary>
   );
 }
 
