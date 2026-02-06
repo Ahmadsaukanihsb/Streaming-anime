@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { Button } from '@/components/ui/button';
 import { DEFAULT_SITE_NAME } from '../config/api';
+import { StaticPageSEO } from '@/components/Seo';
 
 interface ValidationErrors {
   name?: string;
@@ -147,7 +148,13 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0F0F1A] flex items-center justify-center p-4">
+    <>
+      <StaticPageSEO
+        title="Daftar"
+        description="Buat akun Animeku gratis dan bergabung dengan komunitas penggemar anime terbesar."
+        canonical="/register"
+      />
+      <div className="min-h-screen bg-[#0F0F1A] flex items-center justify-center p-4">
       {/* Background Decoration */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#6C5DD3]/10 rounded-full blur-3xl" />
@@ -399,5 +406,6 @@ export default function Register() {
         </div>
       </motion.div>
     </div>
+    </>
   );
 }

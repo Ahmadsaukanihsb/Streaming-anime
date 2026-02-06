@@ -3,7 +3,7 @@ import { Film, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import AnimeCard from '@/components/AnimeCard';
-import Seo from '@/components/Seo';
+import { StaticPageSEO } from '@/components/Seo';
 
 export default function Movies() {
     const { animeList, isLoading } = useApp();
@@ -36,9 +36,10 @@ export default function Movies() {
 
     return (
         <main className="min-h-screen bg-[#0F0F1A] pt-20 pb-12">
-            <Seo
+            <StaticPageSEO
                 title="Film Anime Sub Indo"
                 description="Koleksi film anime sub indo terbaik di Animeku. Streaming atau download film anime kualitas HD secara gratis."
+                canonical="/movies"
             />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header */}

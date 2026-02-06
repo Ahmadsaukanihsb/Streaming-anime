@@ -11,7 +11,7 @@ import RoleBadge from '@/components/RoleBadge';
 import { getAuthHeaders } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
 import SafeAvatar from '@/components/SafeAvatar';
-import Seo from '@/components/Seo';
+import { StaticPageSEO } from '@/components/Seo';
 
 interface Discussion {
     _id: string;
@@ -388,9 +388,10 @@ export default function Community() {
 
     return (
         <div className="min-h-screen bg-[#0F0F1A] pt-24 pb-12">
-            <Seo
+            <StaticPageSEO
                 title="Komunitas Anime"
                 description="Gabung komunitas Animeku untuk berdiskusi, review, dan berbagi rekomendasi anime favorit."
+                canonical="/community"
             />
             {/* Toast Notification */}
             <AnimatePresence>

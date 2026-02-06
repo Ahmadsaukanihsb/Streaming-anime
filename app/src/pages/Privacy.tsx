@@ -1,5 +1,6 @@
 import { Shield, Eye, Lock, Users, Database, Bell, Mail, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { StaticPageSEO } from '@/components/Seo';
 
 export default function Privacy() {
     const sections = [
@@ -64,7 +65,13 @@ export default function Privacy() {
     ];
 
     return (
-        <div className="min-h-screen bg-[#0F0F1A] pt-24 pb-12">
+        <>
+            <StaticPageSEO
+                title="Kebijakan Privasi"
+                description="Pelajari bagaimana Animeku melindungi data pribadi Anda. Kebijakan privasi lengkap dan transparan."
+                canonical="/privacy"
+            />
+            <div className="min-h-screen bg-[#0F0F1A] pt-24 pb-12">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header */}
                 <motion.div
@@ -131,6 +138,7 @@ export default function Privacy() {
                     </a>
                 </motion.div>
             </div>
-        </div>
+            </div>
+        </>
     );
 }

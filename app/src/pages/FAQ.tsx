@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { HelpCircle, ChevronDown, Search, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { StaticPageSEO } from '@/components/Seo';
 
 interface FAQItem {
     question: string;
@@ -77,7 +78,13 @@ export default function FAQ() {
     });
 
     return (
-        <div className="min-h-screen bg-[#0F0F1A] pt-24 pb-12">
+        <>
+            <StaticPageSEO
+                title="FAQ - Pertanyaan Umum"
+                description="Temukan jawaban untuk pertanyaan umum tentang Animeku. Panduan lengkap penggunaan platform."
+                canonical="/faq"
+            />
+            <div className="min-h-screen bg-[#0F0F1A] pt-24 pb-12">
             <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header */}
                 <motion.div
@@ -195,6 +202,7 @@ export default function FAQ() {
                     </Link>
                 </motion.div>
             </div>
-        </div>
+            </div>
+        </>
     );
 }

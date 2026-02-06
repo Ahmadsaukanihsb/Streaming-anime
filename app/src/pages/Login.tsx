@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { Button } from '@/components/ui/button';
 import { DEFAULT_SITE_NAME } from '../config/api';
+import { StaticPageSEO } from '@/components/Seo';
 
 interface ValidationErrors {
   email?: string;
@@ -160,7 +161,13 @@ export default function Login() {
   const isLockedOut = lockoutUntil && Date.now() < lockoutUntil;
 
   return (
-    <div className="min-h-screen bg-[#0F0F1A] flex items-center justify-center p-4">
+    <>
+      <StaticPageSEO
+        title="Login"
+        description="Masuk ke akun Animeku untuk melanjutkan menonton anime favoritmu."
+        canonical="/login"
+      />
+      <div className="min-h-screen bg-[#0F0F1A] flex items-center justify-center p-4">
       {/* Background Decoration */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#6C5DD3]/10 rounded-full blur-3xl" />
@@ -330,5 +337,6 @@ export default function Login() {
         </div>
       </motion.div>
     </div>
+    </>
   );
 }

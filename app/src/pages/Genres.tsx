@@ -4,7 +4,7 @@ import { Search, Grid3X3, Sparkles, Film, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import AnimeCard from '@/components/AnimeCard';
-import Seo from '@/components/Seo';
+import { StaticPageSEO } from '@/components/Seo';
 
 // Genre icons/colors mapping
 const genreStyles: Record<string, { color: string; gradient: string }> = {
@@ -91,9 +91,12 @@ export default function Genres() {
 
     return (
         <main className="min-h-screen bg-[#0F0F1A] pt-20">
-            <Seo
-                title="Genre Anime"
-                description="Jelajahi anime berdasarkan genre favoritmu di Animeku. Action, romance, fantasy, dan banyak lagi."
+            <StaticPageSEO
+                title={selectedGenre ? `Genre: ${selectedGenre}` : 'Genre Anime'}
+                description={selectedGenre 
+                    ? `Koleksi anime genre ${selectedGenre} subtitle Indonesia terlengkap. Streaming dan download gratis kualitas HD.`
+                    : 'Jelajahi anime berdasarkan genre favoritmu di Animeku. Action, romance, fantasy, dan banyak lagi.'}
+                canonical={selectedGenre ? `/genres?genre=${encodeURIComponent(selectedGenre)}` : '/genres'}
             />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 

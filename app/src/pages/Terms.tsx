@@ -1,6 +1,7 @@
 import { FileText, CheckCircle, XCircle, AlertCircle, Scale } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { StaticPageSEO } from '@/components/Seo';
 
 export default function Terms() {
     const sections = [
@@ -47,7 +48,13 @@ export default function Terms() {
     ];
 
     return (
-        <div className="min-h-screen bg-[#0F0F1A] pt-24 pb-12">
+        <>
+            <StaticPageSEO
+                title="Syarat dan Ketentuan"
+                description="Baca syarat dan ketentuan penggunaan layanan Animeku. Informasi penting untuk pengguna platform."
+                canonical="/terms"
+            />
+            <div className="min-h-screen bg-[#0F0F1A] pt-24 pb-12">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header */}
                 <motion.div
@@ -164,6 +171,7 @@ export default function Terms() {
                     </Link>
                 </div>
             </div>
-        </div>
+            </div>
+        </>
     );
 }

@@ -26,7 +26,7 @@ import { motion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import AnimeCard from '@/components/AnimeCard';
 import CommentSection from '@/components/CommentSection';
-import Seo from '@/components/Seo';
+import { AnimeDetailSEO } from '@/components/Seo';
 import { AnimeSchema, BreadcrumbSchema } from '@/components/SchemaOrg';
 import {
   Dialog,
@@ -77,16 +77,6 @@ export default function AnimeDetail() {
   // Get database-backed data
   const userRating = id ? getUserRating(id) : 0;
   const watchedEpisodes = id ? getWatchedEpisodes(id) : [];
-
-  const seoDescription = anime?.synopsis
-    ? (anime.synopsis.length > 180 ? `${anime.synopsis.slice(0, 177)}...` : anime.synopsis)
-    : undefined;
-  const seoImage = anime?.banner || anime?.poster;
-  const seoUrl = anime ? `https://animeku.xyz/anime/${anime.id}` : undefined;
-  const seoKeywords = anime
-    ? [anime.title, 'nonton anime sub indo', 'streaming anime', ...(anime.genres || [])]
-      .join(', ')
-    : undefined;
 
   // UI state only
   const [hoverRating, setHoverRating] = useState<number>(0);
@@ -258,14 +248,19 @@ export default function AnimeDetail() {
 
   return (
     <main className="min-h-screen bg-[#0F0F1A]">
-      <Seo
-        title={anime ? `Nonton ${anime.title} Sub Indo` : 'Detail Anime'}
-        description={seoDescription}
-        image={seoImage}
-        url={seoUrl}
-        type="video.other"
-        keywords={seoKeywords}
-      />
+      {anime && (
+        <AnimeDetailSEO
+          title={anime.title}
+          description={anime.synopsis || `Nonton ${anime.title} subtitle Indonesia streaming gratis di Animeku`}
+          image={anime.banner || anime.poster}
+          url={`/anime/${anime.id}`}
+          rating={String(anime.rating)}
+          genres={anime.genres}
+          status={anime.status}
+          episodes={anime.episodes}
+          year={anime.releasedYear}
+        />
+      )}
       
       {/* Schema.org JSON-LD */}
       {anime && (

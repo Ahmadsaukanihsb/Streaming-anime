@@ -5,7 +5,31 @@ import { motion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import AnimeCard from '@/components/AnimeCard';
 import { Button } from '@/components/ui/button';
-import Seo from '@/components/Seo';
+
+function getPageTitle(searchParams: URLSearchParams): string {
+  const genre = searchParams.get('genre');
+  const search = searchParams.get('search');
+  const status = searchParams.get('status');
+  
+  if (search) return `Pencarian: ${search}`;
+  if (genre) return `Genre: ${genre}`;
+  if (status === 'ongoing') return 'Anime Ongoing';
+  if (status === 'completed') return 'Anime Completed';
+  return 'Daftar Anime';
+}
+
+function getPageDescription(searchParams: URLSearchParams): string {
+  const genre = searchParams.get('genre');
+  const search = searchParams.get('search');
+  const status = searchParams.get('status');
+  
+  if (search) return `Hasil pencarian anime ${search} subtitle Indonesia. Streaming dan download gratis kualitas HD.`;
+  if (genre) return `Koleksi anime genre ${genre} subtitle Indonesia terlengkap. Streaming dan download gratis kualitas HD.`;
+  if (status === 'ongoing') return 'Daftar anime ongoing yang sedang tayang. Streaming subtitle Indonesia gratis kualitas HD.';
+  if (status === 'completed') return 'Daftar anime completed yang sudah tamat. Streaming subtitle Indonesia gratis kualitas HD.';
+  return 'Jelajahi koleksi anime subtitle Indonesia terlengkap. Filter berdasarkan genre, tahun, status, dan rating.';
+}
+import { StaticPageSEO } from '@/components/Seo';
 
 export default function AnimeList() {
   const { animeList } = useApp();
@@ -111,11 +135,16 @@ export default function AnimeList() {
 
   const hasActiveFilters = selectedGenre !== 'all' || selectedYear || selectedStatus !== 'all';
 
+  const pageTitle = getPageTitle(searchParams);
+  const pageDescription = getPageDescription(searchParams);
+  const canonicalUrl = `/anime-list${location.search}`;
+
   return (
     <main className="min-h-screen bg-[#0F0F1A] pt-20">
-      <Seo
-        title={searchQuery ? `Hasil Pencarian: ${searchQuery}` : 'Daftar Anime Sub Indo'}
-        description="Jelajahi daftar anime sub indo terbaru dan terlengkap di Animeku. Filter genre, status, tahun, dan temukan anime favoritmu."
+      <StaticPageSEO
+        title={pageTitle}
+        description={pageDescription}
+        canonical={canonicalUrl}
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}

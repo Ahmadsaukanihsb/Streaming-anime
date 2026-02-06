@@ -8,7 +8,7 @@ import ScheduleWidget from '@/components/ScheduleWidget';
 import UserStatsWidget from '@/components/UserStatsWidget';
 import RandomAnimeButton from '@/components/RandomAnimeButton';
 import { HomePageSkeleton } from '@/components/SkeletonLoading';
-import Seo from '@/components/Seo';
+import { HomeSEO } from '@/components/Seo';
 import { useApp } from '@/context/AppContext';
 import { BACKEND_URL } from '@/config/api';
 import { apiFetch } from '@/lib/api';
@@ -311,7 +311,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#0F0F1A]">
-      <Seo />
+      <HomeSEO />
       <div className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 z-0">
           <div className="absolute -top-40 left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-[#6C5DD3]/20 blur-[140px]" />

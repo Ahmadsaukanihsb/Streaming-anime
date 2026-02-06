@@ -7,7 +7,7 @@ import { useApp } from '@/context/AppContext';
 import { BACKEND_URL } from '@/config/api';
 import { getAuthHeaders } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
-import Seo from '@/components/Seo';
+import { StaticPageSEO } from '@/components/Seo';
 
 // Day names in Indonesian
 const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -136,9 +136,10 @@ export default function Schedule() {
 
     return (
         <div className="min-h-screen bg-[#0F0F1A] pt-24 pb-12">
-            <Seo
+            <StaticPageSEO
                 title="Jadwal Rilis Anime"
                 description="Cek jadwal rilis anime terbaru setiap minggu di Animeku. Atur pengingat dan jangan lewatkan episode favoritmu."
+                canonical="/schedule"
             />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header */}

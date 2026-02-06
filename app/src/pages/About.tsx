@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Info, Heart, Users, Film, Shield, Globe, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { StaticPageSEO } from '@/components/Seo';
 
 export default function About() {
     const features = [
@@ -17,7 +18,13 @@ export default function About() {
     ];
 
     return (
-        <div className="min-h-screen bg-[#0F0F1A] pt-24 pb-12">
+        <>
+            <StaticPageSEO
+                title="Tentang Kami"
+                description="Kenali lebih dekat Animeku - platform streaming anime subtitle Indonesia terbaik dengan koleksi lengkap dan kualitas HD."
+                canonical="/about"
+            />
+            <div className="min-h-screen bg-[#0F0F1A] pt-24 pb-12">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header */}
                 <motion.div
@@ -126,6 +133,7 @@ export default function About() {
                     </Link>
                 </motion.div>
             </div>
-        </div>
+            </div>
+        </>
     );
 }

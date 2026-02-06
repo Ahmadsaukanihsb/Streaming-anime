@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/toast';
 import { Link } from 'react-router-dom';
+import { StaticPageSEO } from '@/components/Seo';
 import {
   LayoutDashboard,
   Film,
@@ -1066,7 +1067,13 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0F0F1A] flex">
+    <>
+      <StaticPageSEO
+        title="Admin Dashboard"
+        description="Panel administrasi Animeku untuk mengelola konten dan pengaturan website."
+        canonical="/admin"
+      />
+      <div className="min-h-screen bg-[#0F0F1A] flex">
       {/* Sidebar Overlay (Mobile) */}
       {sidebarOpen && (
         <div
@@ -3562,5 +3569,6 @@ export default function Admin() {
         )}
       </main>
     </div >
+    </>
   );
 }

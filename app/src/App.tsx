@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { Suspense, lazy } from 'react';
 import { AppProvider } from '@/context/AppContext';
 import { useEffect } from 'react';
@@ -223,23 +224,25 @@ function AppRoutes() {
 // ==========================================
 function App() {
   return (
-    <ErrorBoundary>
-      <ToastProvider>
-        <AppProvider>
-          <Router>
-            <SmoothScroll>
-              <ScrollToTop />
-              <WebsiteSchema />
-              <div className="min-h-screen bg-[#0F0F1A]">
-                <Navbar />
-                <AppRoutes />
-                <Footer />
-              </div>
-            </SmoothScroll>
-          </Router>
-        </AppProvider>
-      </ToastProvider>
-    </ErrorBoundary>
+    <HelmetProvider>
+      <ErrorBoundary>
+        <ToastProvider>
+          <AppProvider>
+            <Router>
+              <SmoothScroll>
+                <ScrollToTop />
+                <WebsiteSchema />
+                <div className="min-h-screen bg-[#0F0F1A]">
+                  <Navbar />
+                  <AppRoutes />
+                  <Footer />
+                </div>
+              </SmoothScroll>
+            </Router>
+          </AppProvider>
+        </ToastProvider>
+      </ErrorBoundary>
+    </HelmetProvider>
   );
 }
 

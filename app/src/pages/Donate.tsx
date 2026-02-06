@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { HeartHandshake, HandCoins, QrCode, CreditCard, ShieldCheck, Sparkles } from 'lucide-react';
-import Seo from '@/components/Seo';
+import { StaticPageSEO } from '@/components/Seo';
 
 export default function Donate() {
   const benefits = [
@@ -42,9 +42,10 @@ export default function Donate() {
 
   return (
     <div className="min-h-screen bg-[#0F0F1A] pt-24 pb-16">
-      <Seo
+      <StaticPageSEO
         title="Donasi"
         description="Dukung Animeku agar tetap gratis, cepat, dan berkualitas. Setiap donasi membantu server, subtitle, dan komunitas."
+        canonical="/donate"
       />
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Hero */}

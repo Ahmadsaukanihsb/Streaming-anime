@@ -2,10 +2,17 @@ import { Link } from 'react-router-dom';
 import { Home, Search, ArrowLeft, Film } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { StaticPageSEO } from '@/components/Seo';
 
 export default function NotFound() {
     return (
-        <div className="min-h-screen bg-[#0F0F1A] flex items-center justify-center p-4">
+        <>
+            <StaticPageSEO
+                title="Halaman Tidak Ditemukan - 404"
+                description="Maaf, halaman yang Anda cari tidak ditemukan. Kembali ke beranda atau jelajahi anime lainnya."
+                canonical="/404"
+            />
+            <div className="min-h-screen bg-[#0F0F1A] flex items-center justify-center p-4">
             {/* Background Decoration */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#6C5DD3]/10 rounded-full blur-3xl" />
@@ -94,5 +101,6 @@ export default function NotFound() {
                 </motion.div>
             </motion.div>
         </div>
+        </>
     );
 }

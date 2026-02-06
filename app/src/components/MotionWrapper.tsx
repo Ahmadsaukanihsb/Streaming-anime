@@ -1,15 +1,15 @@
-import { motion } from 'framer-motion';
+import { motion, type TargetAndTransition, type Transition, type VariantLabels } from 'framer-motion';
 import { useIsMobileDevice, usePrefersReducedMotion } from '@/lib/animation';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 interface MotionWrapperProps {
   children: ReactNode;
   className?: string;
-  initial?: object;
-  animate?: object;
-  transition?: object;
-  whileHover?: object;
-  whileTap?: object;
+  initial?: boolean | TargetAndTransition | VariantLabels;
+  animate?: boolean | TargetAndTransition | VariantLabels;
+  transition?: Transition;
+  whileHover?: TargetAndTransition | VariantLabels;
+  whileTap?: TargetAndTransition | VariantLabels;
 }
 
 /**
@@ -37,7 +37,7 @@ export function MotionDiv({
       <div 
         className={`${className} transition-all duration-200`}
         style={{
-          opacity: animate?.opacity ?? 1,
+          opacity: typeof animate === 'object' && animate && 'opacity' in animate ? (animate.opacity as number) : 1,
           transform: 'none'
         }}
       >

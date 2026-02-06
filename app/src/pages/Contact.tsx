@@ -3,6 +3,7 @@ import { Mail, MessageCircle, Send, Clock, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { DEFAULT_SITE_NAME } from '../config/api';
+import { StaticPageSEO } from '@/components/Seo';
 
 export default function Contact() {
     const [formData, setFormData] = useState({
@@ -39,7 +40,13 @@ export default function Contact() {
     ];
 
     return (
-        <div className="min-h-screen bg-[#0F0F1A] pt-24 pb-12">
+        <>
+            <StaticPageSEO
+                title="Hubungi Kami"
+                description="Hubungi tim Animeku untuk pertanyaan, saran, atau kerjasama. Kami siap membantu Anda."
+                canonical="/contact"
+            />
+            <div className="min-h-screen bg-[#0F0F1A] pt-24 pb-12">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header */}
                 <motion.div
@@ -160,6 +167,7 @@ export default function Contact() {
                     </form>
                 </motion.div>
             </div>
-        </div>
+            </div>
+        </>
     );
 }
