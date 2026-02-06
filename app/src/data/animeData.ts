@@ -5,6 +5,8 @@ export interface EpisodeMetadata {
   releaseDate?: string;
   ep?: number; // Backend uses 'ep' for custom uploads
   streams?: any[]; // Backend stores streams here
+  thumbnail?: string; // Thumbnail URL from video
+  manualStreams?: any[]; // Manual upload streams
 }
 
 export interface Anime {
