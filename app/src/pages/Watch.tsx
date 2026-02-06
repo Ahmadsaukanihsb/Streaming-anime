@@ -32,6 +32,9 @@ import CommentSection from '@/components/CommentSection';
 import { apiFetch } from '@/lib/api';
 import Seo from '@/components/Seo';
 import { VideoSchema, BreadcrumbSchema } from '@/components/SchemaOrg';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('Watch');
 
 
 export default function Watch() {
@@ -58,6 +61,10 @@ export default function Watch() {
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [showSettings, setShowSettings] = useState(false);
   const videoContainerRef = useRef<HTMLDivElement>(null);
+
+  // Refs for keyboard shortcuts (to avoid stale closure)
+  const togglePlayRef = useRef<() => void>();
+  const toggleFullscreenRef = useRef<() => void>();
 
   // Fallback state for anime data (if not found in context/props)
   // This handles direct navigation or refresh
@@ -110,7 +117,7 @@ export default function Watch() {
         .then(data => {
           setApiAnime(data);
         })
-        .catch(err => console.error('[Watch] Error fetching anime info:', err));
+        .catch(err => logger.error('[Watch] Error fetching anime info:', err));
     }
   }, [id, episode, contextAnime]);
 
@@ -150,7 +157,7 @@ export default function Watch() {
 
         // Set subtitle URL if available
         if (data.subtitle && data.subtitle.url) {
-          console.log('[Watch] Subtitle available:', data.subtitle.url);
+          logger.log('[Watch] Subtitle available:', data.subtitle.url);
           setSubtitleUrl(data.subtitle.url);
         } else {
           setSubtitleUrl('');
@@ -195,7 +202,7 @@ export default function Watch() {
         }
 
       } catch (error: any) {
-        console.error('[Watch] Stream error:', error);
+        logger.error('[Watch] Stream error:', error);
 
         setVideoError(error.message || 'Gagal memuat video. Coba episode lain atau refresh halaman.');
         setVideoUrl('');
@@ -218,19 +225,19 @@ export default function Watch() {
       switch (e.key.toLowerCase()) {
         case 'f':
           e.preventDefault();
-          toggleFullscreen();
+          toggleFullscreenRef.current?.();
           break;
         case ' ':
         case 'k':
           e.preventDefault();
-          togglePlay();
+          togglePlayRef.current?.();
           break;
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, []); // Empty deps
+  }, []); // No deps needed - using refs
 
   // Auto-hide controls while playing
   useEffect(() => {
@@ -261,12 +268,15 @@ export default function Watch() {
         videoRef.current.pause();
       } else {
         videoRef.current.play().catch(err => {
-          console.error('[Watch] Play error:', err);
+          logger.error('[Watch] Play error:', err);
         });
       }
       setIsPlaying(!isPlaying);
     }
   };
+
+  // Update refs when functions change
+  togglePlayRef.current = togglePlay;
 
   const toggleMute = () => {
     if (videoRef.current) {
@@ -332,6 +342,9 @@ export default function Watch() {
       }
     }
   };
+
+  // Update refs when functions change
+  toggleFullscreenRef.current = toggleFullscreen;
 
   // Fallback fullscreen for iOS Safari (uses video element's native fullscreen)
   const tryVideoFullscreen = () => {
@@ -406,7 +419,7 @@ export default function Watch() {
         await videoRef.current.requestPictureInPicture();
       }
     } catch (err) {
-      console.error('[Watch] PiP error:', err);
+      logger.error('[Watch] PiP error:', err);
     }
   };
 
@@ -517,11 +530,11 @@ export default function Watch() {
           const data = await res.json();
           if (data.currentTime > 5 && videoRef.current && duration > 0 && data.currentTime < duration - 10) {
             videoRef.current.currentTime = data.currentTime;
-            console.log('[Watch] Resumed from', formatTime(data.currentTime));
+            logger.log('[Watch] Resumed from', formatTime(data.currentTime));
           }
         }
       } catch (err) {
-        console.warn('[Watch] Failed to load progress from DB');
+        logger.warn('[Watch] Failed to load progress from DB');
       }
     };
     if (videoUrl && duration > 0) {
@@ -544,7 +557,7 @@ export default function Watch() {
             })
           });
         } catch (err) {
-          console.warn('[Watch] Failed to save progress to DB');
+          logger.warn('[Watch] Failed to save progress to DB');
         }
       }
     }, 10000); // Save every 10 seconds
@@ -591,12 +604,12 @@ export default function Watch() {
           })
         });
       } catch (err) {
-        console.warn('[Watch] Failed to mark as completed');
+        logger.warn('[Watch] Failed to mark as completed');
       }
     }
 
     if (autoNextEnabled && currentEpisode < totalEpisodes) {
-      console.log('[Watch] Auto-playing next episode');
+      logger.log('[Watch] Auto-playing next episode');
       goToEpisode(currentEpisode + 1);
     } else if (isLooping) {
       if (videoRef.current) {
@@ -727,7 +740,7 @@ export default function Watch() {
                       onCanPlay={() => {}}
                       onError={(e) => {
                         const video = e.target as HTMLVideoElement;
-                        console.error('[Watch] Video Error:', video.error?.message, video.error?.code);
+                        logger.error('[Watch] Video Error:', video.error?.message, video.error?.code);
                         setVideoError(`Video tidak dapat diputar: ${video.error?.message || 'Unknown error'}`);
                       }}
                       poster={anime.banner || anime.poster}
