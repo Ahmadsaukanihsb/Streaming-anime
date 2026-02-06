@@ -32,6 +32,9 @@ export interface Anime {
     jam: string;
   };
   episodeData?: EpisodeMetadata[]; // Optional: episode metadata from API
+  // Backend metadata fields
+  lastEpisodeUpload?: string; // ISO date string
+  createdAt?: string; // ISO date string
 }
 
 export interface Episode {

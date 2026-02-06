@@ -5,10 +5,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { BACKEND_URL } from '@/config/api';
 import { apiFetch } from '@/lib/api';
-import OptimizedImage from './OptimizedImage';
+import OptimizedImage from '@/components/OptimizedImage';
 import { createLogger } from '@/lib/logger';
+import type { Anime } from '@/data/animeData';
 
 const logger = createLogger('Hero');
+
+// Hero slide type derived from Anime with additional display fields
+interface HeroSlide extends Anime {
+  image: string;
+  description: string;
+  trailer?: string;
+  trailerType?: 'youtube' | 'direct';
+}
 
 export default function Hero() {
   const { animeList } = useApp();
@@ -60,7 +69,7 @@ export default function Hero() {
   }, []);
 
   // Use custom hero anime if available, otherwise fallback to top rated
-  const heroSlides = heroAnimeIds.length > 0
+  const heroSlides: HeroSlide[] = heroAnimeIds.length > 0
     ? heroAnimeIds
       .map(id => animeList.find(a => a.id === id))
       .filter((anime): anime is NonNullable<typeof anime> => anime !== undefined)
@@ -113,7 +122,8 @@ export default function Hero() {
     return null;
   }
 
-  const slide = heroSlides[currentSlide] as any;
+  const slide: HeroSlide | undefined = heroSlides[currentSlide];
+  if (!slide) return null;
   const hasTrailer = slide.trailer && slide.trailer.length > 0;
 
   // Convert YouTube URL to embed format with autoplay
@@ -179,7 +189,7 @@ export default function Hero() {
             slide.trailerType === 'youtube' ? (
               <iframe
                 key={`yt-${slide.id}-${currentSlide}`}
-                src={getYouTubeEmbedUrl(slide.trailer)}
+                src={getYouTubeEmbedUrl(slide.trailer!)}
                 className="w-full h-full object-cover scale-125"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen

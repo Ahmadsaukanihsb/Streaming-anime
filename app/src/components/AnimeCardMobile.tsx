@@ -2,7 +2,9 @@ import { Link } from 'react-router-dom';
 import { Play, Star, ChevronRight } from 'lucide-react';
 import type { Anime } from '@/data/animeData';
 import { motion } from 'framer-motion';
-import OptimizedImage from './OptimizedImage';
+import OptimizedImage from '@/components/OptimizedImage';
+import StatusBadge from '@/components/StatusBadge';
+import { THEME } from '@/config/theme';
 
 interface AnimeCardMobileProps {
   anime: Anime;
@@ -36,8 +38,8 @@ function ListView({ anime, index = 0, progress, episodeTitle }: AnimeCardMobileP
           {progress !== undefined && (
             <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
               <div 
-                className="h-full bg-[#6C5DD3]"
-                style={{ width: `${progress}%` }}
+                className="h-full" 
+                style={{ backgroundColor: THEME.colors.primary, width: `${progress}%` }}
               />
             </div>
           )}
@@ -49,7 +51,7 @@ function ListView({ anime, index = 0, progress, episodeTitle }: AnimeCardMobileP
 
         {/* Info */}
         <div className="flex flex-col justify-center flex-1 min-w-0 py-0.5">
-          <h3 className="font-semibold text-white text-sm line-clamp-2 leading-tight group-active:text-[#6C5DD3] transition-colors">
+          <h3 className="font-semibold text-white text-sm line-clamp-2 leading-tight group-active:text-[var(--color-primary)] transition-colors" style={{ ['--color-primary' as string]: THEME.colors.primary }}>
             {anime.title}
           </h3>
           
@@ -67,12 +69,7 @@ function ListView({ anime, index = 0, progress, episodeTitle }: AnimeCardMobileP
             </span>
             
             {/* Status */}
-            <span className={`text-[10px] px-1.5 py-0.5 rounded ${anime.status === 'Ongoing'
-              ? 'bg-green-500/20 text-green-400'
-              : 'bg-blue-500/20 text-blue-400'
-            }`}>
-              {anime.status}
-            </span>
+            <StatusBadge status={anime.status} variant="subtle" className="!text-[10px] !px-1.5 !py-0.5 !rounded" />
           </div>
 
           {/* Episodes count */}
@@ -127,10 +124,10 @@ function CompactView({ anime, index = 0 }: AnimeCardMobileProps) {
             <span className="text-[10px] font-medium text-white">{anime.rating}</span>
           </div>
 
-          {/* Status - Small dot */}
-          <div className={`absolute top-1.5 left-1.5 w-2 h-2 rounded-full ${
-            anime.status === 'Ongoing' ? 'bg-green-400' : 'bg-blue-400'
-          }`} />
+          {/* Status - Small badge */}
+          <div className="absolute top-1.5 left-1.5">
+            <StatusBadge status={anime.status} variant="solid" className="!text-[8px] !px-1 !py-0" />
+          </div>
 
           {/* Title at bottom */}
           <div className="absolute bottom-0 left-0 right-0 p-2">

@@ -2,8 +2,9 @@ import { Link } from 'react-router-dom';
 import { Play, Star, Bookmark, Check } from 'lucide-react';
 import type { Anime } from '@/data/animeData';
 import { useApp } from '@/context/AppContext';
-import OptimizedImage from './OptimizedImage';
-import { MotionDiv } from './MotionWrapper';
+import OptimizedImage from '@/components/OptimizedImage';
+import { MotionDiv } from '@/components/MotionWrapper';
+import StatusBadge from '@/components/StatusBadge';
 
 interface AnimeCardProps {
   anime: Anime;
@@ -86,12 +87,7 @@ export default function AnimeCard({ anime, variant = 'default', index = 0 }: Ani
 
           {/* Status Badge */}
           <div className="absolute top-2 left-2">
-            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${anime.status === 'Ongoing'
-              ? 'bg-green-500/80 text-white'
-              : 'bg-blue-500/80 text-white'
-              }`}>
-              {anime.status}
-            </span>
+            <StatusBadge status={anime.status} variant="solid" />
           </div>
 
           {/* Content */}
@@ -136,12 +132,11 @@ export default function AnimeCard({ anime, variant = 'default', index = 0 }: Ani
         <div className="absolute top-2.5 left-2.5 right-2.5 flex items-start justify-between gap-2">
           {/* Status Badge */}
           {anime.status && (
-            <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded-md shrink-0 ${anime.status === 'Ongoing'
-              ? 'bg-green-500 text-black'
-              : 'bg-blue-500 text-white'
-              }`}>
-              {anime.status === 'Ongoing' ? 'ONGOING' : 'COMPLETED'}
-            </span>
+            <StatusBadge 
+              status={anime.status} 
+              variant="solid" 
+              className="text-[10px] font-bold uppercase tracking-wide rounded-md shrink-0 !px-2 !py-0.5"
+            />
           )}
 
           {/* Rating Badge */}

@@ -3,16 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Search, X, ChevronRight } from 'lucide-react';
 import type { Anime } from '@/data/animeData';
 import { useApp } from '@/context/AppContext';
-import AnimeSectionMobile from './AnimeSectionMobile';
-import ScheduleWidget from './ScheduleWidget';
-import OptimizedImage from './OptimizedImage';
-
-interface SidebarWidget {
-  id: string;
-  name: string;
-  enabled: boolean;
-  order: number;
-}
+import AnimeSectionMobile from '@/components/AnimeSectionMobile';
+import ScheduleWidget from '@/components/ScheduleWidget';
+import OptimizedImage from '@/components/OptimizedImage';
+import type { SidebarWidget } from '@/types';
 
 interface MobileHomeProps {
   trendingAnime: Anime[];

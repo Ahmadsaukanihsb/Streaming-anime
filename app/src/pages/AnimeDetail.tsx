@@ -28,6 +28,7 @@ import AnimeCard from '@/components/AnimeCard';
 import CommentSection from '@/components/CommentSection';
 import { AnimeDetailSEO } from '@/components/Seo';
 import { AnimeDetailSkeleton } from '@/components/skeletons/AnimeDetailSkeleton';
+import StatusBadge from '@/components/StatusBadge';
 import { AnimeSchema, BreadcrumbSchema } from '@/components/SchemaOrg';
 import {
   Dialog,
@@ -355,12 +356,7 @@ export default function AnimeDetail() {
                   <Star className="w-2.5 sm:w-3 h-2.5 sm:h-3 fill-current" />
                   {anime.rating}
                 </span>
-                <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold ${anime.status === 'Ongoing'
-                  ? 'bg-green-500/20 text-green-400'
-                  : 'bg-blue-500/20 text-blue-400'
-                  }`}>
-                  {anime.status}
-                </span>
+                <StatusBadge status={anime.status} variant="subtle" className="!px-2 sm:!px-3 !py-0.5 sm:!py-1 !text-[10px] sm:!text-xs !font-bold !rounded-full" />
               </div>
 
               {/* Highlight Info Bar - Clean Grid */}

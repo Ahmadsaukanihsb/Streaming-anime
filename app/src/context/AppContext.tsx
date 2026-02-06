@@ -214,11 +214,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const fetchAnime = async () => {
       try {
         // Fetch Backend Data (Custom & Deleted)
-        const customPromise = fetch(`${BACKEND_URL}/api/anime/custom`)
+        const customPromise = apiFetch(`${BACKEND_URL}/api/anime/custom`)
           .then(res => res.ok ? res.json() : [])
           .catch(() => []);
 
-        const deletedPromise = fetch(`${BACKEND_URL}/api/anime/deleted`)
+        const deletedPromise = apiFetch(`${BACKEND_URL}/api/anime/deleted`)
           .then(res => res.ok ? res.json() : [])
           .catch(() => []);
 
@@ -228,7 +228,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ]);
 
         // Filter out deleted anime
-        const filteredAnime = (customAnimes as Anime[]).filter(a => !deletedIds.includes(a.id));
+        const filteredAnime = (customAnimes as Anime[]).filter((a: Anime) => !deletedIds.includes(a.id));
 
         setAnimeList(filteredAnime);
       } catch (error) {

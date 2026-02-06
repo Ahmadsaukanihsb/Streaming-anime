@@ -1,9 +1,8 @@
-// BottomNav - Floating mobile navigation
+// BottomNav - Floating mobile navigation (subtle design)
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Search, Calendar, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
-
 
 const navItems = [
   { path: '/', icon: Home, label: 'Home', isSearch: false },
@@ -36,26 +35,13 @@ export default function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 sm:hidden pointer-events-none flex justify-center">
       {/* Floating container - centered with max width */}
-      <div className="mx-auto mb-5 px-4 w-full max-w-sm pointer-events-auto">
+      <div className="mx-auto mb-5 px-4 w-full max-w-[340px] pointer-events-auto">
         <motion.div 
-          className="relative bg-[#16162a]/98 backdrop-blur-2xl rounded-[28px] border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4),0_2px_8px_rgba(108,93,211,0.15)] px-3 py-2.5 overflow-hidden"
+          className="relative bg-[#0F0F1A]/85 backdrop-blur-xl rounded-2xl border border-white/5 shadow-[0_4px_24px_rgba(0,0,0,0.3)] px-2 py-2"
           initial={{ y: 100, opacity: 0, scale: 0.9 }}
           animate={{ y: 0, opacity: 1, scale: 1 }}
           transition={{ type: 'spring', bounce: 0.25, duration: 0.7 }}
         >
-          {/* Animated background glow */}
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-[#6C5DD3]/10 via-transparent to-[#00C2FF]/10 rounded-[28px]"
-            animate={{
-              opacity: [0.5, 0.8, 0.5],
-            }}
-            transition={{
-              duration: 4,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          />
-
           <div className="relative flex items-center justify-between">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -67,49 +53,29 @@ export default function BottomNav() {
                   <button
                     key={item.label}
                     onClick={handleSearchClick}
-                    className="group relative flex flex-col items-center justify-center min-w-[60px] py-1.5"
+                    className="group relative flex flex-col items-center justify-center min-w-[70px] py-1.5"
                   >
-                    {/* Active indicator dot */}
-                    {active && (
-                      <motion.div
-                        layoutId="activeIndicator"
-                        className="absolute -top-1 w-1.5 h-1.5 bg-[#6C5DD3] rounded-full"
-                        transition={{ type: 'spring', bounce: 0.3, duration: 0.5 }}
-                      />
-                    )}
-                    
-                    {/* Icon with glow effect when active */}
+                    {/* Icon container - subtle active state */}
                     <motion.div 
-                      className={`relative flex items-center justify-center w-11 h-11 rounded-2xl transition-all duration-300 ${
+                      className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${
                         active 
-                          ? 'bg-gradient-to-br from-[#6C5DD3] to-[#5a4ec0] text-white shadow-lg shadow-[#6C5DD3]/30' 
-                          : 'text-white/40 group-hover:text-white/70 group-hover:bg-white/5'
+                          ? 'bg-white/10 text-white' 
+                          : 'text-white/30 group-hover:text-white/50'
                       }`}
-                      whileTap={{ scale: 0.88 }}
-                      whileHover={!active ? { scale: 1.05 } : {}}
+                      whileTap={{ scale: 0.92 }}
                     >
                       <Icon 
-                        className={`w-5 h-5 transition-all duration-200 ${
-                          active ? 'stroke-[2.5px]' : 'stroke-[1.5px]'
+                        className={`w-[18px] h-[18px] transition-all duration-200 ${
+                          active ? 'stroke-[2px]' : 'stroke-[1.5px]'
                         }`} 
                       />
-                      
-                      {/* Shine effect on active */}
-                      {active && (
-                        <motion.div
-                          className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-transparent via-white/20 to-transparent"
-                          initial={{ x: '-100%', opacity: 0 }}
-                          animate={{ x: '100%', opacity: [0, 0.5, 0] }}
-                          transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3 }}
-                        />
-                      )}
                     </motion.div>
                     
-                    {/* Label */}
-                    <span className={`text-[11px] font-medium transition-all duration-200 mt-1 ${
+                    {/* Label - subtle color */}
+                    <span className={`text-[10px] font-medium transition-all duration-200 mt-0.5 ${
                       active 
-                        ? 'text-[#6C5DD3] font-semibold' 
-                        : 'text-white/40 group-hover:text-white/60'
+                        ? 'text-white/80' 
+                        : 'text-white/30 group-hover:text-white/50'
                     }`}>
                       {item.label}
                     </span>
@@ -125,49 +91,29 @@ export default function BottomNav() {
                 <Link
                   key={item.label}
                   to={targetPath}
-                  className="group relative flex flex-col items-center justify-center min-w-[60px] py-1.5"
+                  className="group relative flex flex-col items-center justify-center min-w-[70px] py-1.5"
                 >
-                  {/* Active indicator dot */}
-                  {active && (
-                    <motion.div
-                      layoutId="activeIndicator"
-                      className="absolute -top-1 w-1.5 h-1.5 bg-[#6C5DD3] rounded-full"
-                      transition={{ type: 'spring', bounce: 0.3, duration: 0.5 }}
-                    />
-                  )}
-                  
-                  {/* Icon with gradient background when active */}
+                  {/* Icon container - subtle active state */}
                   <motion.div 
-                    className={`relative flex items-center justify-center w-11 h-11 rounded-2xl transition-all duration-300 ${
+                    className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${
                       active 
-                        ? 'bg-gradient-to-br from-[#6C5DD3] to-[#5a4ec0] text-white shadow-lg shadow-[#6C5DD3]/30' 
-                        : 'text-white/40 group-hover:text-white/70 group-hover:bg-white/5'
+                        ? 'bg-white/10 text-white' 
+                        : 'text-white/30 group-hover:text-white/50'
                     }`}
-                    whileTap={{ scale: 0.88 }}
-                    whileHover={!active ? { scale: 1.05 } : {}}
+                    whileTap={{ scale: 0.92 }}
                   >
                     <Icon 
-                      className={`w-5 h-5 transition-all duration-200 ${
-                        active ? 'stroke-[2.5px]' : 'stroke-[1.5px]'
+                      className={`w-[18px] h-[18px] transition-all duration-200 ${
+                        active ? 'stroke-[2px]' : 'stroke-[1.5px]'
                       }`} 
                     />
-                    
-                    {/* Shine effect on active */}
-                    {active && (
-                      <motion.div
-                        className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-transparent via-white/20 to-transparent"
-                        initial={{ x: '-100%', opacity: 0 }}
-                        animate={{ x: '100%', opacity: [0, 0.5, 0] }}
-                        transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3 }}
-                      />
-                    )}
                   </motion.div>
                   
-                  {/* Label */}
-                  <span className={`text-[11px] font-medium transition-all duration-200 mt-1 ${
+                  {/* Label - subtle color */}
+                  <span className={`text-[10px] font-medium transition-all duration-200 mt-0.5 ${
                     active 
-                      ? 'text-[#6C5DD3] font-semibold' 
-                      : 'text-white/40 group-hover:text-white/60'
+                      ? 'text-white/80' 
+                      : 'text-white/30 group-hover:text-white/50'
                   }`}>
                     {item.label}
                   </span>
