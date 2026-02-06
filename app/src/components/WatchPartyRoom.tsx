@@ -157,7 +157,7 @@ export default function WatchPartyRoom({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/90 z-50 flex">
+    <div className="fixed inset-0 z-50 flex">
       {/* Main Content - Video Area */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
