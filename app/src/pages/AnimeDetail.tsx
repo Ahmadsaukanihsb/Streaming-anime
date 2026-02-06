@@ -290,7 +290,9 @@ export default function AnimeDetail() {
             src={anime.banner || anime.poster}
             alt={anime.title}
             className="w-full h-full object-cover"
-            loading="lazy"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F1A] via-[#0F0F1A]/80 to-[#0F0F1A]/30" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#0F0F1A]/90 via-[#0F0F1A]/50 to-transparent" />
@@ -328,7 +330,9 @@ export default function AnimeDetail() {
                   src={anime.poster}
                   alt={anime.title}
                   className="w-full h-full object-cover"
-                  loading="lazy"
+                  loading="eager"
+                  fetchpriority="high"
+                  decoding="async"
                 />
               </div>
             </motion.div>
