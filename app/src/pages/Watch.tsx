@@ -36,6 +36,29 @@ import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('Watch');
 
+// Helper to generate proxy URL for video
+async function getProxyVideoUrl(videoUrl: string, animeId: string | undefined, episode: number): Promise<string> {
+  try {
+    const tokenRes = await apiFetch(`${BACKEND_URL}/api/anime/video-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        videoUrl,
+        animeId,
+        episode
+      })
+    });
+    
+    if (tokenRes.ok) {
+      const tokenData = await tokenRes.json();
+      return `${BACKEND_URL}${tokenData.proxyUrl}`;
+    }
+  } catch (err) {
+    logger.error('[getProxyVideoUrl] Failed to generate proxy:', err);
+  }
+  // Fallback to original URL
+  return videoUrl;
+}
 
 export default function Watch() {
   const params = useParams<{ id: string; episode: string }>();
@@ -190,7 +213,10 @@ export default function Watch() {
           }
 
           setIsEmbed(false);
-          setVideoUrl(selectedStream.url);
+          
+          // Generate proxy token to hide original URL
+          const proxyUrl = await getProxyVideoUrl(selectedStream.url, id, currentEpisode);
+          setVideoUrl(proxyUrl);
         } else if (embedStreams.length > 0) {
           // Use embed (Desustream etc) - no quality selection for embeds
           selectedStream = embedStreams[0];
@@ -953,12 +979,14 @@ export default function Watch() {
                                   {availableQualities.map((quality) => (
                                     <button
                                       key={quality}
-                                      onClick={() => {
+                                      onClick={async () => {
                                         // Find stream with this quality
                                         const stream = allDirectStreams.find(s => s.quality === quality);
                                         if (stream) {
                                           setSelectedQuality(quality);
-                                          setVideoUrl(stream.url);
+                                          // Generate proxy for this quality
+                                          const proxyUrl = await getProxyVideoUrl(stream.url, id, currentEpisode);
+                                          setVideoUrl(proxyUrl);
                                         }
                                         setShowQualityMenu(false);
                                       }}

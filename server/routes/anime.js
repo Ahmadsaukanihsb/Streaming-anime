@@ -386,6 +386,145 @@ router.get('/stream/:animeTitle/:episode', async (req, res) => {
     }
 });
 
+// ============================================
+// VIDEO PROXY - Protects video URLs from scraping
+// ============================================
+const crypto = require('crypto');
+
+// Store active video tokens (in production, use Redis)
+const videoTokens = new Map();
+const TOKEN_EXPIRY = 5 * 60 * 1000; // 5 minutes
+
+// Generate video proxy token
+router.post('/video-token', async (req, res) => {
+    try {
+        const { videoUrl, animeId, episode } = req.body;
+        
+        if (!videoUrl) {
+            return res.status(400).json({ error: 'Video URL required' });
+        }
+
+        // Generate unique token
+        const token = crypto.randomUUID();
+        
+        // Store token data with expiry
+        videoTokens.set(token, {
+            url: videoUrl,
+            animeId,
+            episode,
+            expires: Date.now() + TOKEN_EXPIRY
+        });
+
+        // Clean up expired tokens periodically
+        if (videoTokens.size > 1000) {
+            const now = Date.now();
+            for (const [key, data] of videoTokens.entries()) {
+                if (data.expires < now) {
+                    videoTokens.delete(key);
+                }
+            }
+        }
+
+        res.json({ 
+            token,
+            proxyUrl: `/api/anime/video-proxy/${token}`,
+            expiresIn: TOKEN_EXPIRY / 1000
+        });
+
+    } catch (err) {
+        console.error('[VideoProxy] Token generation error:', err);
+        res.status(500).json({ error: 'Failed to generate video token' });
+    }
+});
+
+// Stream video through proxy
+router.get('/video-proxy/:token', async (req, res) => {
+    try {
+        const { token } = req.params;
+        const tokenData = videoTokens.get(token);
+
+        if (!tokenData) {
+            return res.status(404).json({ error: 'Video not found or expired' });
+        }
+
+        if (tokenData.expires < Date.now()) {
+            videoTokens.delete(token);
+            return res.status(410).json({ error: 'Video link expired' });
+        }
+
+        // Get the original video URL
+        const videoUrl = tokenData.url;
+        
+        // Handle range requests for video streaming
+        const range = req.headers.range;
+        
+        if (range) {
+            // Parse range header
+            const parts = range.replace(/bytes=/, "").split("-");
+            const start = parseInt(parts[0], 10);
+            const end = parts[1] ? parseInt(parts[1], 10) : start + 1024 * 1024; // 1MB chunks
+
+            // Fetch with range from origin
+            const response = await fetch(videoUrl, {
+                headers: {
+                    'Range': `bytes=${start}-${end}`
+                }
+            });
+
+            if (!response.ok && response.status !== 206) {
+                throw new Error('Failed to fetch video range');
+            }
+
+            // Set response headers
+            res.status(206);
+            res.set({
+                'Content-Type': response.headers.get('content-type') || 'video/mp4',
+                'Accept-Ranges': 'bytes',
+                'Content-Range': response.headers.get('content-range'),
+                'Content-Length': response.headers.get('content-length'),
+                'Cache-Control': 'private, no-cache, no-store'
+            });
+
+            // Stream the response
+            const reader = response.body.getReader();
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                res.write(Buffer.from(value));
+            }
+            res.end();
+
+        } else {
+            // Full video request - stream through
+            const response = await fetch(videoUrl);
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch video');
+            }
+
+            res.set({
+                'Content-Type': response.headers.get('content-type') || 'video/mp4',
+                'Accept-Ranges': 'bytes',
+                'Content-Length': response.headers.get('content-length'),
+                'Cache-Control': 'private, no-cache, no-store'
+            });
+
+            // Stream the response
+            const reader = response.body.getReader();
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                res.write(Buffer.from(value));
+            }
+            res.end();
+        }
+
+    } catch (err) {
+        console.error('[VideoProxy] Stream error:', err);
+        res.status(500).json({ error: 'Failed to stream video' });
+    }
+});
+
 // Search anime on Otakudesu AND NontonAnimeID
 router.get('/search-otaku/:query', async (req, res) => {
     try {
