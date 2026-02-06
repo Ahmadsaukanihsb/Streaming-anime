@@ -24,9 +24,10 @@ interface SidebarWidget {
 }
 
 interface HomeSection {
-  id: 'trending' | 'continue' | 'ongoing' | 'latest' | 'explore' | 'completed';
+  id: 'trending' | 'continue' | 'foryou' | 'ongoing' | 'latest' | 'explore' | 'completed';
   name: string;
   enabled: boolean;
+  order: number;
 }
 
 // Default sidebar widgets - Ideal order for UX
@@ -39,12 +40,13 @@ const defaultWidgets: SidebarWidget[] = [
 ];
 
 const defaultHomeSections: HomeSection[] = [
-  { id: 'trending', name: 'Trending Minggu Ini', enabled: true },
-  { id: 'continue', name: 'Lanjutkan Menonton', enabled: true },
-  { id: 'ongoing', name: 'Anime Ongoing', enabled: true },
-  { id: 'latest', name: 'Update Terbaru', enabled: true },
-  { id: 'explore', name: 'Jelajahi Anime', enabled: true },
-  { id: 'completed', name: 'Anime Selesai', enabled: false },
+  { id: 'trending', name: 'Trending Minggu Ini', enabled: true, order: 0 },
+  { id: 'continue', name: 'Lanjutkan Menonton', enabled: true, order: 1 },
+  { id: 'foryou', name: 'Untuk Anda', enabled: true, order: 2 },
+  { id: 'ongoing', name: 'Anime Ongoing', enabled: true, order: 3 },
+  { id: 'latest', name: 'Update Terbaru', enabled: true, order: 4 },
+  { id: 'explore', name: 'Jelajahi Anime', enabled: true, order: 5 },
+  { id: 'completed', name: 'Anime Selesai', enabled: false, order: 6 },
 ];
 
 export default function Home() {
@@ -245,11 +247,11 @@ export default function Home() {
     return Array.from(map.values());
   };
 
-  const isSectionEnabled = (id: HomeSection['id']) =>
-    homeSections.find(section => section.id === id)?.enabled !== false;
-
   // Get sorted enabled widgets
   const sortedWidgets = [...sidebarWidgets].sort((a, b) => a.order - b.order);
+
+  // Get sorted home sections by order
+  const sortedHomeSections = [...homeSections].sort((a, b) => a.order - b.order);
 
   // Loading State - Skeleton
   if (isLoading) {
@@ -457,155 +459,166 @@ export default function Home() {
             </div>
           </section>
 
-          {isSectionEnabled('trending') && trendingAnime.length > 0 && !selectedGenre && (
-            <section className="relative z-10 mb-6 sm:mb-8" style={sectionStyle}>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-[#FF6B6B] flex items-center justify-center border border-white/10 shadow-md">
-                    <TrendingUp className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl sm:text-2xl font-bold text-white">Trending Minggu Ini</h2>
-                    <p className="text-sm text-white/50">Anime terpopuler minggu ini.</p>
-                  </div>
-                </div>
-                <Link
-                  to="/anime-list?sort=trending"
-                  className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors"
-                >
-                  Lihat Semua
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
-              </div>
+          {/* Dynamic Home Sections - Render based on sorted order from admin config */}
+          <div className="flex flex-col lg:flex-row gap-8">
+            <div className="flex-1 min-w-0 space-y-8">
+              {sortedHomeSections
+                .filter(section => section.enabled)
+                .map(section => {
+              switch (section.id) {
+                case 'trending':
+                  return trendingAnime.length > 0 && !selectedGenre ? (
+                    <section key={section.id} className="relative z-10 mb-6 sm:mb-8" style={sectionStyle}>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-lg bg-[#FF6B6B] flex items-center justify-center border border-white/10 shadow-md">
+                            <TrendingUp className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <h2 className="text-xl sm:text-2xl font-bold text-white">{section.name}</h2>
+                            <p className="text-sm text-white/50">Anime terpopuler minggu ini.</p>
+                          </div>
+                        </div>
+                        <Link
+                          to="/anime-list?sort=trending"
+                          className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors"
+                        >
+                          Lihat Semua
+                          <ChevronRight className="w-4 h-4" />
+                        </Link>
+                      </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                {trendingAnime.map((anime, index) => (
-                  <Link
-                    key={anime.id}
-                    to={`/anime/${anime.id}`}
-                    className="group relative"
-                  >
-                    <div className="aspect-[2/3] rounded-xl overflow-hidden bg-white/5 border border-white/10">
-                      <OptimizedImage
-                        src={anime.poster}
-                        alt={anime.title}
-                        aspectRatio="poster"
-                        className="group-hover:scale-105"
-                        containerClassName="w-full h-full"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
-                      <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/60 text-white text-xs font-semibold">
-                        #{index + 1} Trending
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                        {trendingAnime.map((anime, index) => (
+                          <Link
+                            key={anime.id}
+                            to={`/anime/${anime.id}`}
+                            className="group relative"
+                          >
+                            <div className="aspect-[2/3] rounded-xl overflow-hidden bg-white/5 border border-white/10">
+                              <OptimizedImage
+                                src={anime.poster}
+                                alt={anime.title}
+                                aspectRatio="poster"
+                                className="group-hover:scale-105"
+                                containerClassName="w-full h-full"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+                              <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/60 text-white text-xs font-semibold">
+                                #{index + 1} Trending
+                              </div>
+                              <div className="absolute bottom-0 left-0 right-0 p-2">
+                                <p className="text-white text-xs font-medium line-clamp-2">{anime.title}</p>
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
                       </div>
-                      <div className="absolute bottom-0 left-0 right-0 p-2">
-                        <p className="text-white text-xs font-medium line-clamp-2">{anime.title}</p>
-                      </div>
+                    </section>
+                  ) : null;
+
+                case 'continue':
+                  return (
+                    <div key={section.id} style={sectionStyle}>
+                      <ContinueWatching />
                     </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
+                  );
 
-          {/* Continue Watching - Shows only if user has watch history */}
-          {isSectionEnabled('continue') && (
-            <div style={sectionStyle}>
-              <ContinueWatching />
-            </div>
-          )}
+                case 'foryou':
+                  return !selectedGenre ? (
+                    <div key={section.id} style={sectionStyle}>
+                      <ForYouSection />
+                    </div>
+                  ) : null;
 
-          {/* For You - Personalized Recommendations */}
-          {!selectedGenre && (
-            <div style={sectionStyle}>
-              <ForYouSection />
-            </div>
-          )}
+                case 'ongoing':
+                  return ongoingAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre)).length > 0 ? (
+                    <div key={section.id} className="rounded-2xl border border-white/10 bg-white/[0.03]" style={sectionStyle}>
+                      <AnimeSection
+                        title={selectedGenre ? `${selectedGenre} - Ongoing` : section.name}
+                        subtitle="Anime yang sedang tayang minggu ini"
+                        animeList={ongoingAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre))}
+                        variant="grid"
+                        icon="flame"
+                        viewAllLink={`/anime-list?status=ongoing${selectedGenre ? `&genre=${selectedGenre}` : ''}`}
+                        limit={12}
+                      />
+                    </div>
+                  ) : null;
 
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="space-y-6 sm:space-y-8">
+                case 'latest':
+                  return latestAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre)).length > 0 ? (
+                    <div key={section.id} className="rounded-2xl border border-white/10 bg-white/[0.03]" style={sectionStyle}>
+                      <AnimeSection
+                        title={selectedGenre ? `${selectedGenre} - Terbaru` : section.name}
+                        subtitle="Anime yang baru ditambahkan"
+                        animeList={latestAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre))}
+                        variant="grid"
+                        icon="clock"
+                        viewAllLink={`/anime-list${selectedGenre ? `?genre=${selectedGenre}` : ''}`}
+                        limit={8}
+                      />
+                    </div>
+                  ) : null;
 
-              {/* Anime Ongoing - Slider */}
-              {isSectionEnabled('ongoing') && ongoingAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre)).length > 0 && (
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03]" style={sectionStyle}>
-                  <AnimeSection
-                    title={selectedGenre ? `Ongoing - ${selectedGenre}` : "Anime Ongoing"}
-                    subtitle="Anime yang sedang tayang minggu ini"
-                    animeList={ongoingAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre))}
-                    variant="grid"
-                    icon="flame"
-                    viewAllLink={`/anime-list?status=ongoing${selectedGenre ? `&genre=${selectedGenre}` : ''}`}
-                    limit={12}
-                  />
-                </div>
-              )}
+                case 'explore':
+                  return allAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre)).length > 0 ? (
+                    <div key={section.id} className="rounded-2xl border border-white/10 bg-white/[0.03]" style={sectionStyle}>
+                      <AnimeSection
+                        title={selectedGenre ? `${selectedGenre}` : section.name}
+                        subtitle="Temukan anime favoritmu"
+                        animeList={allAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre))}
+                        variant="grid"
+                        icon="trending"
+                        viewAllLink={`/anime-list${selectedGenre ? `?genre=${selectedGenre}` : ''}`}
+                        limit={12}
+                      />
+                    </div>
+                  ) : null;
 
-              {/* Update Terbaru - Grid style */}
-              {isSectionEnabled('latest') && latestAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre)).length > 0 && (
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03]" style={sectionStyle}>
-                  <AnimeSection
-                    title={selectedGenre ? `Terbaru - ${selectedGenre}` : "Update Terbaru"}
-                    subtitle="Anime yang baru ditambahkan"
-                    animeList={latestAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre))}
-                    variant="grid"
-                    icon="clock"
-                    viewAllLink={`/anime-list${selectedGenre ? `?genre=${selectedGenre}` : ''}`}
-                    limit={8}
-                  />
-                </div>
-              )}
+                case 'completed':
+                  return completedAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre)).length > 4 ? (
+                    <div key={section.id} className="rounded-2xl border border-white/10 bg-white/[0.03]" style={sectionStyle}>
+                      <AnimeSection
+                        title={selectedGenre ? `${selectedGenre} - Selesai` : section.name}
+                        subtitle="Anime yang sudah tamat"
+                        animeList={completedAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre)).slice(0, 12)}
+                        variant="grid"
+                        icon="star"
+                        viewAllLink={`/anime-list?status=completed${selectedGenre ? `&genre=${selectedGenre}` : ''}`}
+                        limit={6}
+                      />
+                    </div>
+                  ) : null;
 
-              {/* Semua Anime - Full Grid */}
-              {isSectionEnabled('explore') && allAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre)).length > 0 && (
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03]" style={sectionStyle}>
-                  <AnimeSection
-                    title={selectedGenre ? `${selectedGenre} Anime` : "Jelajahi Anime"}
-                    subtitle="Temukan anime favoritmu"
-                    animeList={allAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre))}
-                    variant="grid"
-                    icon="trending"
-                    viewAllLink={`/anime-list${selectedGenre ? `?genre=${selectedGenre}` : ''}`}
-                    limit={12}
-                  />
-                </div>
-              )}
-
-              {/* Completed Anime - Optional */}
-              {isSectionEnabled('completed') && completedAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre)).length > 4 && (
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03]" style={sectionStyle}>
-                  <AnimeSection
-                    title={selectedGenre ? `Selesai - ${selectedGenre}` : "Anime Selesai"}
-                    subtitle="Anime yang sudah tamat"
-                    animeList={completedAnime.filter(a => !selectedGenre || a.genres?.includes(selectedGenre)).slice(0, 12)}
-                    variant="grid"
-                    icon="star"
-                    viewAllLink={`/anime-list?status=completed${selectedGenre ? `&genre=${selectedGenre}` : ''}`}
-                    limit={6}
-                  />
-                </div>
-              )}
-            </div>
-
-            <aside className="w-full">
-              <div className="lg:sticky lg:top-24 space-y-4">
-                <div className="hidden lg:flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-white/40">
-                  <PlayCircle className="w-4 h-4 text-[#6C5DD3]" />
-                  Live Panel
-                </div>
-                <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4" style={sidebarSectionStyle}>
-                  {sortedWidgets
-                    .filter(w => w.enabled && ['schedule', 'random'].includes(w.id))
-                    .map(widget => widgetComponents[widget.id])}
-                </div>
-                <div className="hidden lg:block space-y-6" style={sidebarSectionStyle}>
-                  {sortedWidgets
-                    .filter(w => w.enabled)
-                    .map(widget => widgetComponents[widget.id])}
-                </div>
-              </div>
-            </aside>
+                default:
+                  return null;
+              }
+            })}
 
           </div>
+
+          <aside className="w-full lg:w-80 xl:w-96 flex-shrink-0">
+            <div className="lg:sticky lg:top-24 space-y-4">
+              <div className="hidden lg:flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-white/40">
+                <PlayCircle className="w-4 h-4 text-[#6C5DD3]" />
+                Live Panel
+              </div>
+              <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4" style={sidebarSectionStyle}>
+                {sortedWidgets
+                  .filter(w => w.enabled && ['schedule', 'random'].includes(w.id))
+                  .map(widget => widgetComponents[widget.id])}
+              </div>
+              <div className="hidden lg:block space-y-6" style={sidebarSectionStyle}>
+                {sortedWidgets
+                  .filter(w => w.enabled)
+                  .map(widget => widgetComponents[widget.id])}
+              </div>
+            </div>
+          </aside>
+
         </div>
+      </div>
       </div>
     </main>
   );

@@ -34,7 +34,8 @@ import {
   Shield,
   Captions,
   Award,
-  Menu
+  Menu,
+  Sparkles
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
@@ -218,6 +219,7 @@ export default function Admin() {
   const defaultHomeSections: HomeSection[] = [
     { id: 'trending', name: 'Trending Minggu Ini', description: 'Anime terpopuler minggu ini', enabled: true },
     { id: 'continue', name: 'Lanjutkan Menonton', description: 'Riwayat tontonan user', enabled: true },
+    { id: 'foryou', name: 'Untuk Anda', description: 'Rekomendasi personal berdasarkan riwayat', enabled: true },
     { id: 'ongoing', name: 'Anime Ongoing', description: 'Anime yang sedang tayang', enabled: true },
     { id: 'latest', name: 'Update Terbaru', description: 'Anime yang baru ditambahkan', enabled: true },
     { id: 'explore', name: 'Jelajahi Anime', description: 'Koleksi rekomendasi', enabled: true },
@@ -361,6 +363,21 @@ export default function Admin() {
     );
     saveHomeSections(updated);
     showToast('Home section berhasil diupdate!', 'success');
+  };
+
+  // Move home section up/down
+  const moveHomeSection = (id: string, direction: 'up' | 'down') => {
+    const idx = homeSections.findIndex(s => s.id === id);
+    if (idx === -1) return;
+
+    const newIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (newIdx < 0 || newIdx >= homeSections.length) return;
+
+    const updated = [...homeSections];
+    [updated[idx], updated[newIdx]] = [updated[newIdx], updated[idx]];
+
+    saveHomeSections(updated);
+    showToast('Urutan section diupdate!', 'success');
   };
 
   // Load hero settings from database on mount
@@ -3071,10 +3088,11 @@ export default function Admin() {
               </div>
 
               <div className="p-4 space-y-2">
-                {homeSections.map((section) => {
+                {homeSections.map((section, index) => {
                   const iconMap: Record<string, any> = {
                     trending: TrendingUp,
                     continue: PlaySquare,
+                    foryou: Sparkles,
                     ongoing: Film,
                     latest: Search,
                     explore: Shuffle,
@@ -3103,6 +3121,30 @@ export default function Admin() {
                         {section.description && (
                           <p className="text-xs text-white/40">{section.description}</p>
                         )}
+                      </div>
+
+                      {/* Reorder Buttons */}
+                      <div className="flex flex-col gap-1">
+                        <button
+                          onClick={() => moveHomeSection(section.id, 'up')}
+                          disabled={index === 0}
+                          className={`p-1 rounded transition-colors ${index === 0
+                            ? 'text-white/10 cursor-not-allowed'
+                            : 'text-white/50 hover:text-white hover:bg-white/10'
+                            }`}
+                        >
+                          <ChevronUp className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => moveHomeSection(section.id, 'down')}
+                          disabled={index === homeSections.length - 1}
+                          className={`p-1 rounded transition-colors ${index === homeSections.length - 1
+                            ? 'text-white/10 cursor-not-allowed'
+                            : 'text-white/50 hover:text-white hover:bg-white/10'
+                            }`}
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </button>
                       </div>
 
                       <button
