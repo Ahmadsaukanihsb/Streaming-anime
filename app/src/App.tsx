@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import Lenis from 'lenis';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import BottomNav from '@/components/BottomNav';
 import ScrollToTop from '@/components/ScrollToTop';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { ToastProvider } from '@/components/ui/toast';
@@ -232,10 +233,11 @@ function App() {
               <SmoothScroll>
                 <ScrollToTop />
                 <WebsiteSchema />
-                <div className="min-h-screen bg-[#0F0F1A]">
+                <div className="min-h-screen bg-[#0F0F1A] pb-16 sm:pb-0">
                   <Navbar />
                   <AppRoutes />
                   <Footer />
+                  <BottomNav />
                 </div>
               </SmoothScroll>
             </Router>
