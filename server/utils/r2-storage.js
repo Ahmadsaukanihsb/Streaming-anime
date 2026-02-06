@@ -240,6 +240,43 @@ async function getPresignedUploadUrl(key, contentType = 'video/mp4', expiresIn =
     }
 }
 
+/**
+ * Generate signed URL for video streaming (viewing, not uploading)
+ * @param {string} key - File path/name in bucket (e.g., "anime/one-piece/ep-1.mp4")
+ * @param {number} expiresIn - URL expiry in seconds (default 10 minutes)
+ * @param {string} bucketType - 'video' atau 'frontend' (default: 'video')
+ * @returns {Promise<{success: boolean, signedUrl: string, expiresIn: number}>}
+ */
+async function getSignedVideoUrl(key, expiresIn = 600, bucketType = 'video') {
+    try {
+        const bucket = bucketType === 'frontend' ? FRONTEND_BUCKET_NAME : VIDEO_BUCKET_NAME;
+        
+        // Import GetObjectCommand here to avoid issues
+        const { GetObjectCommand } = require('@aws-sdk/client-s3');
+        
+        const command = new GetObjectCommand({
+            Bucket: bucket,
+            Key: key
+        });
+
+        const signedUrl = await getSignedUrl(s3Client, command, { expiresIn });
+
+        console.log(`[R2] Generated signed URL for viewing ${bucket}: ${key} (expires in ${expiresIn}s)`);
+
+        return {
+            success: true,
+            signedUrl,
+            expiresIn
+        };
+    } catch (error) {
+        console.error('[R2] Signed URL error:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
 module.exports = {
     uploadFile,
     uploadFromPath,
@@ -248,6 +285,7 @@ module.exports = {
     getPublicUrl,
     generateVideoKey,
     getPresignedUploadUrl,
+    getSignedVideoUrl,
     s3Client,
     VIDEO_BUCKET_NAME,
     FRONTEND_BUCKET_NAME

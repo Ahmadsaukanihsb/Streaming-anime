@@ -36,8 +36,8 @@ import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('Watch');
 
-// Helper to generate proxy URL for video
-async function getProxyVideoUrl(videoUrl: string, animeId: string | undefined, episode: number): Promise<string> {
+// Helper to generate signed URL for video (fast, direct from R2)
+async function getSignedVideoUrl(videoUrl: string, animeId: string | undefined, episode: number): Promise<string> {
   try {
     const tokenRes = await apiFetch(`${BACKEND_URL}/api/anime/video-token`, {
       method: 'POST',
@@ -51,10 +51,11 @@ async function getProxyVideoUrl(videoUrl: string, animeId: string | undefined, e
     
     if (tokenRes.ok) {
       const tokenData = await tokenRes.json();
-      return `${BACKEND_URL}${tokenData.proxyUrl}`;
+      // Use signed URL directly from R2 (fast CDN)
+      return tokenData.signedUrl || videoUrl;
     }
   } catch (err) {
-    logger.error('[getProxyVideoUrl] Failed to generate proxy:', err);
+    logger.error('[getSignedVideoUrl] Failed to generate signed URL:', err);
   }
   // Fallback to original URL
   return videoUrl;
@@ -215,8 +216,8 @@ export default function Watch() {
           setIsEmbed(false);
           
           // Generate proxy token to hide original URL
-          const proxyUrl = await getProxyVideoUrl(selectedStream.url, id, currentEpisode);
-          setVideoUrl(proxyUrl);
+          const signedUrl = await getSignedVideoUrl(selectedStream.url, id, currentEpisode);
+          setVideoUrl(signedUrl);
         } else if (embedStreams.length > 0) {
           // Use embed (Desustream etc) - no quality selection for embeds
           selectedStream = embedStreams[0];
@@ -985,8 +986,8 @@ export default function Watch() {
                                         if (stream) {
                                           setSelectedQuality(quality);
                                           // Generate proxy for this quality
-                                          const proxyUrl = await getProxyVideoUrl(stream.url, id, currentEpisode);
-                                          setVideoUrl(proxyUrl);
+                                          const signedUrl = await getSignedVideoUrl(stream.url, id, currentEpisode);
+                                          setVideoUrl(signedUrl);
                                         }
                                         setShowQualityMenu(false);
                                       }}

@@ -1,7 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const https = require('https');
-const http = require('http');
 const { CustomAnime, DeletedAnime } = require('../models/CustomAnime');
 const ViewHistory = require('../models/ViewHistory');
 const otakudesu = require('../utils/otakudesu-scraper');
@@ -389,15 +387,12 @@ router.get('/stream/:animeTitle/:episode', async (req, res) => {
 });
 
 // ============================================
-// VIDEO PROXY - Protects video URLs from scraping
+// SIGNED VIDEO URLs - Fast & Secure Video Access
 // ============================================
+const { getSignedVideoUrl } = require('../utils/r2-storage');
 const crypto = require('crypto');
 
-// Store active video tokens (in production, use Redis)
-const videoTokens = new Map();
-const TOKEN_EXPIRY = 5 * 60 * 1000; // 5 minutes
-
-// Generate video proxy token
+// Generate signed URL for video streaming
 router.post('/video-token', async (req, res) => {
     try {
         const { videoUrl, animeId, episode } = req.body;
@@ -406,111 +401,38 @@ router.post('/video-token', async (req, res) => {
             return res.status(400).json({ error: 'Video URL required' });
         }
 
-        // Generate unique token
-        const token = crypto.randomUUID();
+        // Extract key from public URL
+        // URL format: https://pub-xxx.r2.dev/anime/.../ep-1-720p.mp4
+        const urlObj = new URL(videoUrl);
+        const key = urlObj.pathname.substring(1); // Remove leading /
         
-        // Store token data with expiry
-        videoTokens.set(token, {
-            url: videoUrl,
-            animeId,
-            episode,
-            expires: Date.now() + TOKEN_EXPIRY
-        });
-
-        // Clean up expired tokens periodically
-        if (videoTokens.size > 1000) {
-            const now = Date.now();
-            for (const [key, data] of videoTokens.entries()) {
-                if (data.expires < now) {
-                    videoTokens.delete(key);
-                }
-            }
+        // Generate signed URL (10 minutes expiry)
+        const result = await getSignedVideoUrl(key, 600);
+        
+        if (!result.success) {
+            console.error('[VideoToken] Failed to generate signed URL:', result.error);
+            // Fallback: return original URL if signing fails
+            return res.json({
+                signedUrl: videoUrl,
+                expiresIn: 0,
+                fallback: true
+            });
         }
 
-        res.json({ 
-            token,
-            proxyUrl: `/api/anime/video-proxy/${token}`,
-            expiresIn: TOKEN_EXPIRY / 1000
+        res.json({
+            signedUrl: result.signedUrl,
+            expiresIn: result.expiresIn,
+            fallback: false
         });
 
     } catch (err) {
-        console.error('[VideoProxy] Token generation error:', err);
-        res.status(500).json({ error: 'Failed to generate video token' });
-    }
-});
-
-// Stream video through proxy using native https
-router.get('/video-proxy/:token', (req, res) => {
-    try {
-        const { token } = req.params;
-        const tokenData = videoTokens.get(token);
-
-        if (!tokenData) {
-            return res.status(404).json({ error: 'Video not found or expired' });
-        }
-
-        if (tokenData.expires < Date.now()) {
-            videoTokens.delete(token);
-            return res.status(410).json({ error: 'Video link expired' });
-        }
-
-        // Get the original video URL
-        const videoUrl = tokenData.url;
-        const parsedUrl = new URL(videoUrl);
-        const client = parsedUrl.protocol === 'https:' ? https : http;
-        
-        // Prepare headers
-        const headers = {};
-        if (req.headers.range) {
-            headers['Range'] = req.headers.range;
-        }
-        
-        // Proxy request options
-        const options = {
-            hostname: parsedUrl.hostname,
-            port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
-            path: parsedUrl.pathname + parsedUrl.search,
-            method: 'GET',
-            headers: headers
-        };
-
-        // Make proxy request
-        const proxyReq = client.request(options, (proxyRes) => {
-            // Set response status
-            res.status(proxyRes.statusCode);
-            
-            // Set headers
-            const responseHeaders = {
-                'Content-Type': proxyRes.headers['content-type'] || 'video/mp4',
-                'Accept-Ranges': proxyRes.headers['accept-ranges'] || 'bytes',
-                'Cache-Control': 'private, no-cache, no-store'
-            };
-            
-            if (proxyRes.headers['content-length']) {
-                responseHeaders['Content-Length'] = proxyRes.headers['content-length'];
-            }
-            if (proxyRes.headers['content-range']) {
-                responseHeaders['Content-Range'] = proxyRes.headers['content-range'];
-            }
-            
-            res.set(responseHeaders);
-            
-            // Pipe the response
-            proxyRes.pipe(res);
+        console.error('[VideoToken] Error:', err);
+        // Fallback to original URL on error
+        res.json({
+            signedUrl: req.body.videoUrl,
+            expiresIn: 0,
+            fallback: true
         });
-
-        proxyReq.on('error', (err) => {
-            console.error('[VideoProxy] Proxy request error:', err);
-            if (!res.headersSent) {
-                res.status(500).json({ error: 'Failed to stream video' });
-            }
-        });
-
-        proxyReq.end();
-
-    } catch (err) {
-        console.error('[VideoProxy] Stream error:', err);
-        res.status(500).json({ error: 'Failed to stream video' });
     }
 });
 
