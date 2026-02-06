@@ -5,3 +5,5 @@ export { default as WatchlistTab } from './WatchlistTab';
 export { default as RatingsTab } from './RatingsTab';
 export { default as NotificationsTab } from './NotificationsTab';
 export { default as SettingsTab } from './SettingsTab';
+export { default as AchievementsTab } from './AchievementsTab';
+export { AchievementBadge, AchievementCard } from './AchievementBadge';

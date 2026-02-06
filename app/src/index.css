@@ -465,3 +465,38 @@ video:-webkit-full-screen::cue {
     padding: 2px 8px;
   }
 }
+
+/* Achievement Shine Animation */
+@keyframes shine {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shine {
+  animation: shine 2s ease-in-out infinite;
+}
+
+/* Achievement Tier Glow Effects */
+.achievement-glow-bronze {
+  box-shadow: 0 0 20px rgba(180, 83, 9, 0.3);
+}
+
+.achievement-glow-silver {
+  box-shadow: 0 0 20px rgba(148, 163, 184, 0.3);
+}
+
+.achievement-glow-gold {
+  box-shadow: 0 0 25px rgba(250, 204, 21, 0.4);
+}
+
+.achievement-glow-platinum {
+  box-shadow: 0 0 30px rgba(34, 211, 238, 0.5);
+}
+
+.achievement-glow-special {
+  box-shadow: 0 0 25px rgba(168, 85, 247, 0.4);
+}

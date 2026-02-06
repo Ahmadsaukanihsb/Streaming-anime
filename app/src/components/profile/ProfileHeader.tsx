@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 // ProfileHeader component
 import { motion } from 'framer-motion';
-import { Mail, Calendar, Settings, LogOut, Edit3 } from 'lucide-react';
+import { Mail, Calendar, Settings, LogOut, Edit3, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,11 +12,15 @@ import {
 } from '@/components/ui/dialog';
 import RoleBadge from '@/components/RoleBadge';
 import SafeAvatar from '@/components/SafeAvatar';
+import { AchievementBadge } from './AchievementBadge';
 import type { User } from '@/context/AppContext';
+import type { AchievementWithProgress } from '@/hooks/useAchievements';
 
 interface ProfileHeaderProps {
   user: User;
   stats: { label: string; value: number; icon: React.ComponentType<{ className?: string }> }[];
+  achievements?: AchievementWithProgress[];
+  totalPoints?: number;
   onLogout: () => void;
   onUpdateProfile: (name: string, email: string) => Promise<{ success: boolean; error?: string }>;
   onUpdateAvatar: (file: File) => Promise<{ success: boolean; error?: string }>;
@@ -25,6 +29,8 @@ interface ProfileHeaderProps {
 export default function ProfileHeader({
   user,
   stats,
+  achievements = [],
+  totalPoints = 0,
   onLogout,
   onUpdateProfile,
   onUpdateAvatar,
@@ -239,6 +245,35 @@ export default function ProfileHeader({
             </motion.div>
           ))}
         </div>
+
+        {/* Achievement Badges */}
+        {achievements.length > 0 && (
+          <div className="mt-6 pt-6 border-t border-white/10">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-4 h-4 text-yellow-400" />
+                <span className="text-white/60 text-sm">Achievement Terbaru</span>
+              </div>
+              <span className="text-[#6C5DD3] text-sm font-medium">{totalPoints} poin</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {achievements
+                .filter(a => a.unlocked)
+                .slice(-6)
+                .map((achievement) => (
+                  <AchievementBadge
+                    key={achievement.id}
+                    achievement={achievement}
+                    unlocked={achievement.unlocked}
+                    size="sm"
+                  />
+                ))}
+              {achievements.filter(a => a.unlocked).length === 0 && (
+                <p className="text-white/30 text-sm">Belum ada achievement terbuka</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </motion.div>
   );

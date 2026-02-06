@@ -20,9 +20,11 @@ import WatchlistTab from '@/components/profile/WatchlistTab';
 import RatingsTab from '@/components/profile/RatingsTab';
 import NotificationsTab from '@/components/profile/NotificationsTab';
 import SettingsTab from '@/components/profile/SettingsTab';
+import AchievementsTab from '@/components/profile/AchievementsTab';
+import { useAchievements } from '@/hooks/useAchievements';
 
 // Icons
-import { Clock, Bookmark, ListVideo, Star, Bell, Settings, Play } from 'lucide-react';
+import { Clock, Bookmark, ListVideo, Star, Bell, Settings, Play, Trophy } from 'lucide-react';
 
 export default function Profile() {
   const {
@@ -144,6 +146,15 @@ export default function Profile() {
     .sort((a, b) => b.timestamp - a.timestamp)
     .slice(0, 10);
 
+  // Calculate achievements
+  const { unlockedAchievements, totalPoints } = useAchievements(
+    watchHistory,
+    ratings,
+    bookmarks,
+    watchlist,
+    animeList
+  );
+
   // Get bookmarked anime
   const bookmarkedAnime = animeList.filter(a => bookmarks.includes(a.id));
 
@@ -171,6 +182,8 @@ export default function Profile() {
             { label: 'Watchlist', value: stats.watchlist, icon: ListVideo },
             { label: 'Jam Menonton', value: stats.hours, icon: Clock },
           ]}
+          achievements={unlockedAchievements}
+          totalPoints={totalPoints}
           onLogout={logout}
           onUpdateProfile={updateProfile}
           onUpdateAvatar={updateAvatar}
@@ -213,6 +226,13 @@ export default function Profile() {
             >
               <Bell className="w-4 h-4" />
               <span className="hidden sm:inline">Notifikasi</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="achievements"
+              className="flex-1 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white text-white/70 text-[10px] sm:text-sm py-2 px-0.5 sm:px-3 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2"
+            >
+              <Trophy className="w-4 h-4" />
+              <span className="hidden sm:inline">Achievement</span>
             </TabsTrigger>
             <TabsTrigger
               value="settings"
@@ -265,6 +285,17 @@ export default function Profile() {
               onMarkAllRead={markAllNotificationsRead}
               onUnsubscribe={handleUnsubscribe}
               loadingSubscriptions={loadingSubscriptions}
+            />
+          </TabsContent>
+
+          {/* Achievements Tab */}
+          <TabsContent value="achievements">
+            <AchievementsTab
+              watchHistory={watchHistory}
+              ratings={ratings}
+              bookmarks={bookmarks}
+              watchlist={watchlist}
+              animeList={animeList}
             />
           </TabsContent>
 
