@@ -34,8 +34,11 @@ export default function WatchPartyRoom({
   episodeNumber,
   isHost: initialHost = false,
   onClose,
-  videoRef,
+  videoRef: externalVideoRef,
 }: WatchPartyRoomProps) {
+  // Create internal ref if none provided
+  const internalVideoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = externalVideoRef || internalVideoRef;
   const {
     isConnected,
     roomData,
@@ -61,8 +64,6 @@ export default function WatchPartyRoom({
   const [joinRoomCode, setJoinRoomCode] = useState('');
   const [hasJoined, setHasJoined] = useState(false);
   const [roomIdToJoin, setRoomIdToJoin] = useState<string | undefined>(roomId);
-  const [syncVideoState, setSyncVideoState] = useState<{ isPlaying?: boolean; currentTime?: number }>({});
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [floatingReactions, setFloatingReactions] = useState<{name: string; emoji: string; id: number}[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   // const wasPlayingRef = useRef(false);
@@ -157,8 +158,7 @@ export default function WatchPartyRoom({
   const readyCount = participants.filter(p => p.isReady).length;
   const totalCount = participants.length;
   
-  console.log('[WatchPartyRoom] Participants:', participants);
-  console.log('[WatchPartyRoom] Messages:', messages);
+
 
   if (error) {
     return (
@@ -387,7 +387,7 @@ export default function WatchPartyRoom({
           {/* Tabs */}
           <div className="flex border-b border-white/10">
             <button
-              onClick={() => { console.log('[WatchPartyRoom] Switch to Chat'); setShowParticipants(false); }}
+              onClick={() => setShowParticipants(false)}
               className={`flex-1 py-3 text-sm font-medium transition-colors ${!showParticipants ? 'text-[#6C5DD3] border-b-2 border-[#6C5DD3]' : 'text-white/60 hover:text-white'}`}
             >
               <div className="flex items-center justify-center gap-2">
@@ -396,7 +396,7 @@ export default function WatchPartyRoom({
               </div>
             </button>
             <button
-              onClick={() => { console.log('[WatchPartyRoom] Switch to Participants'); setShowParticipants(true); }}
+              onClick={() => setShowParticipants(true)}
               className={`flex-1 py-3 text-sm font-medium transition-colors ${showParticipants ? 'text-[#6C5DD3] border-b-2 border-[#6C5DD3]' : 'text-white/60 hover:text-white'}`}
             >
               <div className="flex items-center justify-center gap-2">
@@ -408,10 +408,10 @@ export default function WatchPartyRoom({
 
           {/* Content */}
           <div className="flex-1 overflow-hidden">
-            {console.log('[WatchPartyRoom] Rendering, showParticipants:', showParticipants)}
+
             {showParticipants ? (
               <div className="p-4 space-y-3">
-                {console.log('[WatchPartyRoom] Rendering participants:', participants.length)}
+
                 {participants.map((participant) => (
                   <div
                     key={participant.userId}
@@ -427,7 +427,7 @@ export default function WatchPartyRoom({
                         <span className="text-white text-sm font-medium truncate">
                           {participant.name}
                         </span>
-                        {console.log('[WatchPartyRoom] isHost check:', participant.isHost, typeof participant.isHost, 'for', participant.name)}
+
                         {participant.isHost === true && (
                           <Crown className="w-4 h-4 text-yellow-400 flex-shrink-0" />
                         )}
