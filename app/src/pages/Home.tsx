@@ -4,6 +4,7 @@ import { Search, X, PlayCircle, ChevronRight, TrendingUp } from 'lucide-react';
 import Hero from '@/components/Hero';
 import AnimeSection from '@/components/AnimeSection';
 import ContinueWatching from '@/components/ContinueWatching';
+import ForYouSection from '@/components/ForYouSection';
 import ScheduleWidget from '@/components/ScheduleWidget';
 import UserStatsWidget from '@/components/UserStatsWidget';
 import RandomAnimeButton from '@/components/RandomAnimeButton';
@@ -510,6 +511,13 @@ export default function Home() {
           {isSectionEnabled('continue') && (
             <div style={sectionStyle}>
               <ContinueWatching />
+            </div>
+          )}
+
+          {/* For You - Personalized Recommendations */}
+          {!selectedGenre && (
+            <div style={sectionStyle}>
+              <ForYouSection />
             </div>
           )}
 
