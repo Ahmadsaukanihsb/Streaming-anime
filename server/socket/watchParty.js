@@ -34,7 +34,15 @@ function initializeWatchPartySocket(io) {
         
         // Create new room if host
         if (!room && isHost) {
+          // Generate 6 character room code
+          const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+          let code = '';
+          for (let i = 0; i < 6; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+          
           room = new WatchParty({
+            roomId: code,
             animeId,
             episodeId,
             animeTitle,
@@ -43,7 +51,7 @@ function initializeWatchPartySocket(io) {
             participants: [{
               userId: socket.userId,
               name: socket.userName,
-              avatar: socket.userAvatar,
+              avatar: socket.userAvatar || '',
               isHost: true,
               isReady: false
             }]

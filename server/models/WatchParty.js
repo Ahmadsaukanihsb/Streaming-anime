@@ -108,18 +108,4 @@ const watchPartySchema = new mongoose.Schema({
   }
 });
 
-// Generate unique room ID
-watchPartySchema.pre('save', async function(next) {
-  if (!this.roomId) {
-    // Generate 6 character room code
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let code = '';
-    for (let i = 0; i < 6; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    this.roomId = code;
-  }
-  next();
-});
-
 module.exports = mongoose.model('WatchParty', watchPartySchema);

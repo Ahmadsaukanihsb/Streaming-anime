@@ -79,7 +79,7 @@ export function useWatchParty(): UseWatchPartyReturn {
 
     const socket = io(`${BACKEND_URL}/watchparty`, {
       auth: { token },
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,

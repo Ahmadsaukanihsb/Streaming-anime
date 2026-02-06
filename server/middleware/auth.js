@@ -6,7 +6,12 @@ const ACCESS_TOKEN_TTL = process.env.ACCESS_TOKEN_TTL || '15m';
 
 function signAccessToken(user) {
     return jwt.sign(
-        { id: user._id.toString(), isAdmin: !!user.isAdmin },
+        { 
+            id: user._id.toString(), 
+            isAdmin: !!user.isAdmin,
+            name: user.name,
+            avatar: user.avatar
+        },
         JWT_SECRET,
         { expiresIn: ACCESS_TOKEN_TTL }
     );

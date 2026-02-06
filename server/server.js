@@ -24,7 +24,8 @@ const io = new Server(server, {
         ],
         credentials: true,
         methods: ['GET', 'POST']
-    }
+    },
+    transports: ['websocket', 'polling']
 });
 const PORT = process.env.PORT || 5000;
 const REFRESH_TOKEN_CLEANUP_MINUTES = parseInt(process.env.REFRESH_TOKEN_CLEANUP_MINUTES || '60', 10);
