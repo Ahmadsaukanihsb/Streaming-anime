@@ -27,6 +27,7 @@ import { useApp } from '@/context/AppContext';
 import AnimeCard from '@/components/AnimeCard';
 import CommentSection from '@/components/CommentSection';
 import { AnimeDetailSEO } from '@/components/Seo';
+import { AnimeDetailSkeleton } from '@/components/skeletons/AnimeDetailSkeleton';
 import { AnimeSchema, BreadcrumbSchema } from '@/components/SchemaOrg';
 import {
   Dialog,
@@ -220,11 +221,7 @@ export default function AnimeDetail() {
   }, [id]);
 
   if (animeListLoading) {
-    return (
-      <div className="min-h-screen bg-[#0F0F1A] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-[#6C5DD3] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <AnimeDetailSkeleton />;
   }
 
   if (!anime) {

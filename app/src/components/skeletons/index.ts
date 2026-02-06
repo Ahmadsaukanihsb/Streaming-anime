@@ -1,0 +1,1 @@
+export { AnimeDetailSkeleton } from './AnimeDetailSkeleton';
