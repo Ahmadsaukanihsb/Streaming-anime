@@ -99,6 +99,9 @@ function initializeWatchPartySocket(io) {
         }
         watchPartyRooms.get(roomId).sockets.add(socket.id);
 
+        // Determine if user is host (check if userId matches hostId)
+        const isUserHost = room.hostId.toString() === socket.userId;
+        
         // Send room data to user
         socket.emit('room-joined', {
           roomId: room.roomId,
@@ -109,7 +112,7 @@ function initializeWatchPartySocket(io) {
           participants: room.participants,
           messages: room.messages.slice(-50),
           videoState: room.videoState,
-          isHost: existingParticipant?.isHost || false
+          isHost: isUserHost
         });
 
         // Notify others
