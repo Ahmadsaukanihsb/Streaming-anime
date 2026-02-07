@@ -2,8 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useApp } from '@/context/AppContext';
 import { getAuthToken } from '@/lib/auth';
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+import { BACKEND_URL } from '@/config/api';
 
 export interface ChatMessage {
   id: string;
@@ -69,15 +68,9 @@ export function useGlobalChat(): UseGlobalChatReturn {
       console.log('[GlobalChat] Connecting as guest');
     }
 
-    // iOS Safari fix: Use path instead of namespace for better compatibility
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    
-    const socket = io(BACKEND_URL, {
-      path: '/socket.io',
-      query: { 
-        ns: 'globalchat',
-        ...auth 
-      },
+    // Use namespace URL format for Socket.IO
+    const socket = io(`${BACKEND_URL}/globalchat`, {
+      auth,
       transports: ['polling', 'websocket'],
       reconnection: true,
       reconnectionAttempts: 10,
@@ -86,7 +79,6 @@ export function useGlobalChat(): UseGlobalChatReturn {
       timeout: 20000,
       withCredentials: true,
       forceNew: true,
-      multiplex: !isIOS, // Disable multiplexing on iOS
     });
 
     socketRef.current = socket;
