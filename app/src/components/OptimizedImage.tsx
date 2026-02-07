@@ -1,60 +1,89 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { ImageIcon, AlertCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useState, useEffect, useRef } from 'react';
 
 interface OptimizedImageProps {
   src: string;
   alt: string;
   className?: string;
-  containerClassName?: string;
-  aspectRatio?: 'poster' | 'banner' | 'square' | 'video' | 'avatar' | 'custom';
-  customAspect?: string;
+  loading?: 'lazy' | 'eager';
   priority?: boolean;
-  objectFit?: 'cover' | 'contain' | 'fill';
-  blurHash?: string;
-  fallbackSrc?: string;
+  aspectRatio?: 'poster' | 'banner' | 'square' | 'video';
+  containerClassName?: string;
   onLoad?: () => void;
   onError?: () => void;
-  sizes?: string;
 }
 
-// Aspect ratio mappings
-const aspectRatios = {
-  poster: 'aspect-[2/3]',      // 2:3 - Anime poster
-  banner: 'aspect-[16/9]',     // 16:9 - Hero banner
-  square: 'aspect-square',     // 1:1 - Avatars
-  video: 'aspect-video',       // 16:9 - Video thumbnails
-  avatar: 'aspect-square',     // 1:1 - User avatars
-  custom: '',                  // Custom aspect ratio
-};
+// Convert any image URL to WebP using a service or CDN
+// If using external API, replace with your CDN endpoint
+function getWebPUrl(originalUrl: string, _width?: number): string {
+  if (!originalUrl) return '';
+  
+  // Skip if already WebP/AVIF or data URL
+  if (originalUrl.endsWith('.webp') || originalUrl.endsWith('.avif') || originalUrl.startsWith('data:')) {
+    return originalUrl;
+  }
+  
+  // For external images (e.g., from anime API), you can use:
+  // 1. Cloudinary
+  // 2. ImageKit
+  // 3. Cloudflare Images
+  // 4. Or proxy through your own service
+  
+  // Example using Cloudinary (replace with your config):
+  // return `https://res.cloudinary.com/your-cloud/image/fetch/f_webp,q_auto,w_${width || 400}/${encodeURIComponent(originalUrl)}`;
+  
+  // For now, return original but in real implementation, use CDN
+  return originalUrl;
+}
 
+// Generate srcset for responsive images
+function generateSrcSet(originalUrl: string): string {
+  if (!originalUrl || originalUrl.startsWith('data:')) return originalUrl;
+  
+  const widths = [150, 300, 450, 600, 800];
+  return widths
+    .map(w => `${getWebPUrl(originalUrl, w)} ${w}w`)
+    .join(', ');
+}
 
+// Get aspect ratio class
+function getAspectRatioClass(ratio: string): string {
+  switch (ratio) {
+    case 'poster':
+      return 'aspect-[2/3]';
+    case 'banner':
+      return 'aspect-[16/9]';
+    case 'square':
+      return 'aspect-square';
+    case 'video':
+      return 'aspect-video';
+    default:
+      return '';
+  }
+}
 
 export default function OptimizedImage({
   src,
   alt,
-  className,
-  containerClassName,
-  aspectRatio = 'poster',
-  customAspect,
+  className = '',
+  loading = 'lazy',
   priority = false,
-  objectFit = 'cover',
-  blurHash,
-  fallbackSrc,
+  aspectRatio,
+  containerClassName = '',
   onLoad,
   onError,
-  sizes = '100vw',
 }: OptimizedImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const [currentSrc, setCurrentSrc] = useState(src);
-  const [isInView, setIsInView] = useState(priority);
+  const [isInView, setIsInView] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
 
   // Intersection Observer for lazy loading
   useEffect(() => {
-    if (priority || isInView) return;
+    if (priority || loading === 'eager') {
+      setIsInView(true);
+      return;
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -64,7 +93,7 @@ export default function OptimizedImage({
         }
       },
       {
-        rootMargin: '50px',
+        rootMargin: '50px', // Start loading 50px before visible
         threshold: 0.01,
       }
     );
@@ -74,158 +103,75 @@ export default function OptimizedImage({
     }
 
     return () => observer.disconnect();
-  }, [priority]);
+  }, [priority, loading]);
 
-  // Handle image load
-  const handleLoad = useCallback(() => {
+  const handleLoad = () => {
     setIsLoaded(true);
     onLoad?.();
-  }, [onLoad]);
+  };
 
-  // Handle image error
-  const handleError = useCallback(() => {
-    if (fallbackSrc && currentSrc !== fallbackSrc) {
-      setCurrentSrc(fallbackSrc);
-    } else {
-      setHasError(true);
-      onError?.();
-    }
-  }, [currentSrc, fallbackSrc, onError]);
+  const handleError = () => {
+    setHasError(true);
+    onError?.();
+  };
 
-  // Retry loading
-  const handleRetry = useCallback(() => {
-    setHasError(false);
-    setIsLoaded(false);
-    setCurrentSrc(src + '?retry=' + Date.now());
-  }, [src]);
+  // Generate WebP src and srcset
+  const webpSrc = getWebPUrl(src);
+  const srcSet = generateSrcSet(src);
 
-  // Generate srcSet for responsive images
-  const generateSrcSet = useCallback(() => {
-    if (!src || src.startsWith('data:')) return undefined;
-    
-    // If it's already a processed image from CDN, don't add srcSet
-    if (src.includes('cloudflare') || src.includes('r2')) {
-      return undefined;
-    }
 
-    return undefined; // Disable for now until we have image CDN
-  }, [src]);
-
-  const objectFitClass = {
-    cover: 'object-cover',
-    contain: 'object-contain',
-    fill: 'object-fill',
-  }[objectFit];
-
-  const aspectClass = aspectRatio === 'custom' && customAspect 
-    ? '' 
-    : aspectRatios[aspectRatio];
-
-  const customStyle = aspectRatio === 'custom' && customAspect
-    ? { aspectRatio: customAspect }
-    : undefined;
-
-  // Error state
-  if (hasError) {
-    return (
-      <div
-        ref={containerRef}
-        className={cn(
-          'relative overflow-hidden bg-[#1A1A2E] flex flex-col items-center justify-center gap-2',
-          aspectClass,
-          containerClassName
-        )}
-        style={customStyle}
-      >
-        <AlertCircle className="w-8 h-8 text-white/20" />
-        <span className="text-xs text-white/40 text-center px-4">
-          Gagal memuat gambar
-        </span>
-        <button
-          onClick={handleRetry}
-          className="px-3 py-1 text-xs bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded-full transition-colors"
-        >
-          Coba Lagi
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div
       ref={containerRef}
-      className={cn(
-        'relative overflow-hidden bg-[#1A1A2E]',
-        aspectClass,
-        containerClassName
-      )}
-      style={customStyle}
+      className={`relative overflow-hidden bg-[#1A1A2E] ${
+        aspectRatio ? getAspectRatioClass(aspectRatio) : ''
+      } ${containerClassName}`}
     >
-      {/* Blur Placeholder */}
+      {/* Blur placeholder */}
       {!isLoaded && (
-        <div 
-          className={cn(
-            'absolute inset-0 bg-gradient-to-br from-[#252538] to-[#1A1A2E] animate-pulse',
-            className
-          )}
-        >
-          {/* Shimmer effect */}
-          <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1A1A2E] to-[#0F0F1A] animate-pulse" />
+      )}
+
+      {/* Main image with WebP support */}
+      {isInView && !hasError && (
+        <picture>
+          {/* AVIF - best compression */}
+          <source
+            srcSet={srcSet.replace(/\.(jpg|jpeg|png)/g, '.avif')}
+            type="image/avif"
+            sizes="(max-width: 640px) 150px, (max-width: 1024px) 300px, 400px"
+          />
+          {/* WebP - good compression, wide support */}
+          <source
+            srcSet={srcSet.replace(/\.(jpg|jpeg|png)/g, '.webp')}
+            type="image/webp"
+            sizes="(max-width: 640px) 150px, (max-width: 1024px) 300px, 400px"
+          />
+          {/* JPEG/PNG fallback */}
+          <img
+            ref={imgRef}
+            src={webpSrc}
+            srcSet={srcSet}
+            sizes="(max-width: 640px) 150px, (max-width: 1024px) 300px, 400px"
+            alt={alt}
+            loading={loading}
+            decoding={priority ? 'sync' : 'async'}
+            onLoad={handleLoad}
+            onError={handleError}
+            className={`w-full h-full object-cover transition-opacity duration-300 ${
+              isLoaded ? 'opacity-100' : 'opacity-0'
+            } ${className}`}
+          />
+        </picture>
+      )}
+
+      {/* Error state */}
+      {hasError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A2E]">
+          <span className="text-white/30 text-xs">Failed to load</span>
         </div>
-      )}
-
-      {/* Loading spinner */}
-      {!isLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <ImageIcon className="w-6 h-6 text-white/10" />
-        </div>
-      )}
-
-      {/* Actual Image */}
-      {(isInView || priority) && (
-        <img
-          ref={imageRef}
-          src={currentSrc}
-          alt={alt}
-          loading={priority ? 'eager' : 'lazy'}
-          decoding={priority ? 'sync' : 'async'}
-          srcSet={generateSrcSet()}
-          sizes={sizes}
-          onLoad={handleLoad}
-          onError={handleError}
-          className={cn(
-            'w-full h-full transition-all duration-500',
-            objectFitClass,
-            isLoaded ? 'opacity-100 scale-100 blur-0' : 'opacity-0 scale-105 blur-sm',
-            className
-          )}
-        />
-      )}
-
-      {/* Low Quality Image Placeholder (LQIP) */}
-      {blurHash && !isLoaded && (
-        <img
-          src={blurHash}
-          alt=""
-          aria-hidden="true"
-          className={cn(
-            'absolute inset-0 w-full h-full object-cover blur-xl scale-110',
-            objectFitClass
-          )}
-        />
       )}
     </div>
   );
 }
-
-// Preload critical images
-export function preloadImage(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve();
-    img.onerror = reject;
-    img.src = src;
-  });
-}
-
-

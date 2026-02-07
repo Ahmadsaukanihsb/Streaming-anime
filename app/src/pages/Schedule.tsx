@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import type { Anime } from '@/data/animeData';
 import { Link } from 'react-router-dom';
 import { Calendar, Clock, Play, Bell, Star } from 'lucide-react';
+import OptimizedImage from '@/components/OptimizedImage';
 import { motion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { BACKEND_URL } from '@/config/api';
@@ -233,28 +234,26 @@ export default function Schedule() {
                                     >
                                         {/* Poster - Mobile: Vertical Card, Desktop: Horizontal with Glow */}
                                         <div className="relative aspect-[3/4] sm:aspect-auto sm:w-20 sm:h-28 w-full rounded-xl overflow-hidden mb-2 sm:mb-0 ring-1 ring-white/10 group-hover:ring-[#6C5DD3]/30 transition-all duration-300">
-                                            <img
+                                            <OptimizedImage
                                                 src={anime.poster}
                                                 alt={anime.title}
-                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                                aspectRatio="poster"
+                                                className="group-hover:scale-110"
                                                 loading="lazy"
                                             />
-                                            {/* Enhanced Gradient Overlay */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-80 group-hover:opacity-60 transition-opacity" />
-                                            <div className="absolute inset-0 bg-gradient-to-br from-[#6C5DD3]/0 via-transparent to-[#00C2FF]/0 group-hover:from-[#6C5DD3]/20 group-hover:to-[#00C2FF]/10 transition-all duration-500" />
                                             
                                             {/* Time Badge - Mobile only with Gradient */}
-                                            <div className="sm:hidden absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-[#6C5DD3] to-[#00C2FF] rounded-lg text-[10px] text-white font-bold shadow-lg shadow-[#6C5DD3]/30">
+                                            <div className="sm:hidden absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-[#6C5DD3] to-[#00C2FF] rounded-lg text-[10px] text-white font-bold shadow-lg shadow-[#6C5DD3]/30 z-10">
                                                 {anime.jadwalRilis?.jam || '??:??'}
                                             </div>
                                             
                                             {/* Episode Badge - Mobile only with Glass Effect */}
-                                            <div className="sm:hidden absolute bottom-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-md border border-white/10 rounded-lg text-[10px] text-white font-bold">
+                                            <div className="sm:hidden absolute bottom-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-md border border-white/10 rounded-lg text-[10px] text-white font-bold z-10">
                                                 EP {anime.episodeData?.length || anime.episodes || '?'}
                                             </div>
 
                                             {/* Play Icon - Desktop only with Glow */}
-                                            <div className="hidden sm:flex absolute inset-0 items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                            <div className="hidden sm:flex absolute inset-0 items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10">
                                                 <div className="w-12 h-12 rounded-full bg-[#6C5DD3] flex items-center justify-center shadow-lg shadow-[#6C5DD3]/50 scale-75 group-hover:scale-100 transition-transform duration-300">
                                                     <Play className="w-6 h-6 text-white fill-current ml-1" />
                                                 </div>
