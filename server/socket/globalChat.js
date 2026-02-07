@@ -23,6 +23,11 @@ const onlineUsers = new Map(); // socketId -> { userId, username, avatar }
 
 function initializeGlobalChatSocket(io) {
   const globalChatNamespace = io.of('/globalchat');
+  
+  // Handle connection errors for iOS debugging
+  globalChatNamespace.on('connect_error', (err) => {
+    console.error('[GlobalChat] Connection error:', err.message);
+  });
 
   globalChatNamespace.use(async (socket, next) => {
     try {

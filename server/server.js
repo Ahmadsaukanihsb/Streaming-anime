@@ -24,9 +24,13 @@ const io = new Server(server, {
             'https://www.animeku.xyz'
         ],
         credentials: true,
-        methods: ['GET', 'POST']
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
     },
-    transports: ['websocket', 'polling']
+    transports: ['polling', 'websocket'],
+    allowEIO3: true, // Compatibility with older clients
+    pingTimeout: 60000, // Increase for mobile connections
+    pingInterval: 25000,
+    connectTimeout: 45000
 });
 const PORT = process.env.PORT || 5000;
 const REFRESH_TOKEN_CLEANUP_MINUTES = parseInt(process.env.REFRESH_TOKEN_CLEANUP_MINUTES || '60', 10);
