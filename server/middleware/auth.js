@@ -5,12 +5,16 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 const ACCESS_TOKEN_TTL = process.env.ACCESS_TOKEN_TTL || '15m';
 
 function signAccessToken(user) {
+    // If user is admin, set communityRole to 'admin'
+    const communityRole = user.isAdmin ? 'admin' : (user.communityRole || 'member');
+    
     return jwt.sign(
         { 
             id: user._id.toString(), 
             isAdmin: !!user.isAdmin,
             name: user.name,
-            avatar: user.avatar
+            avatar: user.avatar,
+            communityRole: communityRole
         },
         JWT_SECRET,
         { expiresIn: ACCESS_TOKEN_TTL }

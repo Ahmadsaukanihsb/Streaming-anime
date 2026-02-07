@@ -7,6 +7,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const User = require('./models/User');
 const { initializeWatchPartySocket } = require('./socket/watchParty');
+const { initializeGlobalChatSocket } = require('./socket/globalChat');
 
 dotenv.config();
 
@@ -149,6 +150,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Initialize Socket.io handlers
 initializeWatchPartySocket(io);
+initializeGlobalChatSocket(io);
 
 server.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
