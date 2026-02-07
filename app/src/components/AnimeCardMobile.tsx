@@ -122,27 +122,24 @@ function CompactView({ anime, index = 0 }: AnimeCardMobileProps) {
           />
           
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-
-          {/* Rating */}
-          <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 px-1.5 py-0.5 bg-black/60 backdrop-blur-sm rounded-md">
-            <Star className="w-2.5 h-2.5 text-yellow-400 fill-current" />
-            <span className="text-[10px] font-medium text-white">{anime.rating}</span>
-          </div>
-
-          {/* Status & Type - Horizontal */}
-          <div className="absolute top-1.5 left-1.5 flex items-center gap-1">
-            <StatusBadge status={anime.status} variant="solid" className="!text-[8px] !px-1 !py-0" />
-            {anime.type && (
-              <TypeBadge type={anime.type} variant="card" className="!text-[8px] !px-1 !py-0" />
-            )}
-          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
           {/* Title at bottom */}
           <div className="absolute bottom-0 left-0 right-0 p-2">
-            <h3 className="font-medium text-white text-xs line-clamp-2 leading-tight">
+            <h3 className="font-semibold text-white text-xs line-clamp-2 leading-tight mb-1">
               {anime.title}
             </h3>
+            
+            {/* Rating & Episodes - Clean style */}
+            <div className="flex items-center gap-2 text-[10px]">
+              <span className="flex items-center gap-0.5 text-yellow-400">
+                <Star className="w-3 h-3 fill-current" />
+                {anime.rating}
+              </span>
+              <span className="text-white/50">
+                {anime.episodes} eps
+              </span>
+            </div>
           </div>
         </div>
       </Link>
