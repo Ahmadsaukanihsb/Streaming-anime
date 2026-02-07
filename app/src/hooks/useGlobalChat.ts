@@ -71,13 +71,16 @@ export function useGlobalChat(): UseGlobalChatReturn {
 
     const socket = io(`${BACKEND_URL}/globalchat`, {
       auth,
-      transports: ['polling', 'websocket'], // iOS works better with polling first
+      transports: ['polling', 'websocket'],
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       timeout: 20000,
       withCredentials: true,
+      // iOS Safari specific fixes
+      forceNew: true,
+      multiplex: false,
     });
 
     socketRef.current = socket;
