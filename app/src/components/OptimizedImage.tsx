@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface OptimizedImageProps {
   src: string;
@@ -23,19 +23,6 @@ function getWebPUrl(originalUrl: string): string {
   
   // Replace extension with .webp
   return originalUrl.replace(/\.(jpg|jpeg|png|gif)$/i, '.webp');
-}
-
-// Check if browser supports WebP
-function checkWebPSupport(): Promise<boolean> {
-  return new Promise((resolve) => {
-    const canvas = document.createElement('canvas');
-    if (canvas.getContext && canvas.getContext('2d')) {
-      // WebP is supported if the canvas can export to WebP
-      resolve(canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0);
-    } else {
-      resolve(false);
-    }
-  });
 }
 
 // Get aspect ratio class
@@ -68,16 +55,7 @@ export default function OptimizedImage({
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isInView, setIsInView] = useState(false);
-  const [useWebP, setUseWebP] = useState(false);
-  const [webPFallback, setWebPFallback] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Check WebP support on mount
-  useEffect(() => {
-    checkWebPSupport().then((supported) => {
-      setUseWebP(supported);
-    });
-  }, []);
 
   // Intersection Observer for lazy loading
   useEffect(() => {
@@ -106,28 +84,17 @@ export default function OptimizedImage({
     return () => observer.disconnect();
   }, [priority, loading]);
 
-  // Determine image source
-  const imageSrc = useMemo(() => {
-    if (!src) return '';
-    if (webPFallback) return src; // Fallback to original
-    if (useWebP) return getWebPUrl(src); // Try WebP
-    return src; // Use original
-  }, [src, useWebP, webPFallback]);
-
   const handleLoad = () => {
     setIsLoaded(true);
     onLoad?.();
   };
 
   const handleError = () => {
-    if (useWebP && !webPFallback) {
-      // Try fallback to original format
-      setWebPFallback(true);
-    } else {
-      setHasError(true);
-      onError?.();
-    }
+    setHasError(true);
+    onError?.();
   };
+
+  const webpSrc = getWebPUrl(src);
 
   return (
     <div
@@ -141,19 +108,27 @@ export default function OptimizedImage({
         <div className="absolute inset-0 bg-gradient-to-br from-[#1A1A2E] to-[#0F0F1A] animate-pulse" />
       )}
 
-      {/* Main image */}
+      {/* Picture element - browser automatically picks best format */}
       {(isInView || priority) && !hasError && (
-        <img
-          src={imageSrc}
-          alt={alt}
-          loading={loading}
-          decoding={priority ? 'sync' : 'async'}
-          onLoad={handleLoad}
-          onError={handleError}
-          className={`w-full h-full object-cover transition-opacity duration-300 ${
-            isLoaded ? 'opacity-100' : 'opacity-0'
-          } ${className}`}
-        />
+        <picture>
+          {/* WebP version */}
+          <source 
+            srcSet={webpSrc} 
+            type="image/webp" 
+          />
+          {/* Original format as fallback */}
+          <img
+            src={src}
+            alt={alt}
+            loading={loading}
+            decoding={priority ? 'sync' : 'async'}
+            onLoad={handleLoad}
+            onError={handleError}
+            className={`w-full h-full object-cover transition-opacity duration-300 ${
+              isLoaded ? 'opacity-100' : 'opacity-0'
+            } ${className}`}
+          />
+        </picture>
       )}
 
       {/* Error state */}
