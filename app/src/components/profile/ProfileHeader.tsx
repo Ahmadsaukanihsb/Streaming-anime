@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-// ProfileHeader component
+// ProfileHeader component - Mobile Optimized
 import { motion } from 'framer-motion';
 import { Mail, Calendar, Settings, LogOut, Edit3, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -84,75 +84,91 @@ export default function ProfileHeader({
   };
 
   const formatJoinDate = (dateString?: string) => {
-    if (!dateString) return 'Baru Bergabung';
+    if (!dateString) return 'Baru';
     const date = new Date(dateString);
-    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-    return `Bergabung ${months[date.getMonth()]} ${date.getFullYear()}`;
+    return `Bergabung ${date.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}`;
   };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative mb-8"
+      className="relative mb-6 sm:mb-8"
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-[#6C5DD3]/30 via-[#6C5DD3]/10 to-transparent rounded-2xl blur-xl" />
-
-      <div className="relative bg-[#1A1A2E]/80 backdrop-blur-xl rounded-2xl p-6 sm:p-8 border border-white/10">
-        <div className="flex flex-col sm:flex-row items-center gap-6">
-          {/* Avatar */}
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] rounded-2xl blur-lg opacity-50 group-hover:opacity-70 transition-opacity" />
-            <SafeAvatar
-              src={user.avatar}
-              name={user.name}
-              className={`relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-white/20 ${avatarLoading ? 'opacity-50' : ''}`}
-              imgClassName="object-cover"
-              fallbackBgClassName={user.isAdmin ? 'bg-gradient-to-br from-red-500 to-rose-600' : undefined}
-              fallbackClassName="text-xl"
-            />
-            {avatarLoading && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+      {/* Mobile: Simpler card without blur */}
+      <div className="relative bg-[#1A1A2E] rounded-2xl sm:rounded-2xl p-4 sm:p-8 border border-white/10">
+        
+        {/* Mobile Layout */}
+        <div className="sm:hidden">
+          {/* Top Section - Avatar & Quick Actions */}
+          <div className="flex items-start gap-4">
+            {/* Avatar */}
+            <div className="relative flex-shrink-0">
+              <div className="w-20 h-20 rounded-2xl overflow-hidden ring-2 ring-white/10">
+                <SafeAvatar
+                  src={user.avatar}
+                  name={user.name}
+                  className={`w-full h-full ${avatarLoading ? 'opacity-50' : ''}`}
+                  imgClassName="object-cover"
+                  fallbackBgClassName={user.isAdmin ? 'bg-gradient-to-br from-red-500 to-rose-600' : undefined}
+                  fallbackClassName="text-lg"
+                />
               </div>
-            )}
-            <input
-              ref={avatarInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              onChange={handleAvatarChange}
-              className="hidden"
-            />
-            <button
-              onClick={() => avatarInputRef.current?.click()}
-              disabled={avatarLoading}
-              className="absolute -bottom-2 -right-2 w-8 h-8 bg-gradient-to-br from-[#6C5DD3] to-[#5a4ec0] rounded-lg flex items-center justify-center hover:scale-110 transition-transform shadow-lg disabled:opacity-50"
-            >
-              <Edit3 className="w-4 h-4 text-white" />
-            </button>
-          </div>
-
-          {/* Info */}
-          <div className="flex-1 text-center sm:text-left">
-            <div className="flex items-center justify-center sm:justify-start gap-3 mb-2">
-              <h1 className="text-2xl sm:text-3xl font-bold text-white">{user.name}</h1>
-              {user.communityRole && <RoleBadge role={user.communityRole} size="md" />}
+              {avatarLoading && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                </div>
+              )}
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={handleAvatarChange}
+                className="hidden"
+              />
+              <button
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={avatarLoading}
+                className="absolute -bottom-1.5 -right-1.5 w-7 h-7 bg-gradient-to-br from-[#6C5DD3] to-[#5a4ec0] rounded-lg flex items-center justify-center shadow-lg disabled:opacity-50"
+              >
+                <Edit3 className="w-3 h-3 text-white" />
+              </button>
             </div>
-            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-white/60 text-sm">
-              <span className="flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                {user.email}
-              </span>
-              <span className="hidden sm:inline text-white/30">•</span>
-              <span className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
+
+            {/* Info */}
+            <div className="flex-1 min-w-0 pt-1">
+              <h1 className="text-xl font-bold text-white truncate">{user.name}</h1>
+              <div className="flex items-center gap-2 mt-1">
+                {user.communityRole && <RoleBadge role={user.communityRole} size="sm" />}
+              </div>
+              <p className="text-white/40 text-xs mt-2 flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
                 {formatJoinDate(user.createdAt)}
-              </span>
+              </p>
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 justify-center sm:justify-end">
+          {/* Stats - Horizontal Scroll */}
+          <div className="mt-4 -mx-4 px-4 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2">
+              {stats.map((stat, index) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="flex-shrink-0 bg-white/5 rounded-xl px-4 py-3 min-w-[90px] text-center border border-white/5"
+                >
+                  <stat.icon className="w-4 h-4 text-[#6C5DD3] mx-auto mb-1" />
+                  <p className="text-lg font-bold text-white">{stat.value}</p>
+                  <p className="text-white/40 text-[10px]">{stat.label}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          {/* Actions - Compact */}
+          <div className="flex gap-2 mt-4">
             <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
               setIsEditDialogOpen(open);
               if (open) {
@@ -163,12 +179,16 @@ export default function ProfileHeader({
               }
             }}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="bg-white/5 border-white/20 text-white hover:bg-white/10 hover:border-white/30 transition-all text-xs sm:text-sm">
-                  <Settings className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Edit Profil</span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 bg-white/5 border-white/10 text-white hover:bg-white/10 text-xs h-9"
+                >
+                  <Settings className="w-3.5 h-3.5 mr-1.5" />
+                  Edit Profil
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-[#1A1A2E] border-white/10">
+              <DialogContent className="bg-[#1A1A2E] border-white/10 sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle className="text-white">Edit Profil</DialogTitle>
                 </DialogHeader>
@@ -189,7 +209,7 @@ export default function ProfileHeader({
                       type="text"
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
-                      className="w-full mt-1 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-[#6C5DD3]"
+                      className="w-full mt-1 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-[#6C5DD3]"
                       required
                     />
                   </div>
@@ -199,14 +219,14 @@ export default function ProfileHeader({
                       type="email"
                       value={editEmail}
                       onChange={(e) => setEditEmail(e.target.value)}
-                      className="w-full mt-1 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-[#6C5DD3]"
+                      className="w-full mt-1 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-[#6C5DD3]"
                       required
                     />
                   </div>
                   <Button
                     type="submit"
                     disabled={editLoading}
-                    className="w-full bg-[#6C5DD3] hover:bg-[#5a4ec0] disabled:opacity-50"
+                    className="w-full bg-[#6C5DD3] hover:bg-[#5a4ec0] disabled:opacity-50 h-11"
                   >
                     {editLoading ? 'Menyimpan...' : 'Simpan Perubahan'}
                   </Button>
@@ -218,62 +238,220 @@ export default function ProfileHeader({
               onClick={onLogout}
               variant="outline"
               size="sm"
-              className="bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-500/50 transition-all text-xs sm:text-sm"
+              className="flex-1 bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 text-xs h-9"
             >
-              <LogOut className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Keluar</span>
+              <LogOut className="w-3.5 h-3.5 mr-1.5" />
+              Keluar
             </Button>
           </div>
-        </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-6 sm:mt-8">
-          {stats.map((stat, index) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="relative group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-[#6C5DD3]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative bg-white/5 hover:bg-white/10 rounded-xl p-3 sm:p-4 text-center transition-colors border border-transparent hover:border-white/10">
-                <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 text-[#6C5DD3] mx-auto mb-1 sm:mb-2" />
-                <p className="text-xl sm:text-2xl font-bold text-white">{stat.value}</p>
-                <p className="text-white/50 text-[10px] sm:text-xs mt-0.5 sm:mt-1">{stat.label}</p>
+          {/* Achievement Preview */}
+          {achievements.filter(a => a.unlocked).length > 0 && (
+            <div className="mt-4 pt-4 border-t border-white/5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-yellow-400" />
+                  <span className="text-white/60 text-sm">{totalPoints} poin</span>
+                </div>
+                <span className="text-[#6C5DD3] text-xs">
+                  {achievements.filter(a => a.unlocked).length} achievement
+                </span>
               </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Achievement Badges */}
-        {achievements.length > 0 && (
-          <div className="mt-6 pt-6 border-t border-white/10">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-yellow-400" />
-                <span className="text-white/60 text-sm">Achievement Terbaru</span>
+              <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
+                {achievements
+                  .filter(a => a.unlocked)
+                  .slice(-5)
+                  .map((achievement) => (
+                    <AchievementBadge
+                      key={achievement.id}
+                      achievement={achievement}
+                      unlocked={achievement.unlocked}
+                      size="sm"
+                    />
+                  ))}
               </div>
-              <span className="text-[#6C5DD3] text-sm font-medium">{totalPoints} poin</span>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {achievements
-                .filter(a => a.unlocked)
-                .slice(-6)
-                .map((achievement) => (
-                  <AchievementBadge
-                    key={achievement.id}
-                    achievement={achievement}
-                    unlocked={achievement.unlocked}
-                    size="sm"
-                  />
-                ))}
-              {achievements.filter(a => a.unlocked).length === 0 && (
-                <p className="text-white/30 text-sm">Belum ada achievement terbuka</p>
+          )}
+        </div>
+
+        {/* Desktop Layout - Original */}
+        <div className="hidden sm:block">
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            {/* Avatar */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] rounded-2xl blur-lg opacity-50 group-hover:opacity-70 transition-opacity" />
+              <SafeAvatar
+                src={user.avatar}
+                name={user.name}
+                className={`relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-white/20 ${avatarLoading ? 'opacity-50' : ''}`}
+                imgClassName="object-cover"
+                fallbackBgClassName={user.isAdmin ? 'bg-gradient-to-br from-red-500 to-rose-600' : undefined}
+                fallbackClassName="text-xl"
+              />
+              {avatarLoading && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                </div>
               )}
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={handleAvatarChange}
+                className="hidden"
+              />
+              <button
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={avatarLoading}
+                className="absolute -bottom-2 -right-2 w-8 h-8 bg-gradient-to-br from-[#6C5DD3] to-[#5a4ec0] rounded-lg flex items-center justify-center hover:scale-110 transition-transform shadow-lg disabled:opacity-50"
+              >
+                <Edit3 className="w-4 h-4 text-white" />
+              </button>
+            </div>
+
+            {/* Info */}
+            <div className="flex-1 text-center sm:text-left">
+              <div className="flex items-center justify-center sm:justify-start gap-3 mb-2">
+                <h1 className="text-2xl sm:text-3xl font-bold text-white">{user.name}</h1>
+                {user.communityRole && <RoleBadge role={user.communityRole} size="md" />}
+              </div>
+              <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-white/60 text-sm">
+                <span className="flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  {user.email}
+                </span>
+                <span className="hidden sm:inline text-white/30">•</span>
+                <span className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  {formatJoinDate(user.createdAt)}
+                </span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 justify-center sm:justify-end">
+              <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+                setIsEditDialogOpen(open);
+                if (open) {
+                  setEditName(user.name);
+                  setEditEmail(user.email);
+                  setEditError('');
+                  setEditSuccess(false);
+                }
+              }}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="bg-white/5 border-white/20 text-white hover:bg-white/10 hover:border-white/30 transition-all text-xs sm:text-sm">
+                    <Settings className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Edit Profil</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-[#1A1A2E] border-white/10">
+                  <DialogHeader>
+                    <DialogTitle className="text-white">Edit Profil</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                    {editError && (
+                      <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm">
+                        {editError}
+                      </div>
+                    )}
+                    {editSuccess && (
+                      <div className="p-3 bg-green-500/20 border border-green-500/30 rounded-lg text-green-400 text-sm">
+                        Profil berhasil diperbarui!
+                      </div>
+                    )}
+                    <div>
+                      <label className="text-white/70 text-sm">Nama</label>
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="w-full mt-1 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-[#6C5DD3]"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-white/70 text-sm">Email</label>
+                      <input
+                        type="email"
+                        value={editEmail}
+                        onChange={(e) => setEditEmail(e.target.value)}
+                        className="w-full mt-1 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-[#6C5DD3]"
+                        required
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      disabled={editLoading}
+                      className="w-full bg-[#6C5DD3] hover:bg-[#5a4ec0] disabled:opacity-50"
+                    >
+                      {editLoading ? 'Menyimpan...' : 'Simpan Perubahan'}
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+
+              <Button
+                onClick={onLogout}
+                variant="outline"
+                size="sm"
+                className="bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-500/50 transition-all text-xs sm:text-sm"
+              >
+                <LogOut className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Keluar</span>
+              </Button>
             </div>
           </div>
-        )}
+
+          {/* Stats Grid - Desktop */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-6 sm:mt-8">
+            {stats.map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="relative group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-[#6C5DD3]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative bg-white/5 hover:bg-white/10 rounded-xl p-3 sm:p-4 text-center transition-colors border border-transparent hover:border-white/10">
+                  <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 text-[#6C5DD3] mx-auto mb-1 sm:mb-2" />
+                  <p className="text-xl sm:text-2xl font-bold text-white">{stat.value}</p>
+                  <p className="text-white/50 text-[10px] sm:text-xs mt-0.5 sm:mt-1">{stat.label}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Achievement Badges - Desktop */}
+          {achievements.length > 0 && (
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-yellow-400" />
+                  <span className="text-white/60 text-sm">Achievement Terbaru</span>
+                </div>
+                <span className="text-[#6C5DD3] text-sm font-medium">{totalPoints} poin</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {achievements
+                  .filter(a => a.unlocked)
+                  .slice(-6)
+                  .map((achievement) => (
+                    <AchievementBadge
+                      key={achievement.id}
+                      achievement={achievement}
+                      unlocked={achievement.unlocked}
+                      size="sm"
+                    />
+                  ))}
+                {achievements.filter(a => a.unlocked).length === 0 && (
+                  <p className="text-white/30 text-sm">Belum ada achievement terbuka</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </motion.div>
   );

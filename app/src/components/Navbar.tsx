@@ -179,10 +179,10 @@ export default function Navbar() {
               {/* Source Switcher */}
 
 
-              {/* Search Button */}
+              {/* Search Button - Desktop Only */}
               <button
                 onClick={() => setIsSearchOpen(true)}
-                className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+                className="hidden sm:block p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
               >
                 <Search className="w-5 h-5 text-white/70" />
               </button>
@@ -190,8 +190,9 @@ export default function Navbar() {
               {/* Notifications - Social */}
               {user && <NotificationDropdown />}
 
-              {/* User Menu */}
+              {/* User Menu - Desktop Only */}
               {user ? (
+                <div className="hidden sm:block">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-2 p-1.5 pr-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
@@ -264,8 +265,9 @@ export default function Navbar() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                </div>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-2">
                   <Button
                     variant="ghost"
                     onClick={() => navigate('/login')}
@@ -282,10 +284,10 @@ export default function Navbar() {
                 </div>
               )}
 
-              {/* Mobile Menu Button */}
+              {/* Mobile Menu Button - Hidden (using BottomNav instead) */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+                className="hidden lg:block p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
               >
                 {isMobileMenuOpen ? (
                   <X className="w-5 h-5 text-white" />

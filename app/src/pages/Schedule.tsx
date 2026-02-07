@@ -135,74 +135,86 @@ export default function Schedule() {
     const todayAnime = scheduleByDay[selectedDay] || [];
 
     return (
-        <div className="min-h-screen bg-[#0F0F1A] pt-24 pb-12">
+        <div className="min-h-screen bg-[#0F0F1A] pb-12">
             <StaticPageSEO
                 title="Jadwal Rilis Anime"
                 description="Cek jadwal rilis anime terbaru setiap minggu di Animeku. Atur pengingat dan jangan lewatkan episode favoritmu."
                 canonical="/schedule"
             />
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                {/* Header */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24">
+                {/* Header - Desktop Only */}
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-center mb-8 sm:mb-12"
+                    className="hidden sm:block pb-6 mb-6"
                 >
-                    <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#00C2FF] to-[#6C5DD3] mb-4 sm:mb-6 shadow-xl shadow-[#00C2FF]/30">
-                        <Calendar className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                    <div className="flex items-center justify-center gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#00C2FF] to-[#6C5DD3] flex items-center justify-center shadow-lg shadow-[#6C5DD3]/20">
+                            <Calendar className="w-6 h-6 text-white" />
+                        </div>
+                        <h1 className="text-2xl font-bold text-white">Jadwal Rilis</h1>
                     </div>
-                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 sm:mb-4">Jadwal Rilis Anime</h1>
-                    <p className="text-white/50 text-sm sm:text-base max-w-2xl mx-auto px-4">
-                        Lihat jadwal rilis episode baru anime favoritmu setiap minggu
-                    </p>
                 </motion.div>
 
-                {/* Week Selector */}
-                <div className="flex justify-center mb-6 sm:mb-8 px-2 sm:px-0">
-                    <div className="flex w-full sm:w-auto bg-white/5 rounded-xl sm:rounded-2xl p-1 sm:p-1.5 border border-white/10">
+                {/* Week Selector - Modern Pills */}
+                <div className="mb-4 sm:mb-8 overflow-x-auto scrollbar-hide">
+                    <div className="flex justify-start sm:justify-center gap-1.5 sm:gap-2 px-1">
                         {weekDates.map((date, index) => {
                             const isToday = new Date().toDateString() === date.toDateString();
                             const isSelected = selectedDay === index;
+                            const count = scheduleByDay[index]?.length || 0;
 
                             return (
                                 <button
                                     key={index}
                                     onClick={() => setSelectedDay(index)}
-                                    className={`flex-1 sm:flex-none flex flex-col items-center px-1 sm:px-3 py-2 sm:py-2.5 rounded-lg sm:rounded-xl transition-all sm:min-w-[52px] ${isSelected
-                                        ? 'bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] text-white shadow-lg'
+                                    className={`relative flex-shrink-0 flex flex-col items-center justify-center w-[52px] sm:w-[60px] py-2 sm:py-2.5 rounded-xl sm:rounded-xl transition-all duration-300 ease-out ${isSelected
+                                        ? 'text-white'
                                         : isToday
-                                            ? 'bg-[#6C5DD3]/20 text-[#6C5DD3]'
-                                            : 'text-white/50 hover:bg-white/5 hover:text-white'
+                                            ? 'text-[#6C5DD3]'
+                                            : 'text-white/40 hover:text-white/70'
+                                        } ${isSelected
+                                            ? 'bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] shadow-lg shadow-[#6C5DD3]/25'
+                                            : 'bg-white/[0.03] hover:bg-white/[0.06]'
                                         }`}
                                 >
-                                    <span className="text-[10px] sm:text-xs font-medium">{dayNamesShort[index]}</span>
-                                    <span className="text-sm sm:text-base font-bold">{date.getDate()}</span>
-                                    {scheduleByDay[index]?.length > 0 && (
-                                        <span className={`text-[8px] sm:text-[10px] ${isSelected ? 'text-white/80' : 'text-white/40'}`}>
-                                            {scheduleByDay[index].length}
-                                        </span>
+                                    {/* Today Indicator (only when not selected) */}
+                                    {isToday && !isSelected && (
+                                        <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#6C5DD3] rounded-full" />
                                     )}
-                                </button>
-                            );
-                        })}
+
+                                    {/* Content */}
+                                    <span className="relative z-10 text-[9px] sm:text-xs font-medium opacity-80">{dayNamesShort[index]}</span>
+                                    <span className="relative z-10 text-sm sm:text-base font-bold leading-tight">{date.getDate()}</span>
+                                    
+                                    {/* Anime Count Badge */}
+                                    {count > 0 && (
+                                        <span className={`relative z-10 text-[8px] sm:text-[10px] font-medium mt-0.5 px-1.5 py-0.5 rounded-full ${isSelected 
+                                            ? 'bg-white/20 text-white' 
+                                            : 'bg-white/10 text-white/50'
+                                        }`}>
+                                            {count}
+                                        </span>
+                                        )}
+                                    </button>
+                                );
+                            })}
                     </div>
                 </div>
 
-                {/* Selected Day Header */}
-                <div className="flex items-center justify-center gap-2 mb-6 sm:mb-8 px-2">
-                    <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-[#6C5DD3]" />
-                    <h2 className="text-base sm:text-xl font-bold text-white text-center">
-                        {dayNames[selectedDay]}, {weekDates[selectedDay]?.toLocaleDateString('id-ID', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric'
-                        })}
-                    </h2>
+                {/* Selected Day Header - Compact */}
+                <div className="flex items-center justify-center gap-2 mb-4 sm:mb-6">
+                    <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm px-4 py-2 rounded-full border border-white/10">
+                        <Calendar className="w-4 h-4 text-[#6C5DD3]" />
+                        <h2 className="text-sm sm:text-base font-bold text-white">
+                            {dayNames[selectedDay]}, {weekDates[selectedDay]?.getDate()} {weekDates[selectedDay]?.toLocaleDateString('id-ID', { month: 'short' })}
+                        </h2>
+                    </div>
                 </div>
 
-                {/* Anime Schedule */}
+                {/* Anime Schedule - Mobile: Horizontal Scroll, Desktop: Grid */}
                 {todayAnime.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 overflow-x-auto sm:overflow-visible scrollbar-hide pb-2 sm:pb-0">
                         {todayAnime.map((anime, index) => {
                             const isSubscribed = subscribedAnime.includes(anime.id);
                             const isLoading = loadingSubscription === anime.id;
@@ -213,27 +225,44 @@ export default function Schedule() {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: index * 0.1 }}
+                                    className="flex-shrink-0 w-[140px] sm:w-auto"
                                 >
                                     <Link
                                         to={`/anime/${anime.id}`}
-                                        className="group flex gap-3 sm:gap-4 p-3 sm:p-4 bg-white/5 rounded-xl sm:rounded-2xl border border-white/10 hover:border-[#6C5DD3]/50 transition-all"
+                                        className="group block sm:flex gap-0 sm:gap-4 p-0 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(108,93,211,0.15)]"
                                     >
-                                        {/* Poster */}
-                                        <div className="relative w-16 h-24 sm:w-20 sm:h-28 flex-shrink-0 rounded-lg sm:rounded-xl overflow-hidden">
+                                        {/* Poster - Mobile: Vertical Card, Desktop: Horizontal with Glow */}
+                                        <div className="relative aspect-[3/4] sm:aspect-auto sm:w-20 sm:h-28 w-full rounded-xl overflow-hidden mb-2 sm:mb-0 ring-1 ring-white/10 group-hover:ring-[#6C5DD3]/30 transition-all duration-300">
                                             <img
                                                 src={anime.poster}
                                                 alt={anime.title}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                                 loading="lazy"
                                             />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                                            <div className="absolute bottom-1 left-1 right-1 flex items-center justify-center">
-                                                <Play className="w-5 h-5 sm:w-6 sm:h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            {/* Enhanced Gradient Overlay */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-80 group-hover:opacity-60 transition-opacity" />
+                                            <div className="absolute inset-0 bg-gradient-to-br from-[#6C5DD3]/0 via-transparent to-[#00C2FF]/0 group-hover:from-[#6C5DD3]/20 group-hover:to-[#00C2FF]/10 transition-all duration-500" />
+                                            
+                                            {/* Time Badge - Mobile only with Gradient */}
+                                            <div className="sm:hidden absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-[#6C5DD3] to-[#00C2FF] rounded-lg text-[10px] text-white font-bold shadow-lg shadow-[#6C5DD3]/30">
+                                                {anime.jadwalRilis?.jam || '??:??'}
+                                            </div>
+                                            
+                                            {/* Episode Badge - Mobile only with Glass Effect */}
+                                            <div className="sm:hidden absolute bottom-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-md border border-white/10 rounded-lg text-[10px] text-white font-bold">
+                                                EP {anime.episodeData?.length || anime.episodes || '?'}
+                                            </div>
+
+                                            {/* Play Icon - Desktop only with Glow */}
+                                            <div className="hidden sm:flex absolute inset-0 items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                                <div className="w-12 h-12 rounded-full bg-[#6C5DD3] flex items-center justify-center shadow-lg shadow-[#6C5DD3]/50 scale-75 group-hover:scale-100 transition-transform duration-300">
+                                                    <Play className="w-6 h-6 text-white fill-current ml-1" />
+                                                </div>
                                             </div>
                                         </div>
 
-                                        {/* Info */}
-                                        <div className="flex-1 min-w-0 py-0.5 sm:py-1">
+                                        {/* Info - Desktop only */}
+                                        <div className="hidden sm:block flex-1 min-w-0 py-0.5 sm:py-1">
                                             <h3 className="font-semibold text-white text-sm sm:text-base line-clamp-2 group-hover:text-[#6C5DD3] transition-colors">
                                                 {anime.title}
                                             </h3>
@@ -255,7 +284,35 @@ export default function Schedule() {
                                             </div>
                                         </div>
 
-                                        {/* Notification button */}
+                                        {/* Mobile Info with Text Shadow */}
+                                        <div className="sm:hidden">
+                                            <h3 className="text-xs font-bold text-white line-clamp-2 group-hover:text-[#6C5DD3] transition-colors leading-snug min-h-[2rem] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                                                {anime.title}
+                                            </h3>
+                                            <div className="flex items-center justify-between mt-1.5">
+                                                <div className="flex items-center gap-1 bg-white/5 backdrop-blur-sm px-2 py-0.5 rounded-full">
+                                                    <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                                                    <span className="text-[11px] text-white/80 font-medium">{anime.rating}</span>
+                                                </div>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        handleToggleSubscription(anime);
+                                                    }}
+                                                    disabled={isLoading}
+                                                    className={`p-1.5 rounded-full transition-all ${isSubscribed ? 'bg-[#6C5DD3]/20 text-[#6C5DD3]' : 'bg-white/5 text-white/40'}`}
+                                                >
+                                                    {isLoading ? (
+                                                        <div className="w-3 h-3 border-2 border-[#6C5DD3] border-t-transparent rounded-full animate-spin" />
+                                                    ) : (
+                                                        <Bell className={`w-3 h-3 ${isSubscribed ? 'fill-current' : ''}`} />
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Notification button - Desktop only */}
                                         <button
                                             onClick={(e) => {
                                                 e.preventDefault();
@@ -263,7 +320,7 @@ export default function Schedule() {
                                                 handleToggleSubscription(anime);
                                             }}
                                             disabled={isLoading}
-                                            className={`self-center p-2 rounded-xl transition-all ${isSubscribed
+                                            className={`hidden sm:block self-center p-2 rounded-xl transition-all ${isSubscribed
                                                 ? 'bg-[#6C5DD3]/30 text-[#6C5DD3]'
                                                 : 'bg-white/5 text-white/50 hover:bg-[#6C5DD3]/20 hover:text-[#6C5DD3]'
                                                 }`}
@@ -294,18 +351,30 @@ export default function Schedule() {
                     </motion.div>
                 )}
 
-                {/* User Subscriptions Summary */}
+                {/* Compact Reminder Badge */}
                 {user && subscribedAnime.length > 0 && (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mt-8 p-4 bg-[#6C5DD3]/10 rounded-2xl border border-[#6C5DD3]/20"
+                        className="mt-6 mb-4"
                     >
-                        <div className="flex items-center gap-2 text-[#6C5DD3]">
-                            <Bell className="w-5 h-5" />
-                            <span className="font-medium">
-                                Kamu memiliki {subscribedAnime.length} reminder aktif
-                            </span>
+                        <div className="bg-gradient-to-r from-[#6C5DD3]/20 to-[#00C2FF]/10 rounded-2xl p-3 border border-[#6C5DD3]/20">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center shadow-lg shadow-[#6C5DD3]/30">
+                                        <Bell className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <span className="text-sm font-bold text-white block">
+                                            {subscribedAnime.length} Reminder Aktif
+                                        </span>
+                                        <span className="text-xs text-white/50">Jangan lewatkan episode baru</span>
+                                    </div>
+                                </div>
+                                <Link to="/profile" className="px-3 py-1.5 bg-[#6C5DD3] hover:bg-[#7C6DE3] text-white text-xs font-medium rounded-lg transition-colors">
+                                    Kelola
+                                </Link>
+                            </div>
                         </div>
                     </motion.div>
                 )}

@@ -171,8 +171,8 @@ export default function Profile() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0F0F1A] pt-20">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main className="min-h-screen bg-[#0F0F1A] pt-16 sm:pt-20">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Profile Header */}
         <ProfileHeader
           user={user}
@@ -189,59 +189,117 @@ export default function Profile() {
           onUpdateAvatar={updateAvatar}
         />
 
-        {/* Tabs */}
+        {/* Tabs - Mobile Optimized */}
         <Tabs defaultValue="history" className="w-full">
-          <TabsList className="flex w-full bg-white/5 border border-white/10 rounded-xl p-1.5 mb-4 sm:mb-6">
-            <TabsTrigger
-              value="history"
-              className="flex-1 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white text-white/70 text-[10px] sm:text-sm py-2 px-0.5 sm:px-3 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2"
-            >
-              <Clock className="w-4 h-4" />
-              <span className="hidden sm:inline">Riwayat</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="bookmarks"
-              className="flex-1 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white text-white/70 text-[10px] sm:text-sm py-2 px-0.5 sm:px-3 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2"
-            >
-              <Bookmark className="w-4 h-4" />
-              <span className="hidden sm:inline">Bookmark</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="watchlist"
-              className="flex-1 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white text-white/70 text-[10px] sm:text-sm py-2 px-0.5 sm:px-3 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2"
-            >
-              <ListVideo className="w-4 h-4" />
-              <span className="hidden sm:inline">Watchlist</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="ratings"
-              className="flex-1 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white text-white/70 text-[10px] sm:text-sm py-2 px-0.5 sm:px-3 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2"
-            >
-              <Star className="w-4 h-4" />
-              <span className="hidden sm:inline">Rating</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="notifications"
-              className="flex-1 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white text-white/70 text-[10px] sm:text-sm py-2 px-0.5 sm:px-3 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2"
-            >
-              <Bell className="w-4 h-4" />
-              <span className="hidden sm:inline">Notifikasi</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="achievements"
-              className="flex-1 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white text-white/70 text-[10px] sm:text-sm py-2 px-0.5 sm:px-3 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2"
-            >
-              <Trophy className="w-4 h-4" />
-              <span className="hidden sm:inline">Achievement</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="settings"
-              className="flex-1 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white text-white/70 text-[10px] sm:text-sm py-2 px-0.5 sm:px-3 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2"
-            >
-              <Settings className="w-4 h-4" />
-              <span className="hidden sm:inline">Pengaturan</span>
-            </TabsTrigger>
-          </TabsList>
+          {/* Mobile: Horizontal Scroll Pills */}
+          <div className="sm:hidden mb-4 -mx-4 px-4 overflow-x-auto scrollbar-hide">
+            <TabsList className="flex w-max bg-white/5 border border-white/10 rounded-full p-1 gap-1">
+              <TabsTrigger
+                value="history"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#6C5DD3] data-[state=active]:to-[#00C2FF] data-[state=active]:text-white text-white/60 text-xs px-4 py-2 rounded-full flex items-center gap-2 transition-all"
+              >
+                <Clock className="w-4 h-4" />
+                Riwayat
+              </TabsTrigger>
+              <TabsTrigger
+                value="bookmarks"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#6C5DD3] data-[state=active]:to-[#00C2FF] data-[state=active]:text-white text-white/60 text-xs px-4 py-2 rounded-full flex items-center gap-2 transition-all"
+              >
+                <Bookmark className="w-4 h-4" />
+                Bookmark
+              </TabsTrigger>
+              <TabsTrigger
+                value="watchlist"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#6C5DD3] data-[state=active]:to-[#00C2FF] data-[state=active]:text-white text-white/60 text-xs px-4 py-2 rounded-full flex items-center gap-2 transition-all"
+              >
+                <ListVideo className="w-4 h-4" />
+                Watchlist
+              </TabsTrigger>
+              <TabsTrigger
+                value="ratings"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#6C5DD3] data-[state=active]:to-[#00C2FF] data-[state=active]:text-white text-white/60 text-xs px-4 py-2 rounded-full flex items-center gap-2 transition-all"
+              >
+                <Star className="w-4 h-4" />
+                Rating
+              </TabsTrigger>
+              <TabsTrigger
+                value="notifications"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#6C5DD3] data-[state=active]:to-[#00C2FF] data-[state=active]:text-white text-white/60 text-xs px-4 py-2 rounded-full flex items-center gap-2 transition-all"
+              >
+                <Bell className="w-4 h-4" />
+                Notifikasi
+              </TabsTrigger>
+              <TabsTrigger
+                value="achievements"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#6C5DD3] data-[state=active]:to-[#00C2FF] data-[state=active]:text-white text-white/60 text-xs px-4 py-2 rounded-full flex items-center gap-2 transition-all"
+              >
+                <Trophy className="w-4 h-4" />
+                Achievement
+              </TabsTrigger>
+              <TabsTrigger
+                value="settings"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#6C5DD3] data-[state=active]:to-[#00C2FF] data-[state=active]:text-white text-white/60 text-xs px-4 py-2 rounded-full flex items-center gap-2 transition-all"
+              >
+                <Settings className="w-4 h-4" />
+                Pengaturan
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          {/* Desktop: Grid Tabs */}
+          <div className="hidden sm:block">
+            <TabsList className="flex w-full bg-white/5 border border-white/10 rounded-xl p-1.5 mb-6">
+              <TabsTrigger
+                value="history"
+                className="flex-1 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white text-white/70 text-sm py-2 px-3 rounded-lg flex items-center justify-center gap-2"
+              >
+                <Clock className="w-4 h-4" />
+                Riwayat
+              </TabsTrigger>
+              <TabsTrigger
+                value="bookmarks"
+                className="flex-1 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white text-white/70 text-sm py-2 px-3 rounded-lg flex items-center justify-center gap-2"
+              >
+                <Bookmark className="w-4 h-4" />
+                Bookmark
+              </TabsTrigger>
+              <TabsTrigger
+                value="watchlist"
+                className="flex-1 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white text-white/70 text-sm py-2 px-3 rounded-lg flex items-center justify-center gap-2"
+              >
+                <ListVideo className="w-4 h-4" />
+                Watchlist
+              </TabsTrigger>
+              <TabsTrigger
+                value="ratings"
+                className="flex-1 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white text-white/70 text-sm py-2 px-3 rounded-lg flex items-center justify-center gap-2"
+              >
+                <Star className="w-4 h-4" />
+                Rating
+              </TabsTrigger>
+              <TabsTrigger
+                value="notifications"
+                className="flex-1 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white text-white/70 text-sm py-2 px-3 rounded-lg flex items-center justify-center gap-2"
+              >
+                <Bell className="w-4 h-4" />
+                Notifikasi
+              </TabsTrigger>
+              <TabsTrigger
+                value="achievements"
+                className="flex-1 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white text-white/70 text-sm py-2 px-3 rounded-lg flex items-center justify-center gap-2"
+              >
+                <Trophy className="w-4 h-4" />
+                Achievement
+              </TabsTrigger>
+              <TabsTrigger
+                value="settings"
+                className="flex-1 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white text-white/70 text-sm py-2 px-3 rounded-lg flex items-center justify-center gap-2"
+              >
+                <Settings className="w-4 h-4" />
+                Pengaturan
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* History Tab */}
           <TabsContent value="history">
