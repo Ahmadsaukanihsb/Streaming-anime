@@ -11,12 +11,16 @@ import { ToastProvider } from '@/components/ui/toast';
 import PageLoader from '@/components/PageLoader';
 
 // ==========================================
+// CRITICAL PAGES (Eager Loaded for Performance)
+// Home page loads immediately for best LCP
+// ==========================================
+import Home from '@/pages/Home';
+
+// ==========================================
 // LAZY LOADED PAGES (Code Splitting)
-// All pages loaded on-demand to reduce initial bundle
 // ==========================================
 
 // Core Pages
-const Home = lazy(() => import('@/pages/Home'));
 const AnimeDetail = lazy(() => import('@/pages/AnimeDetail'));
 const Search = lazy(() => import('@/pages/Search'));
 const AnimeList = lazy(() => import('@/pages/AnimeList'));
@@ -112,12 +116,8 @@ function SmoothScroll({ children }: { children: React.ReactNode }) {
 function AppRoutes() {
   return (
     <Routes>
-      {/* All Routes - Lazy Loaded for better performance */}
-      <Route path="/" element={
-        <Suspense fallback={<PageLoader />}>
-          <Home />
-        </Suspense>
-      } />
+      {/* Home - Eager Loaded for best LCP */}
+      <Route path="/" element={<Home />} />
       <Route path="/anime/:id" element={
         <Suspense fallback={<PageLoader />}>
           <AnimeDetail />

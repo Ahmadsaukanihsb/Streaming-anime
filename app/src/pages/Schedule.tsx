@@ -1,15 +1,130 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, memo } from 'react';
 import type { Anime } from '@/data/animeData';
 import { Link } from 'react-router-dom';
 import { Calendar, Clock, Play, Bell, Star } from 'lucide-react';
 import OptimizedImage from '@/components/OptimizedImage';
-import { motion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { BACKEND_URL } from '@/config/api';
 import { getAuthHeaders } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
 import { StaticPageSEO } from '@/components/Seo';
 import { getAnimeUrl } from '@/lib/slug';
+
+// Memoized anime card untuk menghindari re-render
+const AnimeCard = memo(({ anime, isSubscribed, isLoading, onToggle }: {
+    anime: Anime;
+    isSubscribed: boolean;
+    isLoading: boolean;
+    onToggle: (anime: Anime) => void;
+}) => {
+    return (
+        <div className="flex-shrink-0 w-[140px] sm:w-auto animate-fade-in">
+            <Link
+                to={getAnimeUrl(anime)}
+                className="group block sm:flex gap-0 sm:gap-4 p-0 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-200 hover:shadow-[0_0_20px_rgba(108,93,211,0.1)]"
+            >
+                {/* Poster */}
+                <div className="relative aspect-[3/4] sm:aspect-auto sm:w-20 sm:h-28 w-full rounded-xl overflow-hidden mb-2 sm:mb-0 ring-1 ring-white/10 group-hover:ring-[#6C5DD3]/30 transition-all duration-200">
+                    <OptimizedImage
+                        src={anime.poster}
+                        alt={anime.title}
+                        aspectRatio="poster"
+                        className="group-hover:scale-105"
+                        loading="lazy"
+                    />
+                    
+                    {/* Time Badge - Mobile */}
+                    <div className="sm:hidden absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-[#6C5DD3] to-[#00C2FF] rounded-lg text-[10px] text-white font-bold shadow-lg z-10">
+                        {anime.jadwalRilis?.jam || '??:??'}
+                    </div>
+                    
+                    {/* Episode Badge - Mobile */}
+                    <div className="sm:hidden absolute bottom-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-md border border-white/10 rounded-lg text-[10px] text-white font-bold z-10">
+                        EP {anime.episodeData?.length || anime.episodes || '?'}
+                    </div>
+
+                    {/* Play Icon - Desktop */}
+                    <div className="hidden sm:flex absolute inset-0 items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                        <div className="w-12 h-12 rounded-full bg-[#6C5DD3] flex items-center justify-center shadow-lg">
+                            <Play className="w-6 h-6 text-white fill-current ml-1" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Info - Desktop */}
+                <div className="hidden sm:block flex-1 min-w-0 py-0.5 sm:py-1">
+                    <h3 className="font-semibold text-white text-sm sm:text-base line-clamp-2 group-hover:text-[#6C5DD3] transition-colors">
+                        {anime.title}
+                    </h3>
+                    <div className="flex items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-2 text-xs sm:text-sm text-white/50">
+                        <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <span>{anime.jadwalRilis?.jam || '??:??'} WIB</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 sm:gap-2 mt-1">
+                        <div className="flex items-center gap-1">
+                            <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                            <span className="text-xs text-white/60">{anime.rating}</span>
+                        </div>
+                        <span className="text-xs text-white/40">•</span>
+                        <span className="text-xs text-[#00C2FF]">
+                            {anime.episodeData && anime.episodeData.length > 0
+                                ? `${anime.episodeData.length} Ep`
+                                : `${anime.episodes} Ep`}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Mobile Info */}
+                <div className="sm:hidden">
+                    <h3 className="text-xs font-bold text-white line-clamp-2 group-hover:text-[#6C5DD3] transition-colors leading-snug min-h-[2rem]">
+                        {anime.title}
+                    </h3>
+                    <div className="flex items-center justify-between mt-1.5">
+                        <div className="flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded-full">
+                            <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                            <span className="text-[11px] text-white/80 font-medium">{anime.rating}</span>
+                        </div>
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onToggle(anime);
+                            }}
+                            disabled={isLoading}
+                            className={`p-1.5 rounded-full transition-all ${isSubscribed ? 'bg-[#6C5DD3]/20 text-[#6C5DD3]' : 'bg-white/5 text-white/40'}`}
+                        >
+                            {isLoading ? (
+                                <div className="w-3 h-3 border-2 border-[#6C5DD3] border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                                <Bell className={`w-3 h-3 ${isSubscribed ? 'fill-current' : ''}`} />
+                            )}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Notification button - Desktop */}
+                <button
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onToggle(anime);
+                    }}
+                    disabled={isLoading}
+                    className={`hidden sm:block self-center p-2 rounded-xl transition-all ${isSubscribed
+                        ? 'bg-[#6C5DD3]/20 text-[#6C5DD3] hover:bg-[#6C5DD3]/30'
+                        : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/60'
+                        }`}
+                >
+                    {isLoading ? (
+                        <div className="w-5 h-5 border-2 border-[#6C5DD3] border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                        <Bell className={`w-5 h-5 ${isSubscribed ? 'fill-current' : ''}`} />
+                    )}
+                </button>
+            </Link>
+        </div>
+    );
+});
 
 // Day names in Indonesian
 const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -217,127 +332,15 @@ export default function Schedule() {
                 {/* Anime Schedule - Mobile: Horizontal Scroll, Desktop: Grid */}
                 {todayAnime.length > 0 ? (
                     <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 overflow-x-auto sm:overflow-visible scrollbar-hide pb-2 sm:pb-0">
-                        {todayAnime.map((anime, index) => {
-                            const isSubscribed = subscribedAnime.includes(anime.id);
-                            const isLoading = loadingSubscription === anime.id;
-
-                            return (
-                                <motion.div
-                                    key={anime.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.1 }}
-                                    className="flex-shrink-0 w-[140px] sm:w-auto"
-                                >
-                                    <Link
-                                        to={getAnimeUrl(anime)}
-                                        className="group block sm:flex gap-0 sm:gap-4 p-0 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(108,93,211,0.15)]"
-                                    >
-                                        {/* Poster - Mobile: Vertical Card, Desktop: Horizontal with Glow */}
-                                        <div className="relative aspect-[3/4] sm:aspect-auto sm:w-20 sm:h-28 w-full rounded-xl overflow-hidden mb-2 sm:mb-0 ring-1 ring-white/10 group-hover:ring-[#6C5DD3]/30 transition-all duration-300">
-                                            <OptimizedImage
-                                                src={anime.poster}
-                                                alt={anime.title}
-                                                aspectRatio="poster"
-                                                className="group-hover:scale-110"
-                                                loading="lazy"
-                                            />
-                                            
-                                            {/* Time Badge - Mobile only with Gradient */}
-                                            <div className="sm:hidden absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-[#6C5DD3] to-[#00C2FF] rounded-lg text-[10px] text-white font-bold shadow-lg shadow-[#6C5DD3]/30 z-10">
-                                                {anime.jadwalRilis?.jam || '??:??'}
-                                            </div>
-                                            
-                                            {/* Episode Badge - Mobile only with Glass Effect */}
-                                            <div className="sm:hidden absolute bottom-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-md border border-white/10 rounded-lg text-[10px] text-white font-bold z-10">
-                                                EP {anime.episodeData?.length || anime.episodes || '?'}
-                                            </div>
-
-                                            {/* Play Icon - Desktop only with Glow */}
-                                            <div className="hidden sm:flex absolute inset-0 items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10">
-                                                <div className="w-12 h-12 rounded-full bg-[#6C5DD3] flex items-center justify-center shadow-lg shadow-[#6C5DD3]/50 scale-75 group-hover:scale-100 transition-transform duration-300">
-                                                    <Play className="w-6 h-6 text-white fill-current ml-1" />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Info - Desktop only */}
-                                        <div className="hidden sm:block flex-1 min-w-0 py-0.5 sm:py-1">
-                                            <h3 className="font-semibold text-white text-sm sm:text-base line-clamp-2 group-hover:text-[#6C5DD3] transition-colors">
-                                                {anime.title}
-                                            </h3>
-                                            <div className="flex items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-2 text-xs sm:text-sm text-white/50">
-                                                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                                <span>{anime.jadwalRilis?.jam || '??:??'} WIB</span>
-                                            </div>
-                                            <div className="flex items-center gap-1.5 sm:gap-2 mt-1">
-                                                <div className="flex items-center gap-1">
-                                                    <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                                                    <span className="text-xs text-white/60">{anime.rating}</span>
-                                                </div>
-                                                <span className="text-xs text-white/40">•</span>
-                                                <span className="text-xs text-[#00C2FF]">
-                                                    {anime.episodeData && anime.episodeData.length > 0
-                                                        ? `${anime.episodeData.length} Ep`
-                                                        : `${anime.episodes} Ep`}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* Mobile Info with Text Shadow */}
-                                        <div className="sm:hidden">
-                                            <h3 className="text-xs font-bold text-white line-clamp-2 group-hover:text-[#6C5DD3] transition-colors leading-snug min-h-[2rem] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-                                                {anime.title}
-                                            </h3>
-                                            <div className="flex items-center justify-between mt-1.5">
-                                                <div className="flex items-center gap-1 bg-white/5 backdrop-blur-sm px-2 py-0.5 rounded-full">
-                                                    <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                                                    <span className="text-[11px] text-white/80 font-medium">{anime.rating}</span>
-                                                </div>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        handleToggleSubscription(anime);
-                                                    }}
-                                                    disabled={isLoading}
-                                                    className={`p-1.5 rounded-full transition-all ${isSubscribed ? 'bg-[#6C5DD3]/20 text-[#6C5DD3]' : 'bg-white/5 text-white/40'}`}
-                                                >
-                                                    {isLoading ? (
-                                                        <div className="w-3 h-3 border-2 border-[#6C5DD3] border-t-transparent rounded-full animate-spin" />
-                                                    ) : (
-                                                        <Bell className={`w-3 h-3 ${isSubscribed ? 'fill-current' : ''}`} />
-                                                    )}
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* Notification button - Desktop only */}
-                                        <button
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                handleToggleSubscription(anime);
-                                            }}
-                                            disabled={isLoading}
-                                            className={`hidden sm:block self-center p-2 rounded-xl transition-all ${isSubscribed
-                                                ? 'bg-[#6C5DD3]/30 text-[#6C5DD3]'
-                                                : 'bg-white/5 text-white/50 hover:bg-[#6C5DD3]/20 hover:text-[#6C5DD3]'
-                                                }`}
-                                            title={isSubscribed ? 'Nonaktifkan reminder' : 'Aktifkan reminder'}
-                                        >
-                                            {isLoading ? (
-                                                <div className="w-5 h-5 border-2 border-[#6C5DD3] border-t-transparent rounded-full animate-spin" />
-                                            ) : isSubscribed ? (
-                                                <Bell className="w-5 h-5 fill-current" />
-                                            ) : (
-                                                <Bell className="w-5 h-5" />
-                                            )}
-                                        </button>
-                                    </Link>
-                                </motion.div>
-                            );
-                        })}
+                        {todayAnime.map((anime) => (
+                            <AnimeCard
+                                key={anime.id}
+                                anime={anime}
+                                isSubscribed={subscribedAnime.includes(anime.id)}
+                                isLoading={loadingSubscription === anime.id}
+                                onToggle={handleToggleSubscription}
+                            />
+                        ))}
                     </div>
                 ) : (
                     <motion.div
