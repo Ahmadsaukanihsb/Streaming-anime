@@ -16,11 +16,6 @@ export function useReducedMotion(): boolean {
     // Check user preference
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     
-    // Check battery saver (if available)
-    const batterySaver = (navigator as any).getBattery ? 
-      (navigator as any).getBattery()?.then((b: any) => b.saveData) : 
-      Promise.resolve(false);
-
     setReducedMotion(isMobile || prefersReducedMotion);
 
     // Listen for changes
@@ -43,43 +38,4 @@ export function useReducedMotion(): boolean {
   }, []);
 
   return reducedMotion;
-}
-
-/**
- * Wrapper component untuk motion.div yang otomatis disable di mobile
- */
-interface MotionWrapperProps {
-  children: React.ReactNode;
-  className?: string;
-  initial?: object;
-  animate?: object;
-  exit?: object;
-  transition?: object;
-}
-
-export function MotionDiv({ 
-  children, 
-  className = '', 
-  ...props 
-}: MotionWrapperProps) {
-  const reducedMotion = useReducedMotion();
-
-  if (reducedMotion) {
-    return <div className={`${className} animate-fade-in`}>{children}</div>;
-  }
-
-  // Lazy load motion.div only when needed
-  return <LazyMotionDiv className={className} {...props}>{children}</LazyMotionDiv>;
-}
-
-// Lazy loaded motion component
-import { motion } from 'framer-motion';
-import { lazy, Suspense } from 'react';
-
-function LazyMotionDiv({ children, className, ...props }: MotionWrapperProps) {
-  return (
-    <motion.div className={className} {...props}>
-      {children}
-    </motion.div>
-  );
 }

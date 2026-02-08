@@ -477,6 +477,7 @@ export default function Hero() {
             </div>
           </motion.div>
         </AnimatePresence>
+      )}
       </div>
 
       {/* Navigation Arrows */}
