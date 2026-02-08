@@ -41,7 +41,7 @@ export default function Login() {
     const faviconUrl = localStorage.getItem('siteFavicon') || storedLogo;
     if (faviconUrl) {
       const faviconLink = document.getElementById('site-favicon') as HTMLLinkElement;
-      if (faviconLink) faviconLink.href = faviconUrl;
+      if (faviconLink) faviconLink.href = `${faviconUrl}?v=${Date.now()}`;
     }
   }, []);
 

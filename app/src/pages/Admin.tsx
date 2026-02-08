@@ -134,10 +134,11 @@ export default function Admin() {
       // Also save as favicon (use same image as favicon)
       localStorage.setItem('siteFavicon', publicUrl);
       
-      // Update favicon in document head
+      // Update favicon in document head (add timestamp to force refresh)
       const faviconLink = document.getElementById('site-favicon') as HTMLLinkElement;
       if (faviconLink) {
-        faviconLink.href = publicUrl;
+        const timestamp = Date.now();
+        faviconLink.href = `${publicUrl}?v=${timestamp}`;
       }
       
       // Broadcast to all tabs/components

@@ -58,7 +58,7 @@ export default function Navbar() {
       const favicon = localStorage.getItem('siteFavicon') || logo;
       if (favicon) {
         const faviconLink = document.getElementById('site-favicon') as HTMLLinkElement;
-        if (faviconLink) faviconLink.href = favicon;
+        if (faviconLink) faviconLink.href = `${favicon}?v=${Date.now()}`;
       }
     };
     
@@ -68,7 +68,7 @@ export default function Navbar() {
       // Also update favicon
       localStorage.setItem('siteFavicon', e.detail);
       const faviconLink = document.getElementById('site-favicon') as HTMLLinkElement;
-      if (faviconLink) faviconLink.href = e.detail;
+      if (faviconLink) faviconLink.href = `${e.detail}?v=${Date.now()}`;
     };
     
     // Listen for BroadcastChannel messages
@@ -81,7 +81,7 @@ export default function Navbar() {
           // Also update favicon
           localStorage.setItem('siteFavicon', event.data.logo);
           const faviconLink = document.getElementById('site-favicon') as HTMLLinkElement;
-          if (faviconLink) faviconLink.href = event.data.logo;
+          if (faviconLink) faviconLink.href = `${event.data.logo}?v=${Date.now()}`;
         }
       };
     }
