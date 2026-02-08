@@ -6,7 +6,7 @@ import { DEFAULT_SITE_NAME } from '../config/api';
 export default function Footer() {
   const currentYear = new Date().getFullYear();
   const [siteName, setSiteName] = useState(DEFAULT_SITE_NAME);
-  const [siteLogo, setSiteLogo] = useState('');
+  const [siteLogo, setSiteLogo] = useState('/images/logo.png');
   
   useEffect(() => {
     const storedName = localStorage.getItem('siteName');
@@ -35,13 +35,25 @@ export default function Footer() {
           const faviconLink = document.getElementById('site-favicon') as HTMLLinkElement;
           if (faviconLink) faviconLink.href = `${event.data.logo}?v=${Date.now()}`;
         }
+        if (event.data.type === 'siteNameUpdated') {
+          setSiteName(event.data.siteName);
+          localStorage.setItem('siteName', event.data.siteName);
+        }
       };
     }
+    
+    // Listen for storage changes (from other tabs)
+    const handleStorageChange = () => {
+      const updatedName = localStorage.getItem('siteName');
+      if (updatedName) setSiteName(updatedName);
+    };
+    window.addEventListener('storage', handleStorageChange);
     
     window.addEventListener('siteLogoUpdated', handleLogoUpdate as EventListener);
     
     return () => {
       window.removeEventListener('siteLogoUpdated', handleLogoUpdate as EventListener);
+      window.removeEventListener('storage', handleStorageChange);
       bc?.close();
     };
   }, []);
@@ -72,7 +84,7 @@ export default function Footer() {
     // { icon: Instagram, href: '#', label: 'Instagram' },
     // { icon: Youtube, href: '#', label: 'YouTube' },
     { icon: Github, href: '#', label: 'GitHub' },
-    { icon: Mail, href: 'mailto:support@animestream.id', label: 'Email' },
+    { icon: Mail, href: `mailto:support@${siteName.toLowerCase().replace(/\s+/g, '')}.id`, label: 'Email' },
   ];
 
   return (

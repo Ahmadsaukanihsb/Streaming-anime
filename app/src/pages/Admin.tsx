@@ -429,7 +429,10 @@ export default function Admin() {
 
   // Add anime to hero
   const addToHero = (animeId: string) => {
-    if (heroAnimeIds.includes(animeId)) {
+    // Find anime to check if already exists (by id or cleanSlug)
+    const anime = animeList.find(a => a.id === animeId || a.cleanSlug === animeId);
+    const slug = anime?.cleanSlug || animeId;
+    if (heroAnimeIds.includes(slug) || (anime && heroAnimeIds.includes(anime.id))) {
       showToast('Anime sudah ada di Hero!', 'error');
       return;
     }
@@ -437,17 +440,23 @@ export default function Admin() {
       showToast('Maksimal 5 anime di Hero!', 'error');
       return;
     }
-    saveHeroSettings([...heroAnimeIds, animeId]);
+    saveHeroSettings([...heroAnimeIds, slug]);
   };
 
   // Remove anime from hero
   const removeFromHero = (animeId: string) => {
-    saveHeroSettings(heroAnimeIds.filter(id => id !== animeId));
+    // Find anime to get its cleanSlug for consistent removal
+    const anime = animeList.find(a => a.id === animeId || a.cleanSlug === animeId);
+    const slugToRemove = anime?.cleanSlug || animeId;
+    saveHeroSettings(heroAnimeIds.filter(id => id !== slugToRemove && id !== animeId));
   };
 
   // Move hero anime up/down
   const moveHeroAnime = (animeId: string, direction: 'up' | 'down') => {
-    const idx = heroAnimeIds.indexOf(animeId);
+    // Find anime to get its cleanSlug for consistent lookup
+    const anime = animeList.find(a => a.id === animeId || a.cleanSlug === animeId);
+    const slug = anime?.cleanSlug || animeId;
+    const idx = heroAnimeIds.findIndex(id => id === slug || id === animeId);
     if (idx === -1) return;
     const newIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (newIdx < 0 || newIdx >= heroAnimeIds.length) return;
@@ -3062,6 +3071,13 @@ export default function Admin() {
                       localStorage.setItem('siteEmail', siteEmail);
                       localStorage.setItem('siteLogo', siteLogo);
                       
+                      // Broadcast site name update to other tabs
+                      if (typeof BroadcastChannel !== 'undefined') {
+                        const bc = new BroadcastChannel('site-settings');
+                        bc.postMessage({ type: 'siteNameUpdated', siteName });
+                        bc.close();
+                      }
+                      
                       // Save to backend
                       apiFetch(`${BACKEND_URL}/api/settings/siteName`, {
                         method: 'POST',
@@ -3580,7 +3596,7 @@ export default function Admin() {
                   </div>
                 ) : (
                   heroAnimeIds.map((id, index) => {
-                    const anime = animeList.find(a => a.id === id);
+                    const anime = animeList.find(a => a.id === id || a.cleanSlug === id);
                     return (
                       <motion.div
                         key={id}
@@ -3685,6 +3701,7 @@ export default function Admin() {
                   {animeList
                     .filter(anime =>
                       !heroAnimeIds.includes(anime.id) &&
+                      !heroAnimeIds.includes(anime.cleanSlug || '') &&
                       anime.title.toLowerCase().includes(heroSearchQuery.toLowerCase())
                     )
                     .slice(0, 20)
@@ -3692,7 +3709,7 @@ export default function Admin() {
                       <div
                         key={anime.id}
                         className="relative group cursor-pointer"
-                        onClick={() => addToHero(anime.id)}
+                        onClick={() => addToHero(anime.cleanSlug || anime.id)}
                       >
                         <div className="aspect-[2/3] rounded-xl overflow-hidden bg-white/5">
                           <img

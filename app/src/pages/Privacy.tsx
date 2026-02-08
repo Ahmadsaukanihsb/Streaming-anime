@@ -1,8 +1,25 @@
 import { Shield, Eye, Lock, Users, Database, Bell, Mail, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { StaticPageSEO } from '@/components/Seo';
+import { useState, useEffect } from 'react';
+import { DEFAULT_SITE_NAME } from '@/config/api';
 
 export default function Privacy() {
+    const [siteName, setSiteName] = useState(DEFAULT_SITE_NAME);
+    
+    useEffect(() => {
+        const storedName = localStorage.getItem('siteName');
+        if (storedName) setSiteName(storedName);
+        
+        const handleStorageChange = () => {
+            const updatedName = localStorage.getItem('siteName');
+            if (updatedName) setSiteName(updatedName);
+        };
+        
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
+    }, []);
+    
     const sections = [
         {
             icon: Database,
@@ -131,10 +148,10 @@ export default function Privacy() {
                         Ada pertanyaan tentang privasi?
                     </p>
                     <a
-                        href="mailto:privacy@animestream.id"
+                        href={`mailto:privacy@${siteName.toLowerCase().replace(/\s+/g, '')}.id`}
                         className="text-[#6C5DD3] hover:text-[#00C2FF] transition-colors"
                     >
-                        privacy@animestream.id
+                        privacy@{siteName.toLowerCase().replace(/\s+/g, '')}.id
                     </a>
                 </motion.div>
             </div>

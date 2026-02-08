@@ -8,7 +8,7 @@ import { apiFetch } from '@/lib/api';
 import OptimizedImage from '@/components/OptimizedImage';
 import { createLogger } from '@/lib/logger';
 import type { Anime } from '@/data/animeData';
-import { getAnimeUrl, getWatchUrl } from '@/lib/slug';
+import { getAnimeUrl, getWatchUrl, generateCleanSlug } from '@/lib/slug';
 
 const logger = createLogger('Hero');
 
@@ -69,10 +69,26 @@ export default function Hero() {
     return () => window.removeEventListener('resize', update);
   }, []);
 
+  // Helper function to find anime by slug (id, cleanSlug, or generated from title)
+  const findAnimeBySlug = (slug: string): Anime | undefined => {
+    return animeList.find(a => {
+      // 1. Cek exact match dengan id
+      if (a.id === slug) return true;
+      // 2. Cek match dengan cleanSlug yang tersimpan
+      if (a.cleanSlug === slug) return true;
+      // 3. Cek match dengan slug yang di-generate dari title
+      const generatedSlug = generateCleanSlug(a.title);
+      if (generatedSlug === slug) return true;
+      // 4. Cek partial match dengan id (untuk backward compatibility)
+      if (a.id.startsWith(slug + '-')) return true;
+      return false;
+    });
+  };
+
   // Use custom hero anime if available, otherwise fallback to top rated
   const heroSlides: HeroSlide[] = heroAnimeIds.length > 0
     ? heroAnimeIds
-      .map(id => animeList.find(a => a.id === id))
+      .map(id => findAnimeBySlug(id))
       .filter((anime): anime is NonNullable<typeof anime> => anime !== undefined)
       .map(anime => ({
         ...anime,

@@ -36,7 +36,7 @@ import { apiFetch } from '@/lib/api';
 import { WatchSEO } from '@/components/Seo';
 import { VideoSchema, BreadcrumbSchema } from '@/components/SchemaOrg';
 import { createLogger } from '@/lib/logger';
-import { getAnimeUrl, getWatchUrl } from '@/lib/slug';
+import { getAnimeUrl, getWatchUrl, generateCleanSlug } from '@/lib/slug';
 
 const logger = createLogger('Watch');
 
@@ -99,7 +99,19 @@ export default function Watch() {
   // Fallback state for anime data (if not found in context/props)
   // This handles direct navigation or refresh
   const [apiAnime, setApiAnime] = useState<any>(undefined);
-  const contextAnime = id ? animeList.find(a => a.id === id) : undefined;
+  const contextAnime = id ? animeList.find(a => {
+    // 1. Cek exact match dengan id
+    if (a.id === id) return true;
+    // 2. Cek match dengan cleanSlug yang tersimpan
+    if (a.cleanSlug === id) return true;
+    // 3. Cek match dengan slug yang di-generate dari title
+    // Ini untuk handle anime lama yang belum memiliki cleanSlug di database
+    const generatedSlug = generateCleanSlug(a.title);
+    if (generatedSlug === id) return true;
+    // 4. Cek partial match dengan id (untuk backward compatibility)
+    if (a.id.startsWith(id + '-')) return true;
+    return false;
+  }) : undefined;
   const anime = contextAnime || apiAnime;
 
   const currentEpisode = (() => {

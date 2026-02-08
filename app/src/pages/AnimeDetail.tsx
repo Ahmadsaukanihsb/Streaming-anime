@@ -42,6 +42,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BACKEND_URL } from '@/config/api';
 import { getAuthHeaders } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
+import { generateCleanSlug } from '@/lib/slug';
 
 export default function AnimeDetail() {
   const { id } = useParams<{ id: string }>();
@@ -75,6 +76,9 @@ export default function AnimeDetail() {
     if (a.id === id) return true;
     // Match with cleanSlug
     if (a.cleanSlug === id) return true;
+    // Match with slug generated from title (for anime without cleanSlug)
+    const generatedSlug = generateCleanSlug(a.title);
+    if (generatedSlug === id) return true;
     // Match if id starts with the slug (for backward compatibility)
     if (a.id.startsWith(id + '-')) return true;
     // Match if id contains the slug

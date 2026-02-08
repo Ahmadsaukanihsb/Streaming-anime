@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Search, X, ChevronRight, TrendingUp, Clock, Star, Calendar, Play, ChevronLeft, Bookmark } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useRef, useState, useEffect } from 'react';
+import { DEFAULT_SITE_NAME } from '@/config/api';
 import type { Anime } from '@/data/animeData';
 import { useApp } from '@/context/AppContext';
 import OptimizedImage from '@/components/OptimizedImage';
@@ -19,6 +20,27 @@ interface DesktopHomeProps {
   completedAnime: Anime[];
   popularGenres: string[];
   sidebarWidgets: SidebarWidget[];
+}
+
+// Hook to get site name from localStorage
+function useSiteName() {
+  const [siteName, setSiteName] = useState(DEFAULT_SITE_NAME);
+  
+  useEffect(() => {
+    const storedName = localStorage.getItem('siteName');
+    if (storedName) setSiteName(storedName);
+    
+    // Listen for site name updates
+    const handleStorageChange = () => {
+      const updatedName = localStorage.getItem('siteName');
+      if (updatedName) setSiteName(updatedName);
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+  
+  return siteName;
 }
 
 // Minimalist Anime Card with Hover Detail
@@ -386,7 +408,7 @@ export default function DesktopHome({
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center">
                 <Play className="w-4 h-4 text-white fill-current" />
               </div>
-              <span className="text-lg font-bold text-white">AnimeStream</span>
+              <span className="text-lg font-bold text-white">{useSiteName()}</span>
             </Link>
 
             {/* Search */}

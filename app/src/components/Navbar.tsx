@@ -37,7 +37,7 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [siteName, setSiteName] = useState(DEFAULT_SITE_NAME);
-  const [siteLogo, setSiteLogo] = useState('');
+  const [siteLogo, setSiteLogo] = useState('/images/logo.png');
   const rafId = useRef<number | null>(null);
   const lastScrolled = useRef(false);
   
@@ -46,6 +46,7 @@ export default function Navbar() {
     const storedName = localStorage.getItem('siteName');
     const storedLogo = localStorage.getItem('siteLogo');
     if (storedName) setSiteName(storedName);
+    // Use stored logo if available, otherwise keep default logo
     if (storedLogo) setSiteLogo(storedLogo);
     
     // Listen for storage changes (from other tabs)
