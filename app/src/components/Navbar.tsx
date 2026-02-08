@@ -53,11 +53,21 @@ export default function Navbar() {
       const logo = localStorage.getItem('siteLogo');
       if (name) setSiteName(name);
       if (logo) setSiteLogo(logo);
+      // Also update favicon
+      const favicon = localStorage.getItem('siteFavicon') || logo;
+      if (favicon) {
+        const faviconLink = document.getElementById('site-favicon') as HTMLLinkElement;
+        if (faviconLink) faviconLink.href = favicon;
+      }
     };
     
     // Listen for custom event (from same tab)
     const handleLogoUpdate = (e: CustomEvent) => {
       setSiteLogo(e.detail);
+      // Also update favicon
+      localStorage.setItem('siteFavicon', e.detail);
+      const faviconLink = document.getElementById('site-favicon') as HTMLLinkElement;
+      if (faviconLink) faviconLink.href = e.detail;
     };
     
     // Listen for BroadcastChannel messages
@@ -67,6 +77,10 @@ export default function Navbar() {
       bc.onmessage = (event) => {
         if (event.data.type === 'logoUpdated') {
           setSiteLogo(event.data.logo);
+          // Also update favicon
+          localStorage.setItem('siteFavicon', event.data.logo);
+          const faviconLink = document.getElementById('site-favicon') as HTMLLinkElement;
+          if (faviconLink) faviconLink.href = event.data.logo;
         }
       };
     }
@@ -146,9 +160,9 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center overflow-hidden">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden ${siteLogo ? 'bg-transparent' : 'bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF]'}`}>
                 {siteLogo ? (
-                  <img src={siteLogo} alt={siteName} className="w-full h-full object-cover" />
+                  <img src={siteLogo} alt={siteName} className="w-full h-full object-contain" />
                 ) : (
                   <Film className="w-5 h-5 text-white" />
                 )}

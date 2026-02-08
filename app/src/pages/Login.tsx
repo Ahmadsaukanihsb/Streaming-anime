@@ -37,6 +37,12 @@ export default function Login() {
     const storedLogo = localStorage.getItem('siteLogo');
     if (storedName) setSiteName(storedName);
     if (storedLogo) setSiteLogo(storedLogo);
+    // Also set favicon
+    const faviconUrl = localStorage.getItem('siteFavicon') || storedLogo;
+    if (faviconUrl) {
+      const faviconLink = document.getElementById('site-favicon') as HTMLLinkElement;
+      if (faviconLink) faviconLink.href = faviconUrl;
+    }
   }, []);
 
   // Load remembered email
@@ -206,9 +212,9 @@ export default function Login() {
           {/* Logo */}
           <div className="text-center mb-8">
             <Link to="/" className="inline-flex items-center gap-2 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center overflow-hidden">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden ${siteLogo ? 'bg-transparent' : 'bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF]'}`}>
                 {siteLogo ? (
-                  <img src={siteLogo} alt={siteName} className="w-full h-full object-cover" />
+                  <img src={siteLogo} alt={siteName} className="w-full h-full object-contain" />
                 ) : (
                   <Film className="w-6 h-6 text-white" />
                 )}

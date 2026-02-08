@@ -12,6 +12,20 @@
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://animeku.xyz/" />
   <meta name="theme-color" content="#0F0F1A" />
+  
+  <!-- Favicon - dynamically updated from logo -->
+  <link id="site-favicon" rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <script>
+    // Set favicon from localStorage on page load
+    (function() {
+      var faviconUrl = localStorage.getItem('siteFavicon') || localStorage.getItem('siteLogo');
+      var link = document.getElementById('site-favicon');
+      if (link && faviconUrl) {
+        link.href = faviconUrl;
+        link.type = 'image/png';
+      }
+    })();
+  </script>
 
   <!-- Performance: Preconnect to critical origins -->
   <link rel="preconnect" href="https://api.animeku.xyz" crossorigin />

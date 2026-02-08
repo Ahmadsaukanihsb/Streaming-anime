@@ -131,6 +131,15 @@ export default function Admin() {
       // Save to localStorage immediately
       localStorage.setItem('siteLogo', publicUrl);
       
+      // Also save as favicon (use same image as favicon)
+      localStorage.setItem('siteFavicon', publicUrl);
+      
+      // Update favicon in document head
+      const faviconLink = document.getElementById('site-favicon') as HTMLLinkElement;
+      if (faviconLink) {
+        faviconLink.href = publicUrl;
+      }
+      
       // Broadcast to all tabs/components
       if (typeof BroadcastChannel !== 'undefined') {
         const bc = new BroadcastChannel('site-settings');
@@ -1105,9 +1114,9 @@ export default function Admin() {
         <div className="flex-1 overflow-y-auto p-6 pb-2 admin-sidebar-scroll">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 mb-8 group">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center shadow-lg shadow-[#6C5DD3]/20 group-hover:shadow-[#6C5DD3]/40 transition-shadow overflow-hidden">
+            <div className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-lg transition-shadow overflow-hidden ${siteLogo ? 'bg-transparent shadow-none' : 'bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] shadow-[#6C5DD3]/20 group-hover:shadow-[#6C5DD3]/40'}`}>
               {siteLogo ? (
-                <img src={siteLogo} alt={siteName} className="w-full h-full object-cover" />
+                <img src={siteLogo} alt={siteName} className="w-full h-full object-contain" />
               ) : (
                 <Film className="w-6 h-6 text-white" />
               )}
@@ -2983,8 +2992,8 @@ export default function Admin() {
                   {siteLogo && (
                     <div className="mt-3 flex items-center gap-3 p-3 bg-white/5 rounded-xl">
                       <span className="text-xs text-white/40">Preview:</span>
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center overflow-hidden">
-                        <img src={siteLogo} alt="Preview" className="w-full h-full object-cover" />
+                      <div className="w-12 h-12 rounded-xl bg-transparent flex items-center justify-center overflow-hidden">
+                        <img src={siteLogo} alt="Preview" className="w-full h-full object-contain" />
                       </div>
                       <button
                         onClick={() => setSiteLogo('')}
@@ -3055,25 +3064,32 @@ export default function Admin() {
                       // Save to backend
                       apiFetch(`${BACKEND_URL}/api/settings/siteName`, {
                         method: 'POST',
-                        headers: getAuthHeaders(),
+                        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                         body: JSON.stringify({ value: siteName })
                       }).catch(() => {});
                       
                       apiFetch(`${BACKEND_URL}/api/settings/siteDescription`, {
                         method: 'POST',
-                        headers: getAuthHeaders(),
+                        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                         body: JSON.stringify({ value: siteDescription })
                       }).catch(() => {});
                       
                       apiFetch(`${BACKEND_URL}/api/settings/siteEmail`, {
                         method: 'POST',
-                        headers: getAuthHeaders(),
+                        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                         body: JSON.stringify({ value: siteEmail })
                       }).catch(() => {});
                       
                       apiFetch(`${BACKEND_URL}/api/settings/siteLogo`, {
                         method: 'POST',
-                        headers: getAuthHeaders(),
+                        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+                        body: JSON.stringify({ value: siteLogo })
+                      }).catch(() => {});
+                      
+                      // Also save favicon (same as logo)
+                      apiFetch(`${BACKEND_URL}/api/settings/siteFavicon`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                         body: JSON.stringify({ value: siteLogo })
                       }).catch(() => {});
                       

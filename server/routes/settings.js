@@ -21,6 +21,12 @@ router.get('/:key', async (req, res) => {
 router.post('/:key', requireAuth, requireAdmin, async (req, res) => {
     try {
         const { key } = req.params;
+        
+        // Check if body exists
+        if (!req.body) {
+            return res.status(400).json({ error: 'Request body is required' });
+        }
+        
         const { value } = req.body;
 
         if (value === undefined) {
