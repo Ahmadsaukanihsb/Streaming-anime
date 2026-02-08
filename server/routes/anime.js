@@ -23,7 +23,7 @@ router.get('/custom', async (req, res) => {
         res.json(customAnimes);
     } catch (err) {
         console.error('[Anime] Get custom anime error:', err.message);
-        res.status(500).json({ error: 'Server error', message: err.message });
+        return res.status(500).json({ error: 'Server error', message: err.message });
     }
 });
 
@@ -34,7 +34,7 @@ router.get('/deleted', async (req, res) => {
         res.json(deleted.map(d => d.animeId));
     } catch (err) {
         console.error('[Anime] Get deleted anime error:', err.message);
-        res.status(500).json({ error: 'Server error', message: err.message });
+        return res.status(500).json({ error: 'Server error', message: err.message });
     }
 });
 
@@ -57,7 +57,7 @@ router.post('/translate', validateBody([
         res.json({ translated });
     } catch (err) {
         console.error('[Translate] Error:', err.message);
-        res.status(500).json({ error: 'Translation failed', message: err.message });
+        return res.status(500).json({ error: 'Translation failed', message: err.message });
     }
 });
 
@@ -87,13 +87,13 @@ router.post('/', requireAdmin, validateBody([
         await newAnime.save();
 
         console.log('[POST /api/anime] Successfully saved:', newAnime.id);
-        res.json(newAnime);
+        return res.json(newAnime);
     } catch (err) {
         console.error('[POST /api/anime] ERROR:', err);
         console.error('[POST /api/anime] Error message:', err.message);
         console.error('[POST /api/anime] Error stack:', err.stack);
 
-        res.status(500).json({
+        return res.status(500).json({
             error: 'Server error',
             message: err.message,
             details: err.errors || {}
@@ -158,7 +158,7 @@ router.get('/:id', async (req, res) => {
         return res.status(404).json({ msg: 'Anime not found' });
     } catch (err) {
         console.error('[Anime] Get single anime error:', err.message);
-        res.status(500).json({ error: 'Server error', message: err.message });
+        return res.status(500).json({ error: 'Server error', message: err.message });
     }
 });
 
@@ -182,7 +182,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
         res.json(updatedAnime);
     } catch (err) {
         console.error('[Anime] Update anime error:', err.message);
-        res.status(500).json({ error: 'Server error', message: err.message });
+        return res.status(500).json({ error: 'Server error', message: err.message });
     }
 });
 
@@ -204,7 +204,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
         res.json({ msg: 'Anime deleted' });
     } catch (err) {
         console.error('[Anime] Delete anime error:', err.message);
-        res.status(500).json({ error: 'Server error', message: err.message });
+        return res.status(500).json({ error: 'Server error', message: err.message });
     }
 });
 
