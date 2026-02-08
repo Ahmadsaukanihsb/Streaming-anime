@@ -63,13 +63,6 @@ export default function Hero() {
     loadHeroSettings();
   }, []);
 
-  useEffect(() => {
-    const update = () => setIsMobile(window.matchMedia('(max-width: 640px)').matches);
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
-
   // Helper function to find anime by slug (id, cleanSlug, or generated from title)
   const findAnimeBySlug = (slug: string): Anime | undefined => {
     return animeList.find(a => {
