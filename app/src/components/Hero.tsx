@@ -23,7 +23,6 @@ interface HeroSlide extends Anime {
 
 export default function Hero() {
   const { animeList } = useApp();
-  const [isMobile, setIsMobile] = useState(false);
   const reducedMotion = useReducedMotion();
   const touchStartX = useRef<number | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
