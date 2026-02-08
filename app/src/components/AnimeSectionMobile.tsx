@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Flame, Clock, Star, TrendingUp, Sparkles } from 'lucide-react';
 
@@ -33,8 +33,8 @@ const iconColors = {
   sparkles: 'from-[#6C5DD3] to-[#00C2FF]',
 };
 
-// Horizontal scroll section (Netflix-style)
-function HorizontalSection({ 
+// Horizontal scroll section (Netflix-style) - Memoized
+const HorizontalSection = memo(function HorizontalSection({ 
   title, 
   animeList, 
   icon = 'flame', 
@@ -79,10 +79,10 @@ function HorizontalSection({
       </div>
     </section>
   );
-}
+});
 
-// List view section (for latest, completed)
-function ListSection({ 
+// List view section (for latest, completed) - Memoized
+const ListSection = memo(function ListSection({ 
   title, 
   animeList, 
   icon = 'clock', 
@@ -123,10 +123,10 @@ function ListSection({
       </div>
     </section>
   );
-}
+});
 
-// Grid section (3 columns, for explore, genres)
-function GridSection({ 
+// Grid section (3 columns, for explore, genres) - Memoized
+const GridSection = memo(function GridSection({ 
   title, 
   animeList, 
   icon = 'sparkles', 
@@ -167,10 +167,10 @@ function GridSection({
       </div>
     </section>
   );
-}
+});
 
-// Continue watching section with progress
-function ContinueSection({ 
+// Continue watching section with progress - Memoized
+const ContinueSection = memo(function ContinueSection({ 
   title, 
   animeList, 
   progressData = [],
@@ -208,7 +208,7 @@ function ContinueSection({
       </div>
     </section>
   );
-}
+});
 
 export default function AnimeSectionMobile(props: AnimeSectionMobileProps) {
   const { variant = 'horizontal' } = props;

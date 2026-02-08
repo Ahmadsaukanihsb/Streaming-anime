@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Play, Info, ChevronLeft, ChevronRight, Star, Clock, Volume2, VolumeX } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -87,17 +87,19 @@ export default function Hero() {
     });
   };
 
-  // Use custom hero anime if available, otherwise fallback to top rated
-  const heroSlides: HeroSlide[] = heroAnimeIds.length > 0
-    ? heroAnimeIds
-      .map(id => findAnimeBySlug(id))
-      .filter((anime): anime is NonNullable<typeof anime> => anime !== undefined)
-      .map(anime => ({
-        ...anime,
-        image: anime.poster,
-        description: anime.synopsis
-      }))
-    : [...animeList]
+  // Use custom hero anime if available, otherwise fallback to top rated - Memoized
+  const heroSlides: HeroSlide[] = useMemo(() => {
+    if (heroAnimeIds.length > 0) {
+      return heroAnimeIds
+        .map(id => findAnimeBySlug(id))
+        .filter((anime): anime is NonNullable<typeof anime> => anime !== undefined)
+        .map(anime => ({
+          ...anime,
+          image: anime.poster,
+          description: anime.synopsis
+        }));
+    }
+    return [...animeList]
       .filter(anime => anime.rating >= 7.5) // High rated anime
       .sort((a, b) => b.rating - a.rating)
       .slice(0, 5) // Top 5
@@ -106,6 +108,7 @@ export default function Hero() {
         image: anime.poster,
         description: anime.synopsis
       }));
+  }, [heroAnimeIds, animeList]);
 
   const nextSlide = useCallback(() => {
     if (heroSlides.length === 0) return;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Hero from '@/components/Hero';
 import MobileHome from '@/components/MobileHome';
 import DesktopHome from '@/components/DesktopHome';
@@ -71,30 +71,47 @@ export default function Home() {
     }
   }, [animeList]);
 
-  // Filter and sort anime dynamically
-  const ongoingAnime = [...animeList]
-    .filter(a => a.status === 'Ongoing')
-    .sort((a, b) => {
-      const dateA = a.lastEpisodeUpload ? new Date(a.lastEpisodeUpload).getTime() : 0;
-      const dateB = b.lastEpisodeUpload ? new Date(b.lastEpisodeUpload).getTime() : 0;
-      return dateB - dateA;
-    });
-  const completedAnime = animeList.filter(a => a.status === 'Completed');
-  const topRatedAnime = [...animeList].sort((a, b) => b.rating - a.rating).slice(0, 10);
-
-  const latestAnime = [...animeList]
-    .sort((a, b) => {
-      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return dateB - dateA;
-    })
-    .slice(0, 8);
-
-  const popularGenres = [...new Set(
+  // Filter and sort anime dynamically - Memoized untuk performance
+  const ongoingAnime = useMemo(() => 
     animeList
-      .flatMap(anime => anime.genres || [])
-      .filter(Boolean)
-  )].slice(0, 8);
+      .filter(a => a.status === 'Ongoing')
+      .sort((a, b) => {
+        const dateA = a.lastEpisodeUpload ? new Date(a.lastEpisodeUpload).getTime() : 0;
+        const dateB = b.lastEpisodeUpload ? new Date(b.lastEpisodeUpload).getTime() : 0;
+        return dateB - dateA;
+      }),
+    [animeList]
+  );
+
+  const completedAnime = useMemo(() => 
+    animeList.filter(a => a.status === 'Completed'),
+    [animeList]
+  );
+
+  const topRatedAnime = useMemo(() => 
+    [...animeList].sort((a, b) => b.rating - a.rating).slice(0, 10),
+    [animeList]
+  );
+
+  const latestAnime = useMemo(() => 
+    [...animeList]
+      .sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      })
+      .slice(0, 8),
+    [animeList]
+  );
+
+  const popularGenres = useMemo(() => 
+    [...new Set(
+      animeList
+        .flatMap(anime => anime.genres || [])
+        .filter(Boolean)
+    )].slice(0, 8),
+    [animeList]
+  );
 
   // Loading State - Skeleton
   if (isLoading) {

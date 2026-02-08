@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, X, ChevronRight } from 'lucide-react';
 import type { Anime } from '@/data/animeData';
@@ -33,15 +33,18 @@ export default function MobileHome({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
 
-  // Search suggestions
-  const searchSuggestions = searchQuery.length >= 2
-    ? animeList
-      .filter(anime =>
-        anime.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        anime.titleJp?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-      .slice(0, 5)
-    : [];
+  // Search suggestions - Memoized untuk performance
+  const searchSuggestions = useMemo(() => 
+    searchQuery.length >= 2
+      ? animeList
+        .filter(anime =>
+          anime.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          anime.titleJp?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .slice(0, 5)
+      : [],
+    [searchQuery, animeList]
+  );
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
