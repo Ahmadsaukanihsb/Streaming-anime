@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import Hero from '@/components/Hero';
+import HeroMobile from '@/components/HeroMobile';
 import MobileHome from '@/components/MobileHome';
 import DesktopHome from '@/components/DesktopHome';
 import { HomePageSkeleton } from '@/components/SkeletonLoading';
@@ -129,7 +130,14 @@ export default function Home() {
           <div className="absolute top-[45%] left-[-140px] h-[320px] w-[320px] rounded-full bg-[#FF6B6B]/10 blur-[140px]" />
         </div>
         <div className="relative z-10">
-          <Hero />
+          {/* Mobile Hero - Ultra lightweight */}
+          <div className="sm:hidden">
+            <HeroMobile />
+          </div>
+          {/* Desktop Hero - Full features */}
+          <div className="hidden sm:block">
+            <Hero />
+          </div>
         </div>
       </div>
 
