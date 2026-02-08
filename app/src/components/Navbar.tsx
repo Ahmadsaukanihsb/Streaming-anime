@@ -37,7 +37,7 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [siteName, setSiteName] = useState(DEFAULT_SITE_NAME);
-  const [siteLogo, setSiteLogo] = useState('/images/logo.png');
+  const [siteLogo, setSiteLogo] = useState('/images/logo-150.webp');
   const rafId = useRef<number | null>(null);
   const lastScrolled = useRef(false);
   

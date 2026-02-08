@@ -6,7 +6,7 @@ import { DEFAULT_SITE_NAME } from '../config/api';
 export default function Footer() {
   const currentYear = new Date().getFullYear();
   const [siteName, setSiteName] = useState(DEFAULT_SITE_NAME);
-  const [siteLogo, setSiteLogo] = useState('/images/logo.png');
+  const [siteLogo, setSiteLogo] = useState('/images/logo-150.webp');
   
   useEffect(() => {
     const storedName = localStorage.getItem('siteName');
