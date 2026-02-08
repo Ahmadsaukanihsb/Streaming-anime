@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 
 interface OptimizedImageProps {
   src: string;
@@ -41,7 +41,8 @@ function getAspectRatioClass(ratio: string): string {
   }
 }
 
-export default function OptimizedImage({
+// Memoized image component for better performance
+const OptimizedImage = memo(function OptimizedImage({
   src,
   alt,
   className = '',
@@ -54,25 +55,34 @@ export default function OptimizedImage({
 }: OptimizedImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const [isInView, setIsInView] = useState(false);
+  const [isInView, setIsInView] = useState(priority || loading === 'eager');
   const containerRef = useRef<HTMLDivElement>(null);
+  const imageLoadedRef = useRef(false);
 
-  // Intersection Observer for lazy loading
+  // Intersection Observer for lazy loading - only on client
   useEffect(() => {
-    if (priority || loading === 'eager') {
+    if (priority || loading === 'eager' || typeof window === 'undefined') {
+      setIsInView(true);
+      return;
+    }
+
+    // Check if IntersectionObserver is available
+    if (!('IntersectionObserver' in window)) {
+      // Fallback: load image immediately
       setIsInView(true);
       return;
     }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting && !imageLoadedRef.current) {
+          imageLoadedRef.current = true;
           setIsInView(true);
           observer.disconnect();
         }
       },
       {
-        rootMargin: '50px',
+        rootMargin: '100px', // Load 100px before entering viewport
         threshold: 0.01,
       }
     );
@@ -85,8 +95,10 @@ export default function OptimizedImage({
   }, [priority, loading]);
 
   const handleLoad = () => {
-    setIsLoaded(true);
-    onLoad?.();
+    if (!isLoaded) {
+      setIsLoaded(true);
+      onLoad?.();
+    }
   };
 
   const handleError = () => {
@@ -95,6 +107,7 @@ export default function OptimizedImage({
   };
 
   const webpSrc = getWebPUrl(src);
+  const shouldLoad = isInView || priority;
 
   return (
     <div
@@ -103,13 +116,16 @@ export default function OptimizedImage({
         aspectRatio ? getAspectRatioClass(aspectRatio) : ''
       } ${containerClassName}`}
     >
-      {/* Loading placeholder */}
+      {/* Loading placeholder - only show if not loaded and no error */}
       {!isLoaded && !hasError && (
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1A1A2E] to-[#0F0F1A] animate-pulse" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1A1A2E] to-[#0F0F1A]">
+          {/* Shimmer effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer" />
+        </div>
       )}
 
-      {/* Picture element - browser automatically picks best format */}
-      {(isInView || priority) && !hasError && (
+      {/* Actual image - only load when in view */}
+      {shouldLoad && !hasError && (
         <picture>
           {/* WebP version */}
           <source 
@@ -127,6 +143,8 @@ export default function OptimizedImage({
             className={`w-full h-full object-cover transition-opacity duration-300 ${
               isLoaded ? 'opacity-100' : 'opacity-0'
             } ${className}`}
+            // Add fetchpriority for critical images
+            {...(priority && { fetchpriority: 'high' })}
           />
         </picture>
       )}
@@ -139,4 +157,6 @@ export default function OptimizedImage({
       )}
     </div>
   );
-}
+});
+
+export default OptimizedImage;

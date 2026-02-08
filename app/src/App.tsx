@@ -2,13 +2,15 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { Suspense, lazy, useEffect } from 'react';
 import { AppProvider } from '@/context/AppContext';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import BottomNav from '@/components/BottomNav';
 import ScrollToTop from '@/components/ScrollToTop';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import { ToastProvider } from '@/components/ui/toast';
+import { ToastProvider } from '@/components/ui/toast-simple';
 import PageLoader from '@/components/PageLoader';
+
+// Lazy load layout components for better initial load performance
+const Navbar = lazy(() => import('@/components/Navbar'));
+const Footer = lazy(() => import('@/components/Footer'));
+const BottomNav = lazy(() => import('@/components/BottomNav'));
 
 // ==========================================
 // CRITICAL PAGES (Eager Loaded for Performance)
@@ -267,10 +269,16 @@ function App() {
                   <WebsiteSchema />
                 </Suspense>
                 <div className="min-h-screen bg-[#0F0F1A] pb-16 sm:pb-0">
-                  <Navbar />
+                  <Suspense fallback={<div className="h-16" />}>
+                    <Navbar />
+                  </Suspense>
                   <AppRoutes />
-                  <Footer />
-                  <BottomNav />
+                  <Suspense fallback={null}>
+                    <Footer />
+                  </Suspense>
+                  <Suspense fallback={null}>
+                    <BottomNav />
+                  </Suspense>
                   <Suspense fallback={null}>
                     <GlobalChat />
                   </Suspense>
