@@ -114,6 +114,31 @@ export default function Home() {
         </div>
       </div>
 
+      {/* SEO Content Section */}
+      <section className="relative z-10 bg-[#0F0F1A] py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-4">
+            Nonton Anime Subtitle Indonesia Terbaru & Terlengkap
+          </h1>
+          <p className="text-white/70 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
+            Animeku adalah platform terbaik untuk <strong>nonton anime subtitle Indonesia</strong> secara gratis. 
+            Koleksi lengkap anime sub Indo mulai dari anime ongoing, movie, hingga anime klasik dengan 
+            kualitas HD. Streaming tanpa buffering, update tiap hari!
+          </p>
+          <div className="flex flex-wrap justify-center gap-3 mt-6">
+            {['Action', 'Romance', 'Comedy', 'Drama', 'Fantasy', 'Isekai'].map((genre) => (
+              <a
+                key={genre}
+                href={`/genres?genre=${genre}`}
+                className="px-4 py-2 bg-white/5 hover:bg-[#6C5DD3]/20 text-white/80 hover:text-white text-sm rounded-full transition-colors border border-white/10"
+              >
+                {genre}
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <div className="relative z-10 bg-[#0F0F1A]">
         {/* Mobile Layout - Only visible on mobile */}
         <div className="sm:hidden">

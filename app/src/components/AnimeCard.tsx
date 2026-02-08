@@ -27,7 +27,7 @@ export default function AnimeCard({ anime, variant = 'default', index = 0 }: Ani
         <Link to={`/anime/${anime.id}`} className="relative flex-shrink-0 w-24 h-32 rounded-lg overflow-hidden">
           <OptimizedImage
             src={anime.poster}
-            alt={anime.title}
+            alt={`Poster ${anime.title} - Nonton Anime Subtitle Indonesia`}
             aspectRatio="poster"
             className="transition-transform duration-500 group-hover:scale-110"
           />
@@ -73,7 +73,7 @@ export default function AnimeCard({ anime, variant = 'default', index = 0 }: Ani
         <Link to={`/anime/${anime.id}`} className="block relative aspect-[3/4] rounded-xl overflow-hidden">
           <OptimizedImage
             src={anime.poster}
-            alt={anime.title}
+            alt={`Poster ${anime.title} - Nonton Anime Subtitle Indonesia`}
             aspectRatio="poster"
             className="transition-transform duration-500 group-hover:scale-110"
           />
@@ -114,7 +114,7 @@ export default function AnimeCard({ anime, variant = 'default', index = 0 }: Ani
       <Link to={`/anime/${anime.id}`} className="block relative rounded-xl overflow-hidden bg-[#1f1f2e]">
         <OptimizedImage
           src={anime.poster}
-          alt={anime.title}
+          alt={`Poster ${anime.title} - Nonton Anime Subtitle Indonesia`}
           aspectRatio="poster"
           className="transition-transform duration-500 group-hover:scale-110"
         />

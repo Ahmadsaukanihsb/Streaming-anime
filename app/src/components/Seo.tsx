@@ -17,8 +17,8 @@ const siteConfig = {
   url: 'https://animeku.xyz',
   defaultImage: 'https://animeku.xyz/images/hero/hero-jujutsu.jpg',
   twitterHandle: '@animeku',
-  defaultDescription: 'Animeku menawarkan koleksi nonton anime sub indo terbaru dan terlengkap. Nikmati streaming anime ataupun download dengan kualitas HD secara gratis.',
-  defaultKeywords: 'nonton anime, nonton anime sub indo, streaming anime, download anime, anime terbaru, anime hd, animeku, nontonanime',
+  defaultDescription: 'Nonton anime subtitle Indonesia terbaru dan terlengkap GRATIS di Animeku. Streaming anime sub Indo HD tanpa iklan, koleksi anime ongoing update tiap hari.',
+  defaultKeywords: 'nonton anime subtitle indonesia, streaming anime sub indo, nonton anime gratis, download anime sub indo, anime ongoing, anime terbaru, animeku, anime hd',
 };
 
 export function SEO({
@@ -33,8 +33,8 @@ export function SEO({
   jsonLd,
 }: SEOProps) {
   const fullTitle = title 
-    ? `${title} — ${siteConfig.name}` 
-    : `${siteConfig.name} — Nonton Anime Sub Indo Terbaru & Terlengkap`;
+    ? `${title} - ${siteConfig.name}` 
+    : `Nonton Anime Subtitle Indonesia HD Gratis - ${siteConfig.name}`;
   
   const fullCanonical = canonical ? `${siteConfig.url}${canonical}` : siteConfig.url;
 

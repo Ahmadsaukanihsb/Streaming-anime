@@ -210,7 +210,7 @@ export default function Hero() {
           ) : (
             <OptimizedImage
               src={slide.poster}
-              alt={slide.title}
+              alt={`Banner ${slide.title} - Nonton Anime Subtitle Indonesia Gratis`}
               aspectRatio="banner"
               priority
               className="w-full h-full"
@@ -390,7 +390,7 @@ export default function Hero() {
           >
             <OptimizedImage
               src={item.poster}
-              alt={item.title}
+              alt={`Thumbnail ${item.title}`}
               aspectRatio="poster"
               containerClassName="w-full h-full"
             />
