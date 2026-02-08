@@ -109,9 +109,5 @@ export function useToast() {
   return context
 }
 
-// Toast hook for components
-export function toast(props: Omit<Toast, "id">) {
-  // This will be called from components that have access to context
-  // For global usage, we need to export a function that can be imported
-  console.warn("Use useToast hook instead for now")
-}
+// Note: Use useToast hook in components instead of global toast function
+// Example: const { addToast } = useToast();

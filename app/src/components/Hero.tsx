@@ -191,8 +191,8 @@ export default function Hero() {
     >
       {/* Background - Video Trailer or Image */}
       {reducedMotion ? (
-        // Mobile/Reduced Motion: Simple div without heavy animations
-        <div key={currentSlide} className="absolute inset-0 animate-fade-in">
+        // Mobile/Reduced Motion: Simple div without heavy animations (no key to prevent remount)
+        <div className="absolute inset-0">
           <OptimizedImage
             src={slide.poster}
             alt={`Banner ${slide.title} - Nonton Anime Subtitle Indonesia Gratis`}
@@ -272,7 +272,7 @@ export default function Hero() {
       {/* Content */}
       <div className="relative z-10 h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center pt-16 lg:pt-20">
         {reducedMotion ? (
-          <div key={currentSlide} className="max-w-2xl animate-fade-in">
+          <div className="max-w-2xl">
             {/* Badges */}
             <div className="flex items-center gap-2 mb-4 flex-wrap">
               <span className="px-3 py-1.5 bg-gradient-to-r from-[#6C5DD3] to-[#8B7BEF] text-white text-xs font-bold rounded-full shadow-md sm:shadow-lg shadow-[#6C5DD3]/20 sm:shadow-[#6C5DD3]/30">
