@@ -196,11 +196,7 @@ app.get('/anime/:slug', async (req, res) => {
     }
     </script>
     
-    <!-- Redirect to actual SPA -->
-    <meta http-equiv="refresh" content="0;url=${animeUrl}">
-    <script>
-        window.location.href = "${animeUrl}";
-    </script>
+    <!-- No redirect - Let React Router handle the route -->
     
     <style>
         body { font-family: system-ui, -apple-system, sans-serif; background: #0F0F1A; color: white; text-align: center; padding: 50px 20px; }
@@ -210,9 +206,16 @@ app.get('/anime/:slug', async (req, res) => {
     </style>
 </head>
 <body>
-    <div class="spinner"></div>
-    <p>Loading ${anime.title}...</p>
-    <p>If not redirected, <a href="${animeUrl}">click here</a>.</p>
+    <!-- React will mount here and take over -->
+    <div id="root">
+        <div style="font-family: system-ui, -apple-system, sans-serif; background: #0F0F1A; color: white; text-align: center; padding: 50px 20px; min-height: 100vh;">
+            <div class="spinner"></div>
+            <p>Loading ${anime.title}...</p>
+        </div>
+    </div>
+    
+    <!-- App will be loaded by React -->
+    <script type="module" src="${FRONTEND_URL}/src/main.tsx"></script>
     
     <!-- Hidden content for crawlers -->
     <div style="display:none;">
@@ -337,11 +340,7 @@ app.get('/watch/:slug/:episode', async (req, res) => {
     }
     </script>
     
-    <!-- Redirect to actual SPA -->
-    <meta http-equiv="refresh" content="0;url=${watchUrl}">
-    <script>
-        window.location.href = "${watchUrl}";
-    </script>
+    <!-- No redirect - Let React Router handle the route -->
     
     <style>
         body { font-family: system-ui, -apple-system, sans-serif; background: #0F0F1A; color: white; text-align: center; padding: 50px 20px; }
@@ -351,9 +350,16 @@ app.get('/watch/:slug/:episode', async (req, res) => {
     </style>
 </head>
 <body>
-    <div class="spinner"></div>
-    <p>Loading ${anime.title} Episode ${episodeNum}...</p>
-    <p>If not redirected, <a href="${watchUrl}">click here</a>.</p>
+    <!-- React will mount here and take over -->
+    <div id="root">
+        <div style="font-family: system-ui, -apple-system, sans-serif; background: #0F0F1A; color: white; text-align: center; padding: 50px 20px; min-height: 100vh;">
+            <div class="spinner"></div>
+            <p>Loading ${anime.title} Episode ${episodeNum}...</p>
+        </div>
+    </div>
+    
+    <!-- App will be loaded by React -->
+    <script type="module" src="${FRONTEND_URL}/src/main.tsx"></script>
     
     <!-- Hidden content for crawlers -->
     <div style="display:none;">
