@@ -193,52 +193,70 @@ export default function Hero() {
       }}
     >
       {/* Background - Video Trailer or Image */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentSlide}
-          initial={{ opacity: 0, scale: 1.05 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 1.2, ease: [0.645, 0.045, 0.355, 1] }}
-          className="absolute inset-0"
-        >
-          {hasTrailer && !isMobile ? (
-            slide.trailerType === 'youtube' ? (
-              <iframe
-                key={`yt-${slide.id}-${currentSlide}`}
-                src={getYouTubeEmbedUrl(slide.trailer!)}
-                className="w-full h-full object-cover scale-125"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                loading="eager"
-                style={{ border: 'none', pointerEvents: 'none' }}
-              />
-            ) : (
-              <video
-                ref={videoRef}
-                src={slide.trailer}
-                autoPlay
-                loop
-                muted={isMuted}
-                playsInline
-                className="w-full h-full object-cover"
-              />
-            )
-          ) : (
-            <OptimizedImage
-              src={slide.poster}
-              alt={`Banner ${slide.title} - Nonton Anime Subtitle Indonesia Gratis`}
-              aspectRatio="banner"
-              priority
-              className="w-full h-full"
-              containerClassName="w-full h-full"
-            />
-          )}
+      {isMobile ? (
+        // Mobile: Simple div without heavy animations
+        <div key={currentSlide} className="absolute inset-0 animate-fade-in">
+          <OptimizedImage
+            src={slide.poster}
+            alt={`Banner ${slide.title} - Nonton Anime Subtitle Indonesia Gratis`}
+            aspectRatio="banner"
+            priority
+            className="w-full h-full"
+            containerClassName="w-full h-full"
+          />
           {/* Gradient Overlays */}
           <div className="absolute inset-0 bg-gradient-to-r from-[#0F0F1A] via-[#0F0F1A]/80 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F1A] via-transparent to-[#0F0F1A]/40" />
-        </motion.div>
-      </AnimatePresence>
+        </div>
+      ) : (
+        // Desktop: Full animations with AnimatePresence
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentSlide}
+            initial={{ opacity: 0, scale: 1.05 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.2, ease: [0.645, 0.045, 0.355, 1] }}
+            className="absolute inset-0"
+          >
+            {hasTrailer ? (
+              slide.trailerType === 'youtube' ? (
+                <iframe
+                  key={`yt-${slide.id}-${currentSlide}`}
+                  src={getYouTubeEmbedUrl(slide.trailer!)}
+                  className="w-full h-full object-cover scale-125"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  loading="eager"
+                  style={{ border: 'none', pointerEvents: 'none' }}
+                />
+              ) : (
+                <video
+                  ref={videoRef}
+                  src={slide.trailer}
+                  autoPlay
+                  loop
+                  muted={isMuted}
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+              )
+            ) : (
+              <OptimizedImage
+                src={slide.poster}
+                alt={`Banner ${slide.title} - Nonton Anime Subtitle Indonesia Gratis`}
+                aspectRatio="banner"
+                priority
+                className="w-full h-full"
+                containerClassName="w-full h-full"
+              />
+            )}
+            {/* Gradient Overlays */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0F0F1A] via-[#0F0F1A]/80 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F1A] via-transparent to-[#0F0F1A]/40" />
+          </motion.div>
+        </AnimatePresence>
+      )}
 
       {/* Mute/Unmute Button for direct video */}
       {hasTrailer && slide.trailerType === 'direct' && (
@@ -341,14 +359,9 @@ export default function Hero() {
               <p className="text-xs text-white/50">
                 Geser untuk melihat anime unggulan lainnya.
               </p>
-              <motion.span
-                className="ml-1 inline-block text-white/40"
-                animate={{ x: [0, 6, 0] }}
-                transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-                aria-hidden="true"
-              >
+              <span className="ml-1 inline-block text-white/40 animate-pulse">
                 →
-              </motion.span>
+              </span>
             </div>
             <div className="mt-3 flex items-center gap-2 sm:hidden">
               {heroSlides.map((_, index) => (

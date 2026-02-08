@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom';
 import { Play, Star, ChevronRight } from 'lucide-react';
 import type { Anime } from '@/data/animeData';
-import { motion } from 'framer-motion';
 import OptimizedImage from '@/components/OptimizedImage';
 import { getAnimeUrl } from '@/lib/slug';
+import { memo } from 'react';
 
 import { THEME } from '@/config/theme';
 
@@ -16,13 +16,9 @@ interface AnimeCardMobileProps {
 }
 
 // List view - Poster kecil + info di samping (untuk Continue Watching, Latest Update)
-function ListView({ anime, index = 0, progress, episodeTitle }: AnimeCardMobileProps) {
+const ListView = memo(function ListView({ anime, progress, episodeTitle }: AnimeCardMobileProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-    >
+    <div className="animate-fade-in">
       <Link 
         to={getAnimeUrl(anime)}
         className="group flex gap-3 p-2 rounded-xl bg-white/[0.03] active:bg-white/[0.08] transition-colors"
@@ -93,19 +89,14 @@ function ListView({ anime, index = 0, progress, episodeTitle }: AnimeCardMobileP
           <ChevronRight className="w-5 h-5" />
         </div>
       </Link>
-    </motion.div>
+    </div>
   );
-}
+});
 
 // Compact view - Just poster + rating badge (untuk Trending, For You)
-function CompactView({ anime, index = 0 }: AnimeCardMobileProps) {
+const CompactView = memo(function CompactView({ anime }: AnimeCardMobileProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: index * 0.03 }}
-      className="group"
-    >
+    <div className="group animate-fade-in">
       <Link to={getAnimeUrl(anime)} className="block">
         {/* Poster */}
         <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-white/5">
@@ -138,19 +129,14 @@ function CompactView({ anime, index = 0 }: AnimeCardMobileProps) {
           </div>
         </div>
       </Link>
-    </motion.div>
+    </div>
   );
-}
+});
 
 // Poster only view - For horizontal scroll sections
-function PosterView({ anime, index = 0 }: AnimeCardMobileProps) {
+const PosterView = memo(function PosterView({ anime }: AnimeCardMobileProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.05 }}
-      className="group flex-shrink-0 w-28"
-    >
+    <div className="group flex-shrink-0 w-28 animate-fade-in">
       <Link to={getAnimeUrl(anime)} className="block">
         <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-white/5">
           <OptimizedImage
@@ -165,8 +151,6 @@ function PosterView({ anime, index = 0 }: AnimeCardMobileProps) {
             <Play className="w-8 h-8 text-white fill-current" />
           </div>
 
-
-
           {/* Rating badge */}
           <div className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5 px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded-md">
             <Star className="w-2.5 h-2.5 text-yellow-400 fill-current" />
@@ -177,9 +161,9 @@ function PosterView({ anime, index = 0 }: AnimeCardMobileProps) {
           {anime.title}
         </h3>
       </Link>
-    </motion.div>
+    </div>
   );
-}
+});
 
 export default function AnimeCardMobile({ 
   anime, 
@@ -188,6 +172,9 @@ export default function AnimeCardMobile({
   progress,
   episodeTitle 
 }: AnimeCardMobileProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _ = index; // Keep for API compatibility but don't use for animations
+
   if (variant === 'compact') {
     return <CompactView anime={anime} index={index} />;
   }
@@ -205,4 +192,3 @@ export default function AnimeCardMobile({
     />
   );
 }
-

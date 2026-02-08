@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, ChevronLeft, ChevronRight, Play, Clock } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { getAnimeUrl } from '@/lib/slug';
 
@@ -136,14 +135,7 @@ export default function ScheduleWidget() {
                 </div>
 
                 {/* Anime List - Mobile: Horizontal Scroll Cards */}
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={selectedDay}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.2 }}
-                    >
+                <div key={selectedDay} className="animate-fade-in">
                         {scheduleForDay.length > 0 ? (
                             <>
                                 {/* Mobile: Horizontal Scroll Cards */}
@@ -227,8 +219,7 @@ export default function ScheduleWidget() {
                                 <p className="text-sm text-white/40">Tidak ada rilis hari ini</p>
                             </div>
                         )}
-                    </motion.div>
-                </AnimatePresence>
+                </div>
 
                 {/* Swipe Hint - Mobile Only */}
                 <div className="sm:hidden flex items-center justify-center gap-2 mt-4 text-white/30 text-xs">
