@@ -1,8 +1,7 @@
-// BottomNav - Floating mobile navigation (subtle design)
-import { useState } from 'react';
+// BottomNav - Floating mobile navigation (optimized for performance)
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Search, Compass, Calendar, User, Users, Film, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 const navItems = [
   { path: '/', icon: Home, label: 'Home', isSearch: false },
@@ -15,6 +14,13 @@ export default function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isExploreOpen, setIsExploreOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Animate in on mount
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Don't show on certain pages
   const hideOnPaths = ['/watch', '/login', '/register'];
@@ -41,94 +47,81 @@ export default function BottomNav() {
 
   return (
     <>
-      {/* Explore Modal */}
-      <AnimatePresence>
-        {isExploreOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 sm:hidden"
-            onClick={() => setIsExploreOpen(false)}
+      {/* Explore Modal - CSS only animation */}
+      {isExploreOpen && (
+        <div
+          className="fixed inset-0 z-50 sm:hidden animate-fade-in"
+          onClick={() => setIsExploreOpen(false)}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          
+          {/* Modal Content - Slide up animation */}
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-[#1A1A2E] rounded-t-3xl border-t border-white/10 shadow-2xl animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
           >
-            {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            {/* Handle bar */}
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-10 h-1 bg-white/20 rounded-full" />
+            </div>
             
-            {/* Modal Content */}
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="absolute bottom-0 left-0 right-0 bg-[#1A1A2E] rounded-t-3xl border-t border-white/10 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Handle bar */}
-              <div className="flex justify-center pt-3 pb-2">
-                <div className="w-10 h-1 bg-white/20 rounded-full" />
-              </div>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 pb-4 border-b border-white/10">
+              <h2 className="text-lg font-bold text-white">Jelajahi</h2>
+              <button
+                onClick={() => setIsExploreOpen(false)}
+                className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors active:scale-95"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {/* Options */}
+            <div className="p-6 space-y-3">
+              {/* Anime Option */}
+              <button
+                onClick={() => handleExploreSelect('/anime-list')}
+                className="w-full flex items-center gap-4 p-4 bg-gradient-to-r from-[#6C5DD3]/20 to-transparent rounded-2xl border border-[#6C5DD3]/30 hover:border-[#6C5DD3] hover:from-[#6C5DD3]/30 transition-all group active:scale-[0.98]"
+              >
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center shadow-lg shadow-[#6C5DD3]/20 group-hover:scale-110 transition-transform">
+                  <Film className="w-6 h-6 text-white" />
+                </div>
+                <div className="text-left">
+                  <span className="text-white font-semibold block">Anime</span>
+                  <span className="text-white/50 text-sm">Jelajahi daftar anime</span>
+                </div>
+              </button>
               
-              {/* Header */}
-              <div className="flex items-center justify-between px-6 pb-4 border-b border-white/10">
-                <h2 className="text-lg font-bold text-white">Jelajahi</h2>
-                <button
-                  onClick={() => setIsExploreOpen(false)}
-                  className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              {/* Options */}
-              <div className="p-6 space-y-3">
-                {/* Anime Option */}
-                <button
-                  onClick={() => handleExploreSelect('/anime-list')}
-                  className="w-full flex items-center gap-4 p-4 bg-gradient-to-r from-[#6C5DD3]/20 to-transparent rounded-2xl border border-[#6C5DD3]/30 hover:border-[#6C5DD3] hover:from-[#6C5DD3]/30 transition-all group"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] flex items-center justify-center shadow-lg shadow-[#6C5DD3]/20 group-hover:scale-110 transition-transform">
-                    <Film className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="text-left">
-                    <span className="text-white font-semibold block">Anime</span>
-                    <span className="text-white/50 text-sm">Jelajahi daftar anime</span>
-                  </div>
-                </button>
-                
-                {/* Community Option */}
-                <button
-                  onClick={() => handleExploreSelect('/community')}
-                  className="w-full flex items-center gap-4 p-4 bg-gradient-to-r from-white/5 to-transparent rounded-2xl border border-white/10 hover:border-white/30 hover:from-white/10 transition-all group"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Users className="w-6 h-6 text-[#6C5DD3]" />
-                  </div>
-                  <div className="text-left">
-                    <span className="text-white font-semibold block">Komunitas</span>
-                    <span className="text-white/50 text-sm">Diskusi dengan pengguna lain</span>
-                  </div>
-                </button>
-              </div>
-              
-              {/* Safe area padding */}
-              <div className="h-[env(safe-area-inset-bottom,20px)]" />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              {/* Community Option */}
+              <button
+                onClick={() => handleExploreSelect('/community')}
+                className="w-full flex items-center gap-4 p-4 bg-gradient-to-r from-white/5 to-transparent rounded-2xl border border-white/10 hover:border-white/30 hover:from-white/10 transition-all group active:scale-[0.98]"
+              >
+                <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Users className="w-6 h-6 text-[#6C5DD3]" />
+                </div>
+                <div className="text-left">
+                  <span className="text-white font-semibold block">Komunitas</span>
+                  <span className="text-white/50 text-sm">Diskusi dengan pengguna lain</span>
+                </div>
+              </button>
+            </div>
+            
+            {/* Safe area padding */}
+            <div className="h-[env(safe-area-inset-bottom,20px)]" />
+          </div>
+        </div>
+      )}
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 sm:hidden pointer-events-none flex justify-center">
         {/* Floating container - centered with max width */}
         <div className="mx-auto mb-5 px-4 w-full max-w-[380px] pointer-events-auto">
-          <motion.div 
-            className={`relative rounded-2xl border border-white/5 shadow-[0_4px_24px_rgba(0,0,0,0.3)] px-2 py-2 transition-all duration-300 ${
+          <div 
+            className={`relative rounded-2xl border border-white/5 shadow-[0_4px_24px_rgba(0,0,0,0.3)] px-2 py-2 transition-all duration-500 ${
               isExploreOpen ? 'bg-[#0F0F1A]/50' : 'bg-[#0F0F1A]/85 backdrop-blur-xl'
-            }`}
-            initial={{ y: 100, opacity: 0, scale: 0.9 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            transition={{ type: 'spring', bounce: 0.25, duration: 0.7 }}
+            } ${isVisible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-20 opacity-0 scale-90'}`}
           >
             <div className="relative flex items-center justify-between">
               {navItems.map((item) => {
@@ -141,22 +134,21 @@ export default function BottomNav() {
                     <button
                       key={item.label}
                       onClick={handleSearchClick}
-                      className="group relative flex flex-col items-center justify-center min-w-[64px] py-1.5"
+                      className="group relative flex flex-col items-center justify-center min-w-[64px] py-1.5 active:scale-95 transition-transform"
                     >
-                      <motion.div 
+                      <div 
                         className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${
                           active 
                             ? 'bg-white/10 text-white' 
                             : 'text-white/30 group-hover:text-white/50'
                         }`}
-                        whileTap={{ scale: 0.92 }}
                       >
                         <Icon 
                           className={`w-[18px] h-[18px] transition-all duration-200 ${
                             active ? 'stroke-[2px]' : 'stroke-[1.5px]'
                           }`} 
                         />
-                      </motion.div>
+                      </div>
                       <span className={`text-[10px] font-medium transition-all duration-200 mt-0.5 ${
                         active 
                           ? 'text-white/80' 
@@ -174,22 +166,21 @@ export default function BottomNav() {
                   <Link
                     key={item.label}
                     to={targetPath}
-                    className="group relative flex flex-col items-center justify-center min-w-[64px] py-1.5"
+                    className="group relative flex flex-col items-center justify-center min-w-[64px] py-1.5 active:scale-95 transition-transform"
                   >
-                    <motion.div 
+                    <div 
                       className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${
                         active 
                           ? 'bg-white/10 text-white' 
                           : 'text-white/30 group-hover:text-white/50'
                       }`}
-                      whileTap={{ scale: 0.92 }}
                     >
                       <Icon 
                         className={`w-[18px] h-[18px] transition-all duration-200 ${
                           active ? 'stroke-[2px]' : 'stroke-[1.5px]'
                         }`} 
                       />
-                    </motion.div>
+                    </div>
                     <span className={`text-[10px] font-medium transition-all duration-200 mt-0.5 ${
                       active 
                         ? 'text-white/80' 
@@ -204,22 +195,21 @@ export default function BottomNav() {
               {/* Explore Button - Center */}
               <button
                 onClick={() => setIsExploreOpen(true)}
-                className="group relative flex flex-col items-center justify-center min-w-[64px] py-1.5"
+                className="group relative flex flex-col items-center justify-center min-w-[64px] py-1.5 active:scale-95 transition-transform"
               >
-                <motion.div 
+                <div 
                   className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${
                     isExploreOpen
                       ? 'bg-gradient-to-br from-[#6C5DD3] to-[#00C2FF] text-white shadow-lg shadow-[#6C5DD3]/30' 
                       : 'text-white/30 group-hover:text-white/50'
                   }`}
-                  whileTap={{ scale: 0.92 }}
                 >
                   <Compass 
                     className={`w-[18px] h-[18px] transition-all duration-200 ${
                       isExploreOpen ? 'stroke-[2px]' : 'stroke-[1.5px]'
                     }`} 
                   />
-                </motion.div>
+                </div>
                 <span className={`text-[10px] font-medium transition-all duration-200 mt-0.5 ${
                   isExploreOpen 
                     ? 'text-white' 
@@ -229,7 +219,7 @@ export default function BottomNav() {
                 </span>
               </button>
             </div>
-          </motion.div>
+          </div>
           
           {/* Safe area padding */}
           <div className="h-[env(safe-area-inset-bottom,8px)]" />
