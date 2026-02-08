@@ -118,8 +118,22 @@ app.get('/anime/:slug', async (req, res) => {
         const anime = await CustomAnime.findBySlug(slug);
         
         if (!anime) {
-            // If anime not found, redirect to frontend 404
-            return res.redirect(302, `${FRONTEND_URL}/anime/${slug}`);
+            // If anime not found, return 404 HTML page
+            return res.status(404).send(`<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Anime Tidak Ditemukan - Animeku</title>
+    <meta name="description" content="Anime yang Anda cari tidak ditemukan di Animeku.">
+    <meta property="og:title" content="Anime Tidak Ditemukan - Animeku">
+    <meta property="og:description" content="Anime yang Anda cari tidak ditemukan.">
+    <meta property="og:image" content="${FRONTEND_URL}/images/logo.png">
+    <script>window.location.href = "${FRONTEND_URL}/anime-list";</script>
+</head>
+<body>
+    <p>Anime tidak ditemukan. Redirecting...</p>
+</body>
+</html>`);
         }
         
         // Build absolute image URL
@@ -345,8 +359,19 @@ app.get('/watch/:slug/:episode', async (req, res) => {
         
     } catch (err) {
         console.error('[SSR] Error rendering watch page:', err);
-        // Redirect to frontend on error
-        res.redirect(302, `${FRONTEND_URL}/watch/${req.params.slug}/${req.params.episode}`);
+        // Return 404 HTML page
+        return res.status(500).send(`<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Error - Animeku</title>
+    <meta name="description" content="Terjadi kesalahan saat memuat halaman.">
+    <script>window.location.href = "${FRONTEND_URL}";</script>
+</head>
+<body>
+    <p>Error loading page. Redirecting...</p>
+</body>
+</html>`);
     }
 });
 

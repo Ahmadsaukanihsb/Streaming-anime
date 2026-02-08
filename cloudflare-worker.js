@@ -19,7 +19,7 @@ export default {
           method: request.method,
           headers: {
             'Host': 'api.animeku.xyz',
-            'Accept': request.headers.get('Accept') || 'text/html',
+            'Accept': 'text/html',  // Selalu kirim text/html untuk SSR
             'User-Agent': userAgent,
           }
         });
