@@ -25,26 +25,19 @@
   
   <!-- Web App Manifest -->
   <link rel="manifest" href="/manifest.json?v=2">
-  <script>
-    // Set favicon from localStorage on page load
-    (function() {
-      var faviconUrl = localStorage.getItem('siteFavicon') || localStorage.getItem('siteLogo');
-      var link = document.getElementById('site-favicon');
-      if (link && faviconUrl) {
-        link.href = faviconUrl;
-        link.type = 'image/png';
-      }
-    })();
-  </script>
 
-  <!-- Performance: Preconnect to critical origins -->
+  <!-- Performance: Preconnect to critical origins (DNS early) -->
   <link rel="preconnect" href="https://api.animeku.xyz" crossorigin />
-  <link rel="preconnect" href="https://cdn.animeku.xyz" crossorigin />
   <link rel="dns-prefetch" href="https://api.animeku.xyz" />
-  <link rel="dns-prefetch" href="https://cdn.animeku.xyz" />
-
-  <!-- Preload critical hero image (WebP for modern browsers) -->
-  <link rel="preload" as="image" href="/images/hero/hero-jujutsu.webp" type="image/webp" fetchpriority="high" />
+  
+  <!-- Preload critical assets with priority hints -->
+  <!-- Mobile: smaller hero, Desktop: full hero -->
+  <link rel="preload" as="image" href="/images/hero/hero-jujutsu-600.webp" type="image/webp" fetchpriority="high" media="(max-width: 768px)" />
+  <link rel="preload" as="image" href="/images/hero/hero-jujutsu.webp" type="image/webp" fetchpriority="high" media="(min-width: 769px)" />
+  
+  <!-- Prefetch likely next routes -->
+  <link rel="prefetch" href="/src/pages/AnimeDetail.tsx" as="script" />
+  <link rel="prefetch" href="/src/pages/Watch.tsx" as="script" />
 
   <meta property="og:title" content="Nonton Anime Subtitle Indonesia HD Gratis Terbaru - Animeku" />
   <meta property="og:description"
@@ -104,6 +97,19 @@
 <body>
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
+  
+  <!-- Deferred favicon update to prevent render blocking -->
+  <script defer>
+    // Set favicon from localStorage on page load (non-blocking)
+    (function() {
+      var faviconUrl = localStorage.getItem('siteFavicon') || localStorage.getItem('siteLogo');
+      var link = document.getElementById('site-favicon');
+      if (link && faviconUrl) {
+        link.href = faviconUrl;
+        link.type = 'image/png';
+      }
+    })();
+  </script>
 </body>
 
 </html>

@@ -13,19 +13,22 @@ export default defineConfig({
     },
   },
   build: {
-    chunkSizeWarningLimit: 700,
+    chunkSizeWarningLimit: 500,
     rollupOptions: {
       output: {
         // Manual chunk splitting for better caching
         manualChunks: {
-          // React core
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          // UI components
-          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tabs'],
-          // Animation
-          'animation-vendor': ['framer-motion'],
-          // Utilities
-          'utils-vendor': ['date-fns'],
+          // React core (smallest possible)
+          'react-core': ['react', 'react-dom'],
+          // Router (separate for code splitting)
+          'router': ['react-router-dom'],
+          // UI components (grouped by usage)
+          'ui-core': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
+          'ui-tabs': ['@radix-ui/react-tabs', '@radix-ui/react-accordion'],
+          // Animation (heavy, load on demand)
+          'animation': ['framer-motion'],
+          // Heavy utilities
+          'utils': ['date-fns', 'axios'],
         },
         // Ensure small chunks for better loading
         chunkFileNames: 'assets/js/[name]-[hash].js',
@@ -41,10 +44,14 @@ export default defineConfig({
         },
       },
     },
-    // Minification (gunakan esbuild yang built-in)
+    // Minification
     minify: 'esbuild',
     // Target modern browsers for smaller bundles
     target: 'es2020',
+    // CSS optimization
+    cssMinify: true,
+    // Report bundle size
+    reportCompressedSize: true,
   },
   server: {
     allowedHosts: ["animeku.xyz"],
