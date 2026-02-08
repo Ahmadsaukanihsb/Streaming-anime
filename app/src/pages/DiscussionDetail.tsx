@@ -9,6 +9,7 @@ import RoleBadge from '@/components/RoleBadge';
 import { getAuthHeaders } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
 import SafeAvatar from '@/components/SafeAvatar';
+import { SEO } from '@/components/Seo';
 
 interface Discussion {
     _id: string;
@@ -284,7 +285,15 @@ export default function DiscussionDetail() {
     const canDelete = isOwner || user?.isAdmin;
 
     return (
-        <div className="min-h-screen bg-[#0F0F1A] pt-24 pb-12">
+        <>
+            <SEO
+                title={discussion.title}
+                description={discussion.content.substring(0, 160).replace(/<[^>]*>/g, '')}
+                canonical={`/community/discussion/${id}`}
+                ogType="article"
+                keywords={`diskusi anime, ${discussion.title}, ${discussion.category}, ${discussion.animeTitle || ''}`}
+            />
+            <div className="min-h-screen bg-[#0F0F1A] pt-24 pb-12">
             {/* Toast Notification */}
             <AnimatePresence>
                 {toast.show && (
@@ -536,5 +545,6 @@ export default function DiscussionDetail() {
                 </div>
             </div>
         </div>
+        </>
     );
 }

@@ -22,6 +22,7 @@ import NotificationsTab from '@/components/profile/NotificationsTab';
 import SettingsTab from '@/components/profile/SettingsTab';
 import AchievementsTab from '@/components/profile/AchievementsTab';
 import { useAchievements } from '@/hooks/useAchievements';
+import { SEO } from '@/components/Seo';
 
 // Icons
 import { Clock, Bookmark, ListVideo, Star, Bell, Settings, Play, Trophy } from 'lucide-react';
@@ -171,7 +172,14 @@ export default function Profile() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0F0F1A] pt-16 sm:pt-20">
+    <>
+      <SEO
+        title="Profil Saya"
+        description="Kelola profil, bookmark, watchlist, dan pengaturan akun Animeku Anda."
+        canonical="/profile"
+        noIndex
+      />
+      <main className="min-h-screen bg-[#0F0F1A] pt-16 sm:pt-20">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Profile Header */}
         <ProfileHeader
@@ -418,5 +426,6 @@ export default function Profile() {
         </DialogContent>
       </Dialog>
     </main>
+    </>
   );
 }
