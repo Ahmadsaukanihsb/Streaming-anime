@@ -30,14 +30,8 @@
   <link rel="preconnect" href="https://api.animeku.xyz" crossorigin />
   <link rel="dns-prefetch" href="https://api.animeku.xyz" />
   
-  <!-- Preload critical assets with priority hints -->
-  <!-- Mobile: smaller hero, Desktop: full hero -->
-  <link rel="preload" as="image" href="/images/hero/hero-jujutsu-600.webp" type="image/webp" fetchpriority="high" media="(max-width: 768px)" />
-  <link rel="preload" as="image" href="/images/hero/hero-jujutsu.webp" type="image/webp" fetchpriority="high" media="(min-width: 769px)" />
-  
-  <!-- Prefetch likely next routes -->
-  <link rel="prefetch" href="/src/pages/AnimeDetail.tsx" as="script" />
-  <link rel="prefetch" href="/src/pages/Watch.tsx" as="script" />
+  <!-- Preconnect to API for faster data fetching -->
+  <link rel="preconnect" href="https://45.130.164.161" crossorigin />
 
   <meta property="og:title" content="Nonton Anime Subtitle Indonesia HD Gratis Terbaru - Animeku" />
   <meta property="og:description"

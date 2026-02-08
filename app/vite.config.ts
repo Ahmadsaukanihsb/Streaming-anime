@@ -50,8 +50,16 @@ export default defineConfig({
     target: 'es2020',
     // CSS optimization
     cssMinify: true,
+    // CSS code split - makes CSS non-render-blocking
+    cssCodeSplit: true,
     // Report bundle size
     reportCompressedSize: true,
+  },
+  esbuild: {
+    // Drop console logs and debugger in production
+    drop: ['console', 'debugger'],
+    // Legal comments in separate file
+    legalComments: 'none',
   },
   server: {
     allowedHosts: ["animeku.xyz"],
