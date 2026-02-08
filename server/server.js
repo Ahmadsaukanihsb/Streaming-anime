@@ -69,50 +69,14 @@ app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 app.use(cookieParser());
 
 // ============================================
-// BROWSER REDIRECT PROTECTION
-// Redirect direct browser access to main website
+// SITE URL CONFIG
 // ============================================
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://animeku.xyz';
 
-app.use((req, res, next) => {
-    // Skip SSR routes (anime detail & watch pages) - let them be handled by SSR handlers
-    if (req.path.match(/^\/anime\/[^\/]+/) || req.path.match(/^\/watch\/[^\/]+/)) {
-        return next();
-    }
-    
-    // Skip API endpoints that should be accessible (like health check)
-    if (req.path === '/' || req.path.startsWith('/api/health')) {
-        return next();
-    }
-
-    // Check if request wants HTML (browser access)
-    const acceptHeader = req.headers.accept || '';
-    const wantsHtml = acceptHeader.includes('text/html');
-
-    // Check referer/origin
-    const referer = req.headers.referer || '';
-    const origin = req.headers.origin || '';
-    const allowedOrigins = [
-        'http://localhost:5173',
-        'http://localhost:3000',
-        'https://test.aavpanel.my.id',
-        'https://aavpanel.my.id',
-        'https://animeku.xyz',
-        'https://www.animeku.xyz'
-    ];
-
-    const isFromFrontend = allowedOrigins.some(url => 
-        referer.startsWith(url) || origin === url
-    );
-
-    // If browser access without proper referer, redirect to website
-    if (wantsHtml && !isFromFrontend) {
-        console.log(`[Redirect] Blocked direct browser access to ${req.path} from ${req.ip}`);
-        return res.redirect(301, FRONTEND_URL);
-    }
-
-    next();
-});
+// Helper function to escape regex special characters
+function escapeRegex(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 // Database Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/animestream';
@@ -136,11 +100,6 @@ app.use('/api/reviews', require('./routes/review'));
 app.use('/api/badges', require('./routes/badge'));
 app.use('/api/watchparty', require('./routes/watchParty'));
 app.use('/api', require('./routes/turnstile'));
-
-// Helper function to escape regex special characters
-function escapeRegex(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
 
 // SSR for Anime Detail Pages - Generate HTML with proper meta tags for SEO/Social Sharing
 app.get('/anime/:slug', async (req, res) => {
