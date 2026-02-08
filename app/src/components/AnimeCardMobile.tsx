@@ -172,9 +172,6 @@ export default function AnimeCardMobile({
   progress,
   episodeTitle 
 }: AnimeCardMobileProps) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _ = index; // Keep for API compatibility but don't use for animations
-
   if (variant === 'compact') {
     return <CompactView anime={anime} index={index} />;
   }
