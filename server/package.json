@@ -12,6 +12,10 @@
     "cache:images": "node scripts/cacheImages.js",
     "cache:images:dry": "node scripts/cacheImages.js --dry-run",
     "cache:images:preview": "node scripts/cacheImages.js --dry-run --limit=10",
+    "cache:webp": "node scripts/convertToWebP.js",
+    "cache:webp:dry": "node scripts/convertToWebP.js --dry-run",
+    "cache:webp:preview": "node scripts/convertToWebP.js --limit=10",
+    "cache:webp:force": "node scripts/convertToWebP.js --force",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
