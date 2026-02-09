@@ -7,6 +7,7 @@ const quinime = require('../utils/quinime-scraper');
 const nonton = require('../utils/nontonanimeid-scraper');
 const { generateSubtitle, checkFFmpeg, translateText } = require('../utils/subtitle-generator');
 const { uploadFile: uploadToR2 } = require('../utils/r2-storage');
+const { processImage } = require('../utils/imageProxy');
 const { requireAdmin } = require('../middleware/auth');
 const { validateBody } = require('../middleware/validate');
 
@@ -61,6 +62,32 @@ router.post('/translate', validateBody([
     }
 });
 
+// Helper: Auto-cache anime poster and banner to R2 (non-blocking)
+async function cacheAnimeImages(anime) {
+    try {
+        const imagesToCache = [];
+        if (anime.poster) imagesToCache.push(anime.poster);
+        if (anime.banner) imagesToCache.push(anime.banner);
+
+        if (imagesToCache.length === 0) return;
+
+        console.log(`[ImageCache] Auto-caching ${imagesToCache.length} images for ${anime.title}`);
+
+        // Process in parallel, don't await - fire and forget
+        Promise.all(imagesToCache.map(url => processImage(url)))
+            .then(results => {
+                const cached = results.filter(r => !r.fromCache && r.url !== r.originalUrl).length;
+                const alreadyCached = results.filter(r => r.fromCache).length;
+                console.log(`[ImageCache] Done for ${anime.title}: ${cached} cached, ${alreadyCached} already cached`);
+            })
+            .catch(err => {
+                console.error(`[ImageCache] Error caching images for ${anime.title}:`, err.message);
+            });
+    } catch (err) {
+        console.error('[ImageCache] Error:', err.message);
+    }
+}
+
 // Add Custom Anime
 router.post('/', requireAdmin, validateBody([
     { field: 'id', required: true, type: 'string', minLength: 1, maxLength: 200 },
@@ -80,6 +107,10 @@ router.post('/', requireAdmin, validateBody([
             Object.assign(existingAnime, req.body);
             await existingAnime.save();
             console.log('[POST /api/anime] Successfully updated:', existingAnime.id);
+
+            // Auto-cache poster and banner to R2 (non-blocking)
+            cacheAnimeImages(existingAnime);
+
             return res.json(existingAnime);
         }
 
@@ -87,6 +118,10 @@ router.post('/', requireAdmin, validateBody([
         await newAnime.save();
 
         console.log('[POST /api/anime] Successfully saved:', newAnime.id);
+
+        // Auto-cache poster and banner to R2 (non-blocking)
+        cacheAnimeImages(newAnime);
+
         return res.json(newAnime);
     } catch (err) {
         console.error('[POST /api/anime] ERROR:', err);
@@ -179,6 +214,11 @@ router.put('/:id', requireAdmin, async (req, res) => {
 
         console.log('[API PUT] Updated successfully, episodeData count:', updatedAnime.episodeData?.length);
 
+        // Auto-cache poster and banner to R2 if poster or banner was updated
+        if (updates.poster || updates.banner) {
+            cacheAnimeImages(updatedAnime);
+        }
+
         res.json(updatedAnime);
     } catch (err) {
         console.error('[Anime] Update anime error:', err.message);
@@ -220,12 +260,12 @@ router.get('/stream/:animeTitle/:episode', async (req, res) => {
         // 0. Check for Manual Streams in DB (Priority)
         try {
             console.log(`[API/Stream] Looking for anime: "${animeTitle}" episode ${episodeNumber}`);
-            
+
             // Try exact match first
             let dbAnime = await CustomAnime.findOne({
                 title: { $regex: new RegExp(`^${animeTitle}$`, 'i') }
             });
-            
+
             // If not found, try partial match
             if (!dbAnime) {
                 console.log(`[API/Stream] Exact match not found, trying partial match...`);
@@ -233,7 +273,7 @@ router.get('/stream/:animeTitle/:episode', async (req, res) => {
                     title: { $regex: new RegExp(animeTitle, 'i') }
                 });
             }
-            
+
             // If still not found, try slug matching
             if (!dbAnime) {
                 const slug = animeTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -245,7 +285,7 @@ router.get('/stream/:animeTitle/:episode', async (req, res) => {
 
             if (dbAnime) {
                 console.log(`[API/Stream] Found anime: "${dbAnime.title}" (ID: ${dbAnime.id})`);
-                
+
                 if (dbAnime.episodeData) {
                     console.log(`[API/Stream] EpisodeData: ${dbAnime.episodeData.length} episodes`);
                     const epData = dbAnime.episodeData.find(e => e.ep === episodeNumber);
@@ -407,7 +447,7 @@ const crypto = require('crypto');
 router.post('/video-token', async (req, res) => {
     try {
         const { videoUrl, animeId, episode } = req.body;
-        
+
         if (!videoUrl) {
             return res.status(400).json({ error: 'Video URL required' });
         }
@@ -416,10 +456,10 @@ router.post('/video-token', async (req, res) => {
         // URL format: https://pub-xxx.r2.dev/anime/.../ep-1-720p.mp4
         const urlObj = new URL(videoUrl);
         const key = urlObj.pathname.substring(1); // Remove leading /
-        
+
         // Generate signed URL (4 hours expiry - enough for long movies + buffer)
         const result = await getSignedVideoUrl(key, 14400);
-        
+
         if (!result.success) {
             console.error('[VideoToken] Failed to generate signed URL:', result.error);
             // Fallback: return original URL if signing fails
@@ -987,12 +1027,12 @@ router.post('/:id/thumbnails/all', requireAdmin, async (req, res) => {
             try {
                 // Find video stream for thumbnail - prefer direct, fallback to manual
                 let videoStream = episode.streams?.find(s => s.type === 'direct');
-                
+
                 // If no direct stream, try manual streams
                 if (!videoStream && episode.manualStreams?.length > 0) {
                     videoStream = episode.manualStreams[0];
                 }
-                
+
                 if (!videoStream) {
                     errors.push({ ep: episode.ep, error: 'No video stream found' });
                     continue;
@@ -1005,18 +1045,18 @@ router.post('/:id/thumbnails/all', requireAdmin, async (req, res) => {
                 }
 
                 console.log(`[Anime] Generating thumbnail for episode ${episode.ep}...`);
-                
+
                 // Generate thumbnail with random timestamp (3-10 minutes)
                 const thumbnailUrl = await generateThumbnail(
-                    videoStream.url, 
-                    id, 
+                    videoStream.url,
+                    id,
                     episode.ep
                 );
 
                 // Save to episode
                 episode.thumbnail = thumbnailUrl;
                 results.push({ ep: episode.ep, status: 'generated', thumbnail: thumbnailUrl });
-                
+
             } catch (err) {
                 console.error(`[Anime] Failed to generate thumbnail for ep ${episode.ep}:`, err.message);
                 errors.push({ ep: episode.ep, error: err.message });
@@ -1026,8 +1066,8 @@ router.post('/:id/thumbnails/all', requireAdmin, async (req, res) => {
         // Save all changes
         await anime.save();
 
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             results,
             errors,
             summary: {
@@ -1048,7 +1088,7 @@ router.post('/:id/thumbnails/all', requireAdmin, async (req, res) => {
 router.post('/migrate/clean-slugs', requireAdmin, async (req, res) => {
     try {
         console.log('[Migrate] Starting cleanSlug generation for all anime...');
-        
+
         // Find all anime without cleanSlug
         const animeWithoutSlug = await CustomAnime.find({
             $or: [
@@ -1057,13 +1097,13 @@ router.post('/migrate/clean-slugs', requireAdmin, async (req, res) => {
                 { cleanSlug: '' }
             ]
         });
-        
+
         console.log(`[Migrate] Found ${animeWithoutSlug.length} anime without cleanSlug`);
-        
+
         let updated = 0;
         let failed = 0;
         const results = [];
-        
+
         for (const anime of animeWithoutSlug) {
             try {
                 if (anime.title) {
@@ -1073,7 +1113,7 @@ router.post('/migrate/clean-slugs', requireAdmin, async (req, res) => {
                         .replace(/\s+/g, '-')
                         .replace(/-+/g, '-')
                         .replace(/^-|-$/g, '');
-                    
+
                     anime.cleanSlug = cleanSlug;
                     await anime.save();
                     updated++;
@@ -1089,7 +1129,7 @@ router.post('/migrate/clean-slugs', requireAdmin, async (req, res) => {
                 console.error(`[Migrate] Failed for ${anime.id}:`, err.message);
             }
         }
-        
+
         res.json({
             success: true,
             summary: {
