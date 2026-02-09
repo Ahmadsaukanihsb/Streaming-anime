@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  MessageCircle, 
-  X, 
-  Send, 
+import {
+  MessageCircle,
+  X,
+  Send,
   Smile,
   Wifi,
   WifiOff,
@@ -21,14 +21,14 @@ import RoleBadge from './RoleBadge';
 // Group messages by date
 function groupMessagesByDate(messages: ChatMessage[]) {
   const groups: { date: string; messages: ChatMessage[] }[] = [];
-  
+
   messages.forEach((msg) => {
     const msgDate = new Date(msg.timestamp).toLocaleDateString('id-ID', {
       day: 'numeric',
       month: 'short',
       year: 'numeric'
     });
-    
+
     const existingGroup = groups.find(g => g.date === msgDate);
     if (existingGroup) {
       existingGroup.messages.push(msg);
@@ -36,7 +36,7 @@ function groupMessagesByDate(messages: ChatMessage[]) {
       groups.push({ date: msgDate, messages: [msg] });
     }
   });
-  
+
   return groups;
 }
 
@@ -50,21 +50,21 @@ export default function GlobalChat() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { user } = useApp();
-  
-  const { 
-    messages, 
+
+  const {
+    messages,
     pinnedMessage,
-    isConnected, 
-    onlineCount, 
+    isConnected,
+    onlineCount,
     typingUsers,
     error,
     clearError,
-    sendMessage, 
+    sendMessage,
     setTyping,
     deleteMessage,
     pinMessage
   } = useGlobalChat();
-  
+
   const isAdmin = user?.communityRole === 'admin' || user?.isAdmin;
 
   // Emojis
@@ -89,23 +89,15 @@ export default function GlobalChat() {
     if (isOpen && messagesContainerRef.current) {
       const container = messagesContainerRef.current;
       const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-      
+
       if (isAtBottom) {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }
     }
   }, [messages, isOpen]);
 
-  // Lock body scroll when chat is open
-  useEffect(() => {
-    if (isOpen) {
-      const originalOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = originalOverflow;
-      };
-    }
-  }, [isOpen]);
+  // Note: Removed body scroll lock to prevent flickering/reflow issues
+  // Chat scroll is handled internally with overscroll-contain
 
   // Handle input change with typing indicator
   const handleInputChange = (value: string) => {
@@ -141,9 +133,9 @@ export default function GlobalChat() {
   };
 
   const formatTime = (date: Date) => {
-    return new Date(date).toLocaleTimeString('id-ID', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(date).toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -165,23 +157,24 @@ export default function GlobalChat() {
     <>
       {/* Floating Chat Button */}
       <motion.button
-        initial={{ scale: 0, opacity: 0 }}
+        initial={false}
         animate={{ scale: 1, opacity: 1 }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={handleToggle}
         className="fixed bottom-24 sm:bottom-20 right-4 z-50 group"
+        style={{ willChange: 'transform' }}
       >
         <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-[#6C5DD3] via-[#8B5CF6] to-[#A78BFA] shadow-lg shadow-[#6C5DD3]/30 flex items-center justify-center overflow-hidden">
           {/* Animated background */}
           <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          
+
           <MessageCircle className="w-6 h-6 text-white relative z-10" />
-          
+
           {/* Connection Status Indicator */}
           <div className={`absolute top-2 left-2 w-2.5 h-2.5 rounded-full border-2 border-[#6C5DD3] ${isConnected ? 'bg-green-400' : 'bg-yellow-400 animate-pulse'}`} />
         </div>
-        
+
         {/* Unread Badge */}
         <AnimatePresence>
           {unreadCount > 0 && (
@@ -195,7 +188,7 @@ export default function GlobalChat() {
             </motion.span>
           )}
         </AnimatePresence>
-        
+
         {/* New Message Pulse */}
         {hasNewMessage && (
           <span className="absolute inset-0 rounded-2xl ring-2 ring-[#6C5DD3] ring-offset-2 ring-offset-[#0F0F1A] animate-ping opacity-30" />
@@ -206,11 +199,12 @@ export default function GlobalChat() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            initial={{ opacity: 0, y: 20, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            exit={{ opacity: 0, y: 20, scale: 0.98 }}
+            transition={{ type: 'spring', damping: 30, stiffness: 400 }}
             className="fixed bottom-40 sm:bottom-36 right-4 z-50 w-[380px] max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-12rem)] sm:max-h-[calc(100vh-10rem)] bg-[#0F0F1A]/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/10 flex flex-col overflow-hidden"
+            style={{ willChange: 'transform, opacity' }}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-gradient-to-r from-[#6C5DD3]/20 to-transparent">
@@ -244,7 +238,7 @@ export default function GlobalChat() {
                   </div>
                 </div>
               </div>
-              
+
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-2 hover:bg-white/10 rounded-xl transition-colors text-white/50 hover:text-white"
@@ -318,19 +312,19 @@ export default function GlobalChat() {
             </AnimatePresence>
 
             {/* Messages */}
-            <div 
+            <div
               ref={messagesContainerRef}
               className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin overscroll-contain"
               onWheel={(e) => {
                 const container = messagesContainerRef.current;
                 if (!container) return;
-                
+
                 const { scrollTop, scrollHeight, clientHeight } = container;
                 const isAtTop = scrollTop === 0;
                 const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1;
                 const isScrollingUp = e.deltaY < 0;
                 const isScrollingDown = e.deltaY > 0;
-                
+
                 // Prevent scroll propagation if at boundary
                 if ((isAtTop && isScrollingUp) || (isAtBottom && isScrollingDown)) {
                   e.preventDefault();
@@ -340,11 +334,11 @@ export default function GlobalChat() {
               onTouchMove={(e) => {
                 const container = messagesContainerRef.current;
                 if (!container) return;
-                
+
                 const { scrollTop, scrollHeight, clientHeight } = container;
                 const isAtTop = scrollTop === 0;
                 const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1;
-                
+
                 // Prevent pull-to-refresh and scroll propagation
                 if (isAtTop || isAtBottom) {
                   e.preventDefault();
@@ -370,13 +364,13 @@ export default function GlobalChat() {
                           <span className="text-[10px] text-white/40">{group.date}</span>
                         </div>
                       </div>
-                      
+
                       {group.messages.map((msg, index) => {
                         const myMessage = isMyMessage(msg);
                         const isFirstInGroup = index === 0 || group.messages[index - 1].userId !== msg.userId;
                         const isLastInGroup = index === group.messages.length - 1 || group.messages[index + 1].userId !== msg.userId;
                         const isConsecutive = !isFirstInGroup;
-                        
+
                         // WHATSAPP STYLE: Pesan sendiri tanpa avatar & username
                         if (myMessage) {
                           return (
@@ -407,7 +401,7 @@ export default function GlobalChat() {
                                     </button>
                                   </div>
                                 )}
-                                
+
                                 {/* Message Bubble */}
                                 <div className="flex flex-col items-end gap-0.5">
                                   <div className="bg-gradient-to-br from-[#6C5DD3] to-[#8B5CF6] text-white px-4 py-2.5 rounded-2xl rounded-tr-sm shadow-lg shadow-[#6C5DD3]/20 text-sm leading-relaxed">
@@ -424,7 +418,7 @@ export default function GlobalChat() {
                             </motion.div>
                           );
                         }
-                        
+
                         // PESAN ORANG LAIN - dengan avatar & username
                         return (
                           <motion.div
@@ -445,7 +439,7 @@ export default function GlobalChat() {
                             ) : (
                               <div className="flex-shrink-0 w-8" />
                             )}
-                            
+
                             {/* Message Content */}
                             <div className="flex flex-col items-start max-w-[75%]">
                               {/* Username & Badge - only for first message */}
@@ -460,13 +454,13 @@ export default function GlobalChat() {
                                   )}
                                 </div>
                               )}
-                              
+
                               {/* Message Bubble */}
                               <div className="flex items-start gap-1">
                                 <div className="bg-white/10 text-white/95 px-4 py-2.5 rounded-2xl rounded-tl-sm hover:bg-white/15 transition-colors text-sm leading-relaxed">
                                   {msg.message}
                                 </div>
-                                
+
                                 {/* Admin Actions */}
                                 {isAdmin && (
                                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all duration-200 self-center">
@@ -488,7 +482,7 @@ export default function GlobalChat() {
                                   </div>
                                 )}
                               </div>
-                              
+
                               {/* Time - only for last message */}
                               {isLastInGroup && (
                                 <span className="text-[10px] text-white/30 mt-0.5 ml-1">
@@ -503,7 +497,7 @@ export default function GlobalChat() {
                   ))}
                 </>
               )}
-              
+
               {/* Typing Indicator */}
               <AnimatePresence>
                 {typingUsers.length > 0 && (
@@ -522,7 +516,7 @@ export default function GlobalChat() {
                   </motion.div>
                 )}
               </AnimatePresence>
-              
+
               <div ref={messagesEndRef} />
             </div>
 
@@ -559,7 +553,7 @@ export default function GlobalChat() {
                 >
                   <Smile className="w-5 h-5" />
                 </button>
-                
+
                 <div className="flex-1 relative">
                   <input
                     ref={inputRef}
@@ -578,7 +572,7 @@ export default function GlobalChat() {
                     </span>
                   )}
                 </div>
-                
+
                 <motion.button
                   onClick={handleSendMessage}
                   disabled={!inputMessage.trim() || !isConnected}
