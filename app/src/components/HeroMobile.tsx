@@ -27,6 +27,7 @@ export default function HeroMobile() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [heroAnimeIds, setHeroAnimeIds] = useState<string[]>([]);
+  const [firstImagePreloaded, setFirstImagePreloaded] = useState(false);
 
   // Load hero settings from database (same as desktop Hero)
   useEffect(() => {
@@ -87,6 +88,40 @@ export default function HeroMobile() {
         description: anime.synopsis
       }));
   }, [heroAnimeIds, animeList, findAnimeBySlug]);
+
+  // Preload first hero image for better LCP
+  useEffect(() => {
+    if (slides.length === 0 || firstImagePreloaded) return;
+
+    const firstImage = slides[0]?.poster;
+    if (!firstImage) return;
+
+    // Check if preload already exists
+    const existingPreload = document.querySelector(`link[rel="preload"][href="${firstImage}"]`);
+    if (existingPreload) {
+      setFirstImagePreloaded(true);
+      return;
+    }
+
+    // Create preload link for LCP image
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = firstImage;
+    link.setAttribute('fetchpriority', 'high');
+    if (firstImage.endsWith('.webp')) {
+      link.type = 'image/webp';
+    }
+    document.head.appendChild(link);
+    setFirstImagePreloaded(true);
+
+    // Cleanup
+    return () => {
+      if (link.parentNode) {
+        link.parentNode.removeChild(link);
+      }
+    };
+  }, [slides, firstImagePreloaded]);
 
   // Auto-slide logic
   useEffect(() => {
@@ -202,8 +237,8 @@ export default function HeroMobile() {
                     key={index}
                     onClick={() => goToSlide(index)}
                     className={`transition-all duration-300 rounded-full ${index === currentSlide
-                        ? 'w-6 h-2 bg-[#6C5DD3]'
-                        : 'w-2 h-2 bg-white/30'
+                      ? 'w-6 h-2 bg-[#6C5DD3]'
+                      : 'w-2 h-2 bg-white/30'
                       }`}
                     aria-label={`Go to slide ${index + 1}`}
                   />

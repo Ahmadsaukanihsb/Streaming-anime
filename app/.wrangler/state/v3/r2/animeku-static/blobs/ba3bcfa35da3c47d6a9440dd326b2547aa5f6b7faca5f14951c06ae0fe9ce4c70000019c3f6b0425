@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nonton Anime Subtitle Indonesia HD Gratis Terbaru - Animeku</title>
+  <meta name="description"
+    content="Nonton anime subtitle Indonesia terbaru dan terlengkap GRATIS di Animeku. Streaming anime sub Indo HD tanpa iklan, koleksi anime ongoing update tiap hari." />
+  <!-- Meta keywords dihapus - Google tidak menggunakannya lagi -->
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://animeku.xyz/" />
+  <meta name="theme-color" content="#0F0F1A" />
+  
+  <!-- Favicon - dynamically updated from logo (v=2 to force refresh) -->
+  <link id="site-favicon" rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
+  
+  <!-- Apple Touch Icon -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2">
+  <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png?v=2">
+  <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png?v=2">
+  
+  <!-- Safari Mask Icon -->
+  <link rel="mask-icon" href="/favicon.svg?v=2" color="#6C5DD3">
+  
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="/manifest.json?v=2">
+
+  <!-- Performance: Preconnect to critical origins (DNS early) -->
+  <link rel="preconnect" href="https://api.animeku.xyz" crossorigin />
+  <link rel="dns-prefetch" href="https://api.animeku.xyz" />
+  
+  <!-- Preconnect to image CDN for faster LCP -->
+  <link rel="preconnect" href="https://cdn.myanimelist.net" crossorigin />
+  <link rel="dns-prefetch" href="https://cdn.myanimelist.net" />
+  
+  <!-- Font optimization - Preconnect to Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'" />
+  
+  <!-- Preconnect to API for faster data fetching -->
+  <link rel="preconnect" href="https://45.130.164.161" crossorigin />
+
+  <meta property="og:title" content="Nonton Anime Subtitle Indonesia HD Gratis Terbaru - Animeku" />
+  <meta property="og:description"
+    content="Nonton anime subtitle Indonesia terbaru dan terlengkap GRATIS di Animeku. Streaming anime sub Indo HD tanpa iklan, koleksi anime ongoing update tiap hari." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://animeku.xyz/" />
+  <meta property="og:image" content="https://animeku.xyz/images/hero/hero-jujutsu.jpg" />
+  <meta property="og:site_name" content="Animeku" />
+  <meta property="og:locale" content="id_ID" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Nonton Anime Subtitle Indonesia HD Gratis Terbaru - Animeku" />
+  <meta name="twitter:description"
+    content="Nonton anime subtitle Indonesia terbaru dan terlengkap GRATIS di Animeku. Streaming anime sub Indo HD tanpa iklan, koleksi anime ongoing update tiap hari." />
+  <meta name="twitter:image" content="https://animeku.xyz/images/hero/hero-jujutsu.jpg" />
+
+  <!-- Critical CSS for above-the-fold content - Inlined to prevent render-blocking -->
+  <style>
+    /* Critical CSS - Prevent layout shift */
+    html {
+      background-color: #0F0F1A;
+    }
+    body {
+      margin: 0;
+      background-color: #0F0F1A;
+      color: #ffffff;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    #root {
+      min-height: 100vh;
+    }
+    /* Hero section critical styles - prevent CLS */
+    .hero-section {
+      position: relative;
+      height: 60vh;
+      max-height: 500px;
+      width: 100%;
+      overflow: hidden;
+      background-color: #1A1A2E;
+    }
+    .hero-image {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      -o-object-fit: cover;
+         object-fit: cover;
+      filter: brightness(0.7);
+    }
+    /* Prevent FOUC */
+    .loading {
+      opacity: 0;
+      animation: fadeIn 0.3s ease-in forwards;
+    }
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+    /* Critical font loading - system fonts first */
+    .font-heading {
+      font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+    }
+  </style>
+  
+  <!-- Preload hero image for LCP -->
+  <link rel="preload" as="image" href="https://cdn.myanimelist.net/images/anime/1544/154878l.webp" type="image/webp" fetchpriority="high" />
+
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Animeku",
+      "url": "https://animeku.xyz/",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://animeku.xyz/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+  </script>
+  <script type="module" crossorigin src="/assets/js/index-DJ_36Qk0.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/js/react-core-ChtzOUez.js">
+  <link rel="modulepreload" crossorigin href="/assets/js/router-CZPo72cZ.js">
+  <link rel="modulepreload" crossorigin href="/assets/js/ui-core-TPptuXij.js">
+  <link rel="modulepreload" crossorigin href="/assets/js/animation-HDd_DiG7.js">
+  <link rel="stylesheet" crossorigin href="/assets/css/index-6w19U0G8.css">
+</head>
+
+<body>
+  <div id="root"></div>
+  
+  <!-- Deferred favicon update to prevent render blocking -->
+  <script defer>
+    // Set favicon from localStorage on page load (non-blocking)
+    (function() {
+      var faviconUrl = localStorage.getItem('siteFavicon') || localStorage.getItem('siteLogo');
+      var link = document.getElementById('site-favicon');
+      if (link && faviconUrl) {
+        link.href = faviconUrl;
+        link.type = 'image/png';
+      }
+    })();
+  </script>
+</body>
+
+</html>

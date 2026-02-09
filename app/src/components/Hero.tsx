@@ -31,6 +31,7 @@ export default function Hero() {
   const [heroAnimeIds, setHeroAnimeIds] = useState<string[]>([]);
   const [isMuted, setIsMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [firstImagePreloaded, setFirstImagePreloaded] = useState(false);
 
   // Load hero settings from database
   useEffect(() => {
@@ -101,6 +102,40 @@ export default function Hero() {
         description: anime.synopsis
       }));
   }, [heroAnimeIds, animeList]);
+
+  // Preload first hero image for better LCP
+  useEffect(() => {
+    if (heroSlides.length === 0 || firstImagePreloaded) return;
+
+    const firstImage = heroSlides[0]?.poster || heroSlides[0]?.banner;
+    if (!firstImage) return;
+
+    // Check if preload already exists
+    const existingPreload = document.querySelector(`link[rel="preload"][href="${firstImage}"]`);
+    if (existingPreload) {
+      setFirstImagePreloaded(true);
+      return;
+    }
+
+    // Create preload link for LCP image
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = firstImage;
+    link.setAttribute('fetchpriority', 'high');
+    if (firstImage.endsWith('.webp')) {
+      link.type = 'image/webp';
+    }
+    document.head.appendChild(link);
+    setFirstImagePreloaded(true);
+
+    // Cleanup
+    return () => {
+      if (link.parentNode) {
+        link.parentNode.removeChild(link);
+      }
+    };
+  }, [heroSlides, firstImagePreloaded]);
 
   const nextSlide = useCallback(() => {
     if (heroSlides.length === 0) return;
@@ -379,100 +414,100 @@ export default function Hero() {
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               className="max-w-2xl"
             >
-            {/* Badges */}
-            <div className="flex items-center gap-2 mb-4 flex-wrap">
-              <span className="px-3 py-1.5 bg-gradient-to-r from-[#6C5DD3] to-[#8B7BEF] text-white text-xs font-bold rounded-full shadow-md sm:shadow-lg shadow-[#6C5DD3]/20 sm:shadow-[#6C5DD3]/30">
-                ✨ FEATURED
-              </span>
-              <span className="flex items-center gap-1 px-3 py-1.5 bg-yellow-500/20 text-yellow-400 text-xs font-bold rounded-full backdrop-blur-[2px] sm:backdrop-blur-sm">
-                <Star className="w-3.5 h-3.5 fill-current" />
-                {slide.rating?.toFixed(1) || '0.0'}
-              </span>
-              <span className={`px-3 py-1.5 text-xs font-bold rounded-full backdrop-blur-[2px] sm:backdrop-blur-sm ${slide.status === 'Ongoing'
-                ? 'bg-green-500/20 text-green-400'
-                : 'bg-blue-500/20 text-blue-400'
-                }`}>
-                {slide.status}
-              </span>
-            </div>
-
-            {/* Title */}
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold font-heading text-white mb-3 leading-tight">
-              {slide.title}
-            </h1>
-
-            {/* Meta Info */}
-            <div className="flex items-center gap-4 text-sm text-white/60 mb-4">
-              <span className="flex items-center gap-1.5">
-                <Play className="w-4 h-4" />
-                {slide.episodes || '?'} Episode
-              </span>
-              <span className="w-1 h-1 bg-white/30 rounded-full" />
-              <span className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4" />
-                {slide.duration || '24 min'}
-              </span>
-              <span className="w-1 h-1 bg-white/30 rounded-full" />
-              <span>{slide.studio || 'Unknown Studio'}</span>
-            </div>
-
-            {/* Genres */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              {slide.genres?.slice(0, 4).map((genre: string) => (
-                <span key={genre} className="px-3 py-1 text-xs bg-white/10 text-white/80 rounded-full backdrop-blur-[2px] sm:backdrop-blur-sm">
-                  {genre}
+              {/* Badges */}
+              <div className="flex items-center gap-2 mb-4 flex-wrap">
+                <span className="px-3 py-1.5 bg-gradient-to-r from-[#6C5DD3] to-[#8B7BEF] text-white text-xs font-bold rounded-full shadow-md sm:shadow-lg shadow-[#6C5DD3]/20 sm:shadow-[#6C5DD3]/30">
+                  ✨ FEATURED
                 </span>
-              ))}
-            </div>
+                <span className="flex items-center gap-1 px-3 py-1.5 bg-yellow-500/20 text-yellow-400 text-xs font-bold rounded-full backdrop-blur-[2px] sm:backdrop-blur-sm">
+                  <Star className="w-3.5 h-3.5 fill-current" />
+                  {slide.rating?.toFixed(1) || '0.0'}
+                </span>
+                <span className={`px-3 py-1.5 text-xs font-bold rounded-full backdrop-blur-[2px] sm:backdrop-blur-sm ${slide.status === 'Ongoing'
+                  ? 'bg-green-500/20 text-green-400'
+                  : 'bg-blue-500/20 text-blue-400'
+                  }`}>
+                  {slide.status}
+                </span>
+              </div>
 
-            {/* Description */}
-            <p className="text-sm sm:text-base text-white/70 mb-6 line-clamp-3 leading-relaxed max-w-xl">
-              {slide.synopsis || 'Sinopsis belum tersedia.'}
-            </p>
+              {/* Title */}
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold font-heading text-white mb-3 leading-tight">
+                {slide.title}
+              </h1>
 
-            {/* Actions */}
-            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-4">
-              <Link
-                to={getWatchUrl(slide, 1)}
-                className="group flex items-center justify-center gap-2 px-5 py-2 text-sm bg-[#6C5DD3] hover:bg-[#5a4bbf] text-white font-semibold rounded-xl transition-all duration-300 shadow-md sm:shadow-lg shadow-[#6C5DD3]/20 sm:shadow-[#6C5DD3]/30 hover:shadow-[#6C5DD3]/40 w-full sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-              >
-                <Play className="w-5 h-5 fill-current group-hover:scale-110 transition-transform" />
-                Tonton Sekarang
-              </Link>
-              <Link
-                to={getAnimeUrl(slide)}
-                className="flex items-center justify-center gap-2 px-5 py-2 text-sm bg-transparent hover:bg-white/10 text-white font-semibold rounded-xl transition-colors duration-200 border border-white/40 w-full sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-              >
-                <Info className="w-5 h-5" />
-                Detail Anime
-              </Link>
-            </div>
+              {/* Meta Info */}
+              <div className="flex items-center gap-4 text-sm text-white/60 mb-4">
+                <span className="flex items-center gap-1.5">
+                  <Play className="w-4 h-4" />
+                  {slide.episodes || '?'} Episode
+                </span>
+                <span className="w-1 h-1 bg-white/30 rounded-full" />
+                <span className="flex items-center gap-1.5">
+                  <Clock className="w-4 h-4" />
+                  {slide.duration || '24 min'}
+                </span>
+                <span className="w-1 h-1 bg-white/30 rounded-full" />
+                <span>{slide.studio || 'Unknown Studio'}</span>
+              </div>
 
-            <div className="mt-3 flex items-center gap-2 sm:hidden">
-              <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-[#6C5DD3]/20 text-[#9B8CFF] rounded-full border border-[#6C5DD3]/30">
-                Featured
-              </span>
-              <p className="text-xs text-white/50">
-                Geser untuk melihat anime unggulan lainnya.
+              {/* Genres */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {slide.genres?.slice(0, 4).map((genre: string) => (
+                  <span key={genre} className="px-3 py-1 text-xs bg-white/10 text-white/80 rounded-full backdrop-blur-[2px] sm:backdrop-blur-sm">
+                    {genre}
+                  </span>
+                ))}
+              </div>
+
+              {/* Description */}
+              <p className="text-sm sm:text-base text-white/70 mb-6 line-clamp-3 leading-relaxed max-w-xl">
+                {slide.synopsis || 'Sinopsis belum tersedia.'}
               </p>
-              <span className="ml-1 inline-block text-white/40 animate-pulse">
-                →
-              </span>
-            </div>
-            <div className="mt-3 flex items-center gap-2 sm:hidden">
-              {heroSlides.map((_, index) => (
-                <span
-                  key={index}
-                  className={`h-1.5 rounded-full transition-all ${index === currentSlide
-                    ? 'w-6 bg-[#6C5DD3]'
-                    : 'w-2 bg-white/30'
-                    }`}
-                />
-              ))}
-            </div>
-          </motion.div>
-        </AnimatePresence>
-      )}
+
+              {/* Actions */}
+              <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-4">
+                <Link
+                  to={getWatchUrl(slide, 1)}
+                  className="group flex items-center justify-center gap-2 px-5 py-2 text-sm bg-[#6C5DD3] hover:bg-[#5a4bbf] text-white font-semibold rounded-xl transition-all duration-300 shadow-md sm:shadow-lg shadow-[#6C5DD3]/20 sm:shadow-[#6C5DD3]/30 hover:shadow-[#6C5DD3]/40 w-full sm:w-auto sm:px-6 sm:py-3 sm:text-base"
+                >
+                  <Play className="w-5 h-5 fill-current group-hover:scale-110 transition-transform" />
+                  Tonton Sekarang
+                </Link>
+                <Link
+                  to={getAnimeUrl(slide)}
+                  className="flex items-center justify-center gap-2 px-5 py-2 text-sm bg-transparent hover:bg-white/10 text-white font-semibold rounded-xl transition-colors duration-200 border border-white/40 w-full sm:w-auto sm:px-6 sm:py-3 sm:text-base"
+                >
+                  <Info className="w-5 h-5" />
+                  Detail Anime
+                </Link>
+              </div>
+
+              <div className="mt-3 flex items-center gap-2 sm:hidden">
+                <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-[#6C5DD3]/20 text-[#9B8CFF] rounded-full border border-[#6C5DD3]/30">
+                  Featured
+                </span>
+                <p className="text-xs text-white/50">
+                  Geser untuk melihat anime unggulan lainnya.
+                </p>
+                <span className="ml-1 inline-block text-white/40 animate-pulse">
+                  →
+                </span>
+              </div>
+              <div className="mt-3 flex items-center gap-2 sm:hidden">
+                {heroSlides.map((_, index) => (
+                  <span
+                    key={index}
+                    className={`h-1.5 rounded-full transition-all ${index === currentSlide
+                      ? 'w-6 bg-[#6C5DD3]'
+                      : 'w-2 bg-white/30'
+                      }`}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        )}
       </div>
 
       {/* Navigation Arrows */}
