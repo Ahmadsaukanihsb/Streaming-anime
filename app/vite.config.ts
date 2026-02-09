@@ -22,13 +22,14 @@ export default defineConfig({
           'react-core': ['react', 'react-dom'],
           // Router (separate for code splitting)
           'router': ['react-router-dom'],
-          // UI components (grouped by usage)
-          'ui-core': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
+          // UI components dialog/dropdown (used on many pages)
+          'ui-core': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-popover', '@radix-ui/react-tooltip'],
+          // UI tabs (specific pages only)
           'ui-tabs': ['@radix-ui/react-tabs', '@radix-ui/react-accordion'],
           // Animation (heavy, load on demand)
           'animation': ['framer-motion'],
-          // Heavy utilities
-          'utils': ['date-fns'],
+          // Lenis smooth scroll (only desktop)
+          'lenis': ['lenis'],
         },
         // Ensure small chunks for better loading
         chunkFileNames: 'assets/js/[name]-[hash].js',
@@ -42,6 +43,11 @@ export default defineConfig({
           }
           return `assets/[name]-[hash][extname]`;
         },
+      },
+      // Treeshake for better dead code elimination
+      treeshake: {
+        moduleSideEffects: 'no-external',
+        propertyReadSideEffects: false,
       },
     },
     // Minification
