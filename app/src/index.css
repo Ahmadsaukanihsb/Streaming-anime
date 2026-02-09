@@ -72,6 +72,8 @@
     @apply bg-[#0F0F1A] text-white antialiased;
     /* System font stack for faster initial render, custom fonts load async */
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    /* Prevent CLS from font swap by matching font metrics */
+    font-size-adjust: 0.5;
     overflow-x: hidden;
     max-width: 100vw;
   }
@@ -128,11 +130,25 @@
   /* Prevent CLS for images by reserving aspect-ratio space */
   img {
     content-visibility: auto;
+    /* Prevent images from causing layout shift */
+    contain-intrinsic-size: auto 300px;
   }
 
-  /* Poster images - fixed aspect ratio */
+  /* Poster images - fixed aspect ratio with placeholder */
   img[class*="aspect-"] {
     background-color: hsl(var(--card));
+  }
+
+  /* Anime card grid - prevent shift during data load */
+  .grid>* {
+    contain: layout style;
+  }
+
+  /* Reserve space for anime poster cards (2:3 ratio) */
+  [class*="aspect-[2/3]"],
+  [class*="aspect-[3/4]"] {
+    min-height: 180px;
+    background-color: #1A1A2E;
   }
 
   html {
