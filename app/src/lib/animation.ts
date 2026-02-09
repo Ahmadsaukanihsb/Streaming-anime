@@ -6,8 +6,18 @@
 import { useEffect, useState } from 'react';
 
 // Check if device is mobile/low-end
+// Initialize with correct value to prevent flash/flicker
+const getInitialMobileState = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const isMobileWidth = window.innerWidth < 768;
+  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return isMobileWidth || (isTouchDevice && isMobileWidth) || prefersReducedMotion;
+};
+
 export function useIsMobileDevice(): boolean {
-  const [isMobile, setIsMobile] = useState(false);
+  // Initialize with correct value immediately to prevent flicker
+  const [isMobile, setIsMobile] = useState(getInitialMobileState);
 
   useEffect(() => {
     // Check screen width
@@ -17,11 +27,10 @@ export function useIsMobileDevice(): boolean {
       const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
       // Check for reduced motion preference
       const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      
+
       setIsMobile(isMobileWidth || (isTouchDevice && isMobileWidth) || prefersReducedMotion);
     };
 
-    checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
@@ -30,12 +39,17 @@ export function useIsMobileDevice(): boolean {
 }
 
 // Check if user prefers reduced motion
+const getInitialReducedMotion = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+};
+
 export function usePrefersReducedMotion(): boolean {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  // Initialize with correct value immediately to prevent flicker
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(getInitialReducedMotion);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
 
     const handler = (e: MediaQueryListEvent) => {
       setPrefersReducedMotion(e.matches);

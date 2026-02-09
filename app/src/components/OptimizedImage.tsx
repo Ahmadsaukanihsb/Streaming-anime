@@ -15,12 +15,12 @@ interface OptimizedImageProps {
 // Convert image URL to WebP version
 function getWebPUrl(originalUrl: string): string {
   if (!originalUrl) return '';
-  
+
   // Skip if already WebP/AVIF or data URL
   if (originalUrl.endsWith('.webp') || originalUrl.endsWith('.avif') || originalUrl.startsWith('data:')) {
     return originalUrl;
   }
-  
+
   // Replace extension with .webp
   return originalUrl.replace(/\.(jpg|jpeg|png|gif)$/i, '.webp');
 }
@@ -112,25 +112,21 @@ const OptimizedImage = memo(function OptimizedImage({
   return (
     <div
       ref={containerRef}
-      className={`relative overflow-hidden bg-[#1A1A2E] ${
-        aspectRatio ? getAspectRatioClass(aspectRatio) : ''
-      } ${containerClassName}`}
+      className={`relative overflow-hidden bg-[#1A1A2E] ${aspectRatio ? getAspectRatioClass(aspectRatio) : ''
+        } ${containerClassName}`}
     >
-      {/* Loading placeholder - only show if not loaded and no error */}
+      {/* Loading placeholder - simple solid background, no shimmer animation to reduce flicker */}
       {!isLoaded && !hasError && (
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1A1A2E] to-[#0F0F1A]">
-          {/* Shimmer effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer" />
-        </div>
+        <div className="absolute inset-0 bg-[#1A1A2E]" />
       )}
 
-      {/* Actual image - only load when in view */}
+      {/* Actual image - always visible when loaded, no fade to prevent flicker */}
       {shouldLoad && !hasError && (
         <picture>
           {/* WebP version */}
-          <source 
-            srcSet={webpSrc} 
-            type="image/webp" 
+          <source
+            srcSet={webpSrc}
+            type="image/webp"
           />
           {/* Original format as fallback */}
           <img
@@ -140,9 +136,8 @@ const OptimizedImage = memo(function OptimizedImage({
             decoding={priority ? 'sync' : 'async'}
             onLoad={handleLoad}
             onError={handleError}
-            className={`w-full h-full object-cover transition-opacity duration-300 ${
-              isLoaded ? 'opacity-100' : 'opacity-0'
-            } ${className}`}
+            className={`w-full h-full object-cover ${priority ? '' : isLoaded ? 'opacity-100' : 'opacity-0 transition-opacity duration-200'
+              } ${className}`}
             // Add fetchpriority for critical images
             {...(priority && { fetchpriority: 'high' })}
           />
