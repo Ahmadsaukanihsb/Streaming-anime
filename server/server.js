@@ -16,10 +16,10 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: function(origin, callback) {
+        origin: function (origin, callback) {
             // Allow requests with no origin (like mobile apps, curl, etc)
             if (!origin) return callback(null, true);
-            
+
             const allowedOrigins = [
                 'http://localhost:5173',
                 'http://localhost:3000',
@@ -28,7 +28,7 @@ const io = new Server(server, {
                 'https://animeku.xyz',
                 'https://www.animeku.xyz'
             ];
-            
+
             if (allowedOrigins.includes(origin) || origin.includes('localhost')) {
                 callback(null, true);
             } else {
@@ -101,22 +101,23 @@ app.use('/api/reviews', require('./routes/review'));
 app.use('/api/badges', require('./routes/badge'));
 app.use('/api/watchparty', require('./routes/watchParty'));
 app.use('/api', require('./routes/turnstile'));
+app.use('/api/img', require('./routes/imageProxy'));
 
 // SSR for Anime Detail Pages - Generate HTML with proper meta tags for SEO/Social Sharing
 app.get('/anime/:slug', async (req, res) => {
     const acceptHeader = req.headers.accept || '';
-    
+
     // Only handle browser/crawler requests (not API requests)
     if (!acceptHeader.includes('text/html')) {
         return res.status(404).json({ error: 'Not found' });
     }
-    
+
     try {
         const { slug } = req.params;
-        
+
         // Find anime by slug
         const anime = await CustomAnime.findBySlug(slug);
-        
+
         if (!anime) {
             // If anime not found, return 404 HTML page
             return res.status(404).send(`<!DOCTYPE html>
@@ -135,21 +136,21 @@ app.get('/anime/:slug', async (req, res) => {
 </body>
 </html>`);
         }
-        
+
         // Build absolute image URL
         let imageUrl = anime.banner || anime.poster;
         if (imageUrl && !imageUrl.startsWith('http')) {
-            imageUrl = imageUrl.startsWith('/') 
-                ? `${FRONTEND_URL}${imageUrl}` 
+            imageUrl = imageUrl.startsWith('/')
+                ? `${FRONTEND_URL}${imageUrl}`
                 : `${FRONTEND_URL}/${imageUrl}`;
         }
         // Use logo as reliable fallback (1200x630 recommended for OG)
         const defaultImage = `${FRONTEND_URL}/images/logo.png`;
         const finalImage = imageUrl && imageUrl.startsWith('http') ? imageUrl : defaultImage;
-        
+
         // Build anime URL
         const animeUrl = `${FRONTEND_URL}/anime/${anime.cleanSlug || anime.id}`;
-        
+
         // Generate HTML with proper meta tags
         const html = `<!DOCTYPE html>
 <html lang="id">
@@ -224,10 +225,10 @@ app.get('/anime/:slug', async (req, res) => {
     </div>
 </body>
 </html>`;
-        
+
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.send(html);
-        
+
     } catch (err) {
         console.error('[SSR] Error rendering anime page:', err);
         // Redirect to frontend on error
@@ -247,38 +248,38 @@ app.get('/', (req, res) => {
 // SSR for Watch Pages - Generate HTML with proper meta tags for SEO/Social Sharing
 app.get('/watch/:slug/:episode', async (req, res) => {
     const acceptHeader = req.headers.accept || '';
-    
+
     // Only handle browser/crawler requests (not API requests)
     if (!acceptHeader.includes('text/html')) {
         return res.status(404).json({ error: 'Not found' });
     }
-    
+
     try {
         const { slug, episode } = req.params;
         const episodeNum = parseInt(episode, 10) || 1;
-        
+
         // Find anime by slug
         const anime = await CustomAnime.findBySlug(slug);
-        
+
         if (!anime) {
             // If anime not found, redirect to frontend 404
             return res.redirect(302, `${FRONTEND_URL}/watch/${slug}/${episodeNum}`);
         }
-        
+
         // Build absolute image URL
         let imageUrl = anime.banner || anime.poster;
         if (imageUrl && !imageUrl.startsWith('http')) {
-            imageUrl = imageUrl.startsWith('/') 
-                ? `${FRONTEND_URL}${imageUrl}` 
+            imageUrl = imageUrl.startsWith('/')
+                ? `${FRONTEND_URL}${imageUrl}`
                 : `${FRONTEND_URL}/${imageUrl}`;
         }
         // Use logo as reliable fallback
         const defaultImage = `${FRONTEND_URL}/images/logo.png`;
         const finalImage = imageUrl && imageUrl.startsWith('http') ? imageUrl : defaultImage;
-        
+
         // Build watch URL
         const watchUrl = `${FRONTEND_URL}/watch/${anime.cleanSlug || anime.id}/${episodeNum}`;
-        
+
         // Generate HTML with proper meta tags
         const html = `<!DOCTYPE html>
 <html lang="id">
@@ -353,10 +354,10 @@ app.get('/watch/:slug/:episode', async (req, res) => {
     </div>
 </body>
 </html>`;
-        
+
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.send(html);
-        
+
     } catch (err) {
         console.error('[SSR] Error rendering watch page:', err);
         // Return 404 HTML page
