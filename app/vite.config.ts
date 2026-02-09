@@ -64,8 +64,10 @@ export default defineConfig({
   server: {
     allowedHosts: ["animeku.xyz"],
   },
-  // Optimize dependencies
+  // Optimize dependencies - exclude framer-motion to allow dynamic import
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom', 'framer-motion'],
+    include: ['react', 'react-dom', 'react-router-dom'],
+    // Exclude heavy animation library - will be loaded on demand
+    exclude: ['framer-motion'],
   },
 });

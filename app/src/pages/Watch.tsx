@@ -52,7 +52,7 @@ async function getSignedVideoUrl(videoUrl: string, animeId: string | undefined, 
         episode
       })
     });
-    
+
     if (tokenRes.ok) {
       const tokenData = await tokenRes.json();
       // Use signed URL directly from R2 (fast CDN)
@@ -245,7 +245,7 @@ export default function Watch() {
           }
 
           setIsEmbed(false);
-          
+
           // Generate proxy token to hide original URL
           const signedUrl = await getSignedVideoUrl(selectedStream.url, id, currentEpisode);
           setVideoUrl(signedUrl);
@@ -272,30 +272,9 @@ export default function Watch() {
     fetchVideoUrl();
   }, [currentEpisode, anime, selectedServer]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      // Ignore if typing in input field
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
+  // NOTE: Keyboard shortcuts are handled in the handleKeyDown useEffect below (line ~506)
+  // This avoids duplicate event listeners for better performance
 
-      switch (e.key.toLowerCase()) {
-        case 'f':
-          e.preventDefault();
-          toggleFullscreenRef.current?.();
-          break;
-        case ' ':
-        case 'k':
-          e.preventDefault();
-          togglePlayRef.current?.();
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, []); // No deps needed - using refs
 
   // Auto-hide controls while playing
   useEffect(() => {
@@ -712,7 +691,7 @@ export default function Watch() {
   }
 
   const seoDescription = anime ? `Streaming ${anime.title} Episode ${currentEpisode} subtitle Indonesia kualitas HD` : 'Streaming anime subtitle Indonesia';
-  
+
   const breadcrumbItems = [
     { name: 'Home', url: 'https://animeku.xyz/' },
     { name: anime?.title || 'Anime', url: `https://animeku.xyz${getAnimeUrl(anime!)}` },
@@ -745,681 +724,681 @@ export default function Watch() {
         </>
       )}
       <main className="min-h-screen bg-[#0F0F1A]">
-      {!user && (
-        <div className="px-4 sm:px-6 lg:px-8 pt-20">
-          <div className="mx-auto max-w-3xl bg-white/5 border border-white/10 rounded-xl p-4 text-center text-white/70">
-            Login untuk menyimpan progress dan melanjutkan tontonan dari menit terakhir.
-            <Link to="/login" className="ml-2 text-[#6C5DD3] hover:underline">Login</Link>
+        {!user && (
+          <div className="px-4 sm:px-6 lg:px-8 pt-20">
+            <div className="mx-auto max-w-3xl bg-white/5 border border-white/10 rounded-xl p-4 text-center text-white/70">
+              Login untuk menyimpan progress dan melanjutkan tontonan dari menit terakhir.
+              <Link to="/login" className="ml-2 text-[#6C5DD3] hover:underline">Login</Link>
+            </div>
           </div>
-        </div>
-      )}
-      {/* Video Player + Episode List Section */}
-      <div className={`mx-auto px-4 sm:px-6 lg:px-8 pt-20 transition-all duration-300 ${isTheaterMode ? 'max-w-full' : 'max-w-7xl'}`}>
-        <div className={`grid gap-4 ${isTheaterMode ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-4'}`}>
-          {/* Video Player - 3 columns (or full width in theater mode) */}
-          <div className={`${isTheaterMode ? 'w-full' : 'lg:col-span-3'} ${showNobar ? 'hidden' : ''}`}>
-            <div className="relative bg-black rounded-xl overflow-hidden">
-              {/* Back Button */}
-              <Link
-                to={getAnimeUrl(anime!)}
-                className="absolute top-4 left-4 z-50 flex items-center gap-2 px-3 py-1.5 bg-black/50 backdrop-blur-sm rounded-lg text-white/70 hover:text-white transition-colors text-sm"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Kembali
-              </Link>
+        )}
+        {/* Video Player + Episode List Section */}
+        <div className={`mx-auto px-4 sm:px-6 lg:px-8 pt-20 transition-all duration-300 ${isTheaterMode ? 'max-w-full' : 'max-w-7xl'}`}>
+          <div className={`grid gap-4 ${isTheaterMode ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-4'}`}>
+            {/* Video Player - 3 columns (or full width in theater mode) */}
+            <div className={`${isTheaterMode ? 'w-full' : 'lg:col-span-3'} ${showNobar ? 'hidden' : ''}`}>
+              <div className="relative bg-black rounded-xl overflow-hidden">
+                {/* Back Button */}
+                <Link
+                  to={getAnimeUrl(anime!)}
+                  className="absolute top-4 left-4 z-50 flex items-center gap-2 px-3 py-1.5 bg-black/50 backdrop-blur-sm rounded-lg text-white/70 hover:text-white transition-colors text-sm"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Kembali
+                </Link>
 
-              {/* Video Container */}
-              <div
-                ref={videoContainerRef}
-                className="relative aspect-video bg-black overflow-hidden flex items-center justify-center"
-                onMouseMove={handleMouseMove}
-                onMouseLeave={() => isPlaying && setShowControls(false)}
-                onDoubleClick={handleDoubleClick}
-                style={{ filter: `brightness(${brightness}%)` }}
-              >
+                {/* Video Container */}
+                <div
+                  ref={videoContainerRef}
+                  className="relative aspect-video bg-black overflow-hidden flex items-center justify-center"
+                  onMouseMove={handleMouseMove}
+                  onMouseLeave={() => isPlaying && setShowControls(false)}
+                  onDoubleClick={handleDoubleClick}
+                  style={{ filter: `brightness(${brightness}%)` }}
+                >
 
-                {/* Video Render */}
-                {videoUrl && (videoUrl.startsWith('http') || videoUrl.startsWith('//')) ? (
-                  isEmbed ? (
-                    <iframe
-                      src={videoUrl}
-                      className="w-full h-full border-0"
-                      allowFullScreen
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    />
+                  {/* Video Render */}
+                  {videoUrl && (videoUrl.startsWith('http') || videoUrl.startsWith('//')) ? (
+                    isEmbed ? (
+                      <iframe
+                        src={videoUrl}
+                        className="w-full h-full border-0"
+                        allowFullScreen
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      />
+                    ) : (
+                      <video
+                        ref={videoRef}
+                        className="w-full h-full object-contain cursor-pointer"
+                        onClick={togglePlay}
+                        onTimeUpdate={handleTimeUpdate}
+                        onLoadedMetadata={handleLoadedMetadata}
+                        onProgress={handleProgress}
+                        onEnded={handleVideoEnd}
+                        onCanPlay={() => { }}
+                        onError={(e) => {
+                          const video = e.target as HTMLVideoElement;
+                          logger.error('[Watch] Video Error:', video.error?.message, video.error?.code);
+                          setVideoError(`Video tidak dapat diputar: ${video.error?.message || 'Unknown error'}`);
+                        }}
+                        poster={anime.banner || anime.poster}
+                        key={videoUrl}
+                        src={videoUrl}
+                        autoPlay={isPlaying}
+                        playsInline
+                        // @ts-ignore - webkit attribute for iOS Safari
+                        webkit-playsinline="true"
+                        x-webkit-airplay="allow"
+                        loop={isLooping}
+                        crossOrigin="anonymous"
+                      >
+                        {subtitleUrl && (
+                          <track
+                            kind="subtitles"
+                            label="Subtitle"
+                            srcLang="id"
+                            src={subtitleUrl}
+                            default
+                          />
+                        )}
+                        Your browser does not support the video tag.
+                      </video>
+                    )
                   ) : (
-                    <video
-                      ref={videoRef}
-                      className="w-full h-full object-contain cursor-pointer"
-                      onClick={togglePlay}
-                      onTimeUpdate={handleTimeUpdate}
-                      onLoadedMetadata={handleLoadedMetadata}
-                      onProgress={handleProgress}
-                      onEnded={handleVideoEnd}
-                      onCanPlay={() => {}}
-                      onError={(e) => {
-                        const video = e.target as HTMLVideoElement;
-                        logger.error('[Watch] Video Error:', video.error?.message, video.error?.code);
-                        setVideoError(`Video tidak dapat diputar: ${video.error?.message || 'Unknown error'}`);
-                      }}
-                      poster={anime.banner || anime.poster}
-                      key={videoUrl}
-                      src={videoUrl}
-                      autoPlay={isPlaying}
-                      playsInline
-                      // @ts-ignore - webkit attribute for iOS Safari
-                      webkit-playsinline="true"
-                      x-webkit-airplay="allow"
-                      loop={isLooping}
-                      crossOrigin="anonymous"
-                    >
-                      {subtitleUrl && (
-                        <track
-                          kind="subtitles"
-                          label="Subtitle"
-                          srcLang="id"
-                          src={subtitleUrl}
-                          default
-                        />
+                    <div className="flex flex-col items-center gap-4">
+                      {!videoError && !isLoadingVideo && (
+                        <div className="w-12 h-12 border-4 border-[#6C5DD3] border-t-transparent rounded-full animate-spin" />
                       )}
-                      Your browser does not support the video tag.
-                    </video>
-                  )
-                ) : (
-                  <div className="flex flex-col items-center gap-4">
-                    {!videoError && !isLoadingVideo && (
-                      <div className="w-12 h-12 border-4 border-[#6C5DD3] border-t-transparent rounded-full animate-spin" />
-                    )}
-                    <p className="text-white/40 text-sm">
-                      {videoError ? videoError : "Menyiapkan aliran video..."}
-                    </p>
-                  </div>
-                )}
-
-                {/* Loading Overlay */}
-                {isLoadingVideo && videoUrl && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-20">
-                    <div className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin" />
-                  </div>
-                )}
-
-                {/* Big Play Button */}
-                {!isPlaying && !isLoadingVideo && videoUrl && !isEmbed && (
-                  <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
-                    <button
-                      onClick={togglePlay}
-                      className="w-16 h-16 rounded-full bg-[#6C5DD3]/90 flex items-center justify-center hover:scale-110 transition-transform pointer-events-auto"
-                    >
-                      <Play className="w-8 h-8 text-white fill-current ml-1" />
-                    </button>
-                  </div>
-                )}
-
-                {/* Controls Overlay */}
-                {!isEmbed && (
-                  <div
-                    className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent transition-opacity duration-300 pointer-events-none ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0'}`}
-                  >
-                    <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between pointer-events-auto">
-                      <div className="flex items-center gap-3">
-                        <span className="text-white font-medium text-sm">{anime.title}</span>
-                        <span className="text-white/50 text-sm">EP {currentEpisode}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => setShowNobar(true)}
-                          className="flex items-center gap-2 px-3 py-1.5 bg-[#6C5DD3]/80 hover:bg-[#6C5DD3] text-white rounded-lg text-sm transition-colors"
-                        >
-                          <Users className="w-4 h-4" />
-                          <span className="hidden sm:inline">Nobar</span>
-                        </button>
-                        <button className="p-2 text-white/70 hover:text-white transition-colors">
-                          <Flag className="w-4 h-4" />
-                        </button>
-                        <button className="p-2 text-white/70 hover:text-white transition-colors">
-                          <Share2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      <p className="text-white/40 text-sm">
+                        {videoError ? videoError : "Menyiapkan aliran video..."}
+                      </p>
                     </div>
+                  )}
 
-                    <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-auto">
-                      {/* Skip Intro Button */}
-                      {showSkipIntro && (
-                        <button
-                          onClick={skipIntro}
-                          className="absolute -top-12 right-4 flex items-center gap-2 px-4 py-2 bg-white/90 text-black font-medium rounded-lg hover:bg-white transition-all animate-pulse"
-                        >
-                          <FastForward className="w-4 h-4" />
-                          Skip Intro
-                        </button>
-                      )}
+                  {/* Loading Overlay */}
+                  {isLoadingVideo && videoUrl && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-20">
+                      <div className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+                    </div>
+                  )}
 
-                      {/* Progress Bar with Buffer */}
-                      <div className="mb-3 relative h-1.5 group">
-                        {/* Buffer Progress (background) */}
-                        <div
-                          className="absolute top-0 left-0 h-full bg-white/30 rounded-full transition-all"
-                          style={{ width: `${buffered}%` }}
-                        />
-                        {/* Current Progress (foreground) */}
-                        <input
-                          type="range"
-                          min={0}
-                          max={duration || 100}
-                          value={currentTime}
-                          onChange={handleSeek}
-                          className="absolute top-0 left-0 w-full h-full bg-transparent rounded-full appearance-none cursor-pointer [&::-webkit-slider-runnable-track]:bg-white/20 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:h-1.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-[#6C5DD3] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:mt-[-3px] group-hover:[&::-webkit-slider-thumb]:scale-125"
-                          style={{
-                            background: `linear-gradient(to right, #6C5DD3 0%, #6C5DD3 ${(currentTime / (duration || 100)) * 100}%, transparent ${(currentTime / (duration || 100)) * 100}%)`
-                          }}
-                        />
+                  {/* Big Play Button */}
+                  {!isPlaying && !isLoadingVideo && videoUrl && !isEmbed && (
+                    <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
+                      <button
+                        onClick={togglePlay}
+                        className="w-16 h-16 rounded-full bg-[#6C5DD3]/90 flex items-center justify-center hover:scale-110 transition-transform pointer-events-auto"
+                      >
+                        <Play className="w-8 h-8 text-white fill-current ml-1" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Controls Overlay */}
+                  {!isEmbed && (
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent transition-opacity duration-300 pointer-events-none ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0'}`}
+                    >
+                      <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between pointer-events-auto">
+                        <div className="flex items-center gap-3">
+                          <span className="text-white font-medium text-sm">{anime.title}</span>
+                          <span className="text-white/50 text-sm">EP {currentEpisode}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setShowNobar(true)}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-[#6C5DD3]/80 hover:bg-[#6C5DD3] text-white rounded-lg text-sm transition-colors"
+                          >
+                            <Users className="w-4 h-4" />
+                            <span className="hidden sm:inline">Nobar</span>
+                          </button>
+                          <button className="p-2 text-white/70 hover:text-white transition-colors">
+                            <Flag className="w-4 h-4" />
+                          </button>
+                          <button className="p-2 text-white/70 hover:text-white transition-colors">
+                            <Share2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
 
-                      <div className="flex items-center justify-between flex-wrap gap-2">
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          <button onClick={togglePlay} className="text-white hover:text-[#6C5DD3] transition-colors p-1">
-                            {isPlaying ? <Pause className="w-5 h-5 sm:w-5 sm:h-5 fill-current" /> : <Play className="w-5 h-5 sm:w-5 sm:h-5 fill-current" />}
+                      <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-auto">
+                        {/* Skip Intro Button */}
+                        {showSkipIntro && (
+                          <button
+                            onClick={skipIntro}
+                            className="absolute -top-12 right-4 flex items-center gap-2 px-4 py-2 bg-white/90 text-black font-medium rounded-lg hover:bg-white transition-all animate-pulse"
+                          >
+                            <FastForward className="w-4 h-4" />
+                            Skip Intro
                           </button>
-                          <button onClick={() => goToEpisode(currentEpisode - 1)} disabled={currentEpisode <= 1} className="text-white hover:text-[#6C5DD3] transition-colors disabled:opacity-30 p-1">
-                            <SkipBack className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => goToEpisode(currentEpisode + 1)} disabled={currentEpisode >= totalEpisodes} className="text-white hover:text-[#6C5DD3] transition-colors disabled:opacity-30 p-1">
-                            <SkipForward className="w-4 h-4" />
-                          </button>
+                        )}
 
-                          {/* Volume - hidden on mobile */}
-                          <div className="hidden sm:flex items-center gap-2">
-                            <button onClick={toggleMute} className="text-white hover:text-[#6C5DD3] transition-colors">
-                              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                            </button>
-                            <input type="range" min={0} max={1} step={0.1} value={isMuted ? 0 : volume} onChange={handleVolumeChange} className="w-16 h-1 bg-white/20 rounded-full cursor-pointer" />
-                          </div>
-                          <span className="text-white text-[10px] sm:text-xs whitespace-nowrap">{formatTime(currentTime)} / {formatTime(duration)}</span>
+                        {/* Progress Bar with Buffer */}
+                        <div className="mb-3 relative h-1.5 group">
+                          {/* Buffer Progress (background) */}
+                          <div
+                            className="absolute top-0 left-0 h-full bg-white/30 rounded-full transition-all"
+                            style={{ width: `${buffered}%` }}
+                          />
+                          {/* Current Progress (foreground) */}
+                          <input
+                            type="range"
+                            min={0}
+                            max={duration || 100}
+                            value={currentTime}
+                            onChange={handleSeek}
+                            className="absolute top-0 left-0 w-full h-full bg-transparent rounded-full appearance-none cursor-pointer [&::-webkit-slider-runnable-track]:bg-white/20 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:h-1.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-[#6C5DD3] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:mt-[-3px] group-hover:[&::-webkit-slider-thumb]:scale-125"
+                            style={{
+                              background: `linear-gradient(to right, #6C5DD3 0%, #6C5DD3 ${(currentTime / (duration || 100)) * 100}%, transparent ${(currentTime / (duration || 100)) * 100}%)`
+                            }}
+                          />
                         </div>
-                        <div className="flex items-center gap-1 sm:gap-2">
-                          {/* Playback Speed - always visible */}
-                          <button
-                            onClick={changePlaybackSpeed}
-                            className="px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs font-medium text-white bg-white/10 hover:bg-white/20 rounded transition-colors"
-                            title="Playback Speed (S)"
-                          >
-                            {playbackSpeed}x
-                          </button>
 
-                          {/* Brightness Control - hidden on mobile */}
-                          <div className="relative group hidden sm:block">
-                            <button className="p-1.5 text-white hover:text-[#6C5DD3] transition-colors" title="Brightness">
-                              <Sun className="w-4 h-4" />
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <button onClick={togglePlay} className="text-white hover:text-[#6C5DD3] transition-colors p-1">
+                              {isPlaying ? <Pause className="w-5 h-5 sm:w-5 sm:h-5 fill-current" /> : <Play className="w-5 h-5 sm:w-5 sm:h-5 fill-current" />}
                             </button>
-                            <div className="absolute bottom-full right-0 mb-2 hidden group-hover:flex items-center gap-2 bg-black/90 px-3 py-2 rounded-lg">
-                              <span className="text-xs text-white/70">Brightness</span>
-                              <input
-                                type="range"
-                                min={50}
-                                max={150}
-                                value={brightness}
-                                onChange={(e) => setBrightness(parseInt(e.target.value))}
-                                className="w-20 h-1 bg-white/20 rounded-full cursor-pointer"
-                              />
-                              <span className="text-xs text-white w-8">{brightness}%</span>
+                            <button onClick={() => goToEpisode(currentEpisode - 1)} disabled={currentEpisode <= 1} className="text-white hover:text-[#6C5DD3] transition-colors disabled:opacity-30 p-1">
+                              <SkipBack className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => goToEpisode(currentEpisode + 1)} disabled={currentEpisode >= totalEpisodes} className="text-white hover:text-[#6C5DD3] transition-colors disabled:opacity-30 p-1">
+                              <SkipForward className="w-4 h-4" />
+                            </button>
+
+                            {/* Volume - hidden on mobile */}
+                            <div className="hidden sm:flex items-center gap-2">
+                              <button onClick={toggleMute} className="text-white hover:text-[#6C5DD3] transition-colors">
+                                {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                              </button>
+                              <input type="range" min={0} max={1} step={0.1} value={isMuted ? 0 : volume} onChange={handleVolumeChange} className="w-16 h-1 bg-white/20 rounded-full cursor-pointer" />
                             </div>
+                            <span className="text-white text-[10px] sm:text-xs whitespace-nowrap">{formatTime(currentTime)} / {formatTime(duration)}</span>
                           </div>
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            {/* Playback Speed - always visible */}
+                            <button
+                              onClick={changePlaybackSpeed}
+                              className="px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs font-medium text-white bg-white/10 hover:bg-white/20 rounded transition-colors"
+                              title="Playback Speed (S)"
+                            >
+                              {playbackSpeed}x
+                            </button>
 
-                          {/* Picture-in-Picture - hidden on mobile */}
-                          <button
-                            onClick={togglePiP}
-                            className="hidden sm:block p-1.5 text-white hover:text-[#6C5DD3] transition-colors"
-                            title="Picture in Picture (P)"
-                          >
-                            <PictureInPicture2 className="w-4 h-4" />
-                          </button>
+                            {/* Brightness Control - hidden on mobile */}
+                            <div className="relative group hidden sm:block">
+                              <button className="p-1.5 text-white hover:text-[#6C5DD3] transition-colors" title="Brightness">
+                                <Sun className="w-4 h-4" />
+                              </button>
+                              <div className="absolute bottom-full right-0 mb-2 hidden group-hover:flex items-center gap-2 bg-black/90 px-3 py-2 rounded-lg">
+                                <span className="text-xs text-white/70">Brightness</span>
+                                <input
+                                  type="range"
+                                  min={50}
+                                  max={150}
+                                  value={brightness}
+                                  onChange={(e) => setBrightness(parseInt(e.target.value))}
+                                  className="w-20 h-1 bg-white/20 rounded-full cursor-pointer"
+                                />
+                                <span className="text-xs text-white w-8">{brightness}%</span>
+                              </div>
+                            </div>
 
-                          {/* Screenshot - hidden on mobile */}
-                          <button
-                            onClick={takeScreenshot}
-                            className="hidden sm:block p-1.5 text-white hover:text-[#6C5DD3] transition-colors"
-                            title="Screenshot"
-                          >
-                            <Camera className="w-4 h-4" />
-                          </button>
+                            {/* Picture-in-Picture - hidden on mobile */}
+                            <button
+                              onClick={togglePiP}
+                              className="hidden sm:block p-1.5 text-white hover:text-[#6C5DD3] transition-colors"
+                              title="Picture in Picture (P)"
+                            >
+                              <PictureInPicture2 className="w-4 h-4" />
+                            </button>
 
-                          {/* Loop Toggle - hidden on mobile */}
-                          <button
-                            onClick={() => setIsLooping(!isLooping)}
-                            className={`hidden sm:block p-1.5 transition-colors ${isLooping ? 'text-[#6C5DD3]' : 'text-white hover:text-[#6C5DD3]'}`}
-                            title="Loop Video"
-                          >
-                            <Repeat className="w-4 h-4" />
-                          </button>
+                            {/* Screenshot - hidden on mobile */}
+                            <button
+                              onClick={takeScreenshot}
+                              className="hidden sm:block p-1.5 text-white hover:text-[#6C5DD3] transition-colors"
+                              title="Screenshot"
+                            >
+                              <Camera className="w-4 h-4" />
+                            </button>
 
-                          {/* Auto Next Toggle - hidden on mobile */}
-                          <button
-                            onClick={() => setAutoNextEnabled(!autoNextEnabled)}
-                            className={`hidden sm:flex p-1.5 transition-colors items-center gap-1 ${autoNextEnabled ? 'text-green-400' : 'text-white/50'}`}
-                            title={autoNextEnabled ? 'Auto Next: ON' : 'Auto Next: OFF'}
-                          >
-                            <SkipForward className="w-4 h-4" />
-                            <span className="text-[10px] font-medium">{autoNextEnabled ? 'ON' : 'OFF'}</span>
-                          </button>
+                            {/* Loop Toggle - hidden on mobile */}
+                            <button
+                              onClick={() => setIsLooping(!isLooping)}
+                              className={`hidden sm:block p-1.5 transition-colors ${isLooping ? 'text-[#6C5DD3]' : 'text-white hover:text-[#6C5DD3]'}`}
+                              title="Loop Video"
+                            >
+                              <Repeat className="w-4 h-4" />
+                            </button>
 
-                          {/* Quality Selector - only for direct streams with multiple qualities */}
-                          {availableQualities.length > 0 && !isEmbed && (
+                            {/* Auto Next Toggle - hidden on mobile */}
+                            <button
+                              onClick={() => setAutoNextEnabled(!autoNextEnabled)}
+                              className={`hidden sm:flex p-1.5 transition-colors items-center gap-1 ${autoNextEnabled ? 'text-green-400' : 'text-white/50'}`}
+                              title={autoNextEnabled ? 'Auto Next: ON' : 'Auto Next: OFF'}
+                            >
+                              <SkipForward className="w-4 h-4" />
+                              <span className="text-[10px] font-medium">{autoNextEnabled ? 'ON' : 'OFF'}</span>
+                            </button>
+
+                            {/* Quality Selector - only for direct streams with multiple qualities */}
+                            {availableQualities.length > 0 && !isEmbed && (
+                              <div className="relative hidden sm:block">
+                                <button
+                                  onClick={() => setShowQualityMenu(!showQualityMenu)}
+                                  className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-colors ${showQualityMenu ? 'bg-[#6C5DD3] text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
+                                  title="Video Quality"
+                                >
+                                  <Film className="w-3.5 h-3.5" />
+                                  <span>{selectedQuality || 'Auto'}</span>
+                                </button>
+
+                                {showQualityMenu && (
+                                  <div className="absolute bottom-full right-0 mb-2 bg-[#1A1A2E] border border-white/10 rounded-lg shadow-xl overflow-hidden min-w-[100px]">
+                                    {availableQualities.map((quality) => (
+                                      <button
+                                        key={quality}
+                                        onClick={async () => {
+                                          // Find stream with this quality
+                                          const stream = allDirectStreams.find(s => s.quality === quality);
+                                          if (stream) {
+                                            setSelectedQuality(quality);
+                                            // Generate proxy for this quality
+                                            const signedUrl = await getSignedVideoUrl(stream.url, id, currentEpisode);
+                                            setVideoUrl(signedUrl);
+                                          }
+                                          setShowQualityMenu(false);
+                                        }}
+                                        className={`w-full px-4 py-2 text-left text-sm hover:bg-white/10 transition-colors ${selectedQuality === quality ? 'text-[#6C5DD3] bg-white/5' : 'text-white'
+                                          }`}
+                                      >
+                                        {quality}
+                                        {selectedQuality === quality && ' ✓'}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Theater Mode - hidden on mobile */}
+                            <button
+                              onClick={() => setIsTheaterMode(!isTheaterMode)}
+                              className={`hidden lg:block p-1.5 transition-colors ${isTheaterMode ? 'text-[#6C5DD3]' : 'text-white hover:text-[#6C5DD3]'}`}
+                              title="Theater Mode (T)"
+                            >
+                              <Monitor className="w-4 h-4" />
+                            </button>
+
+                            {/* Settings Menu - hidden on mobile */}
                             <div className="relative hidden sm:block">
                               <button
-                                onClick={() => setShowQualityMenu(!showQualityMenu)}
-                                className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-colors ${showQualityMenu ? 'bg-[#6C5DD3] text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
-                                title="Video Quality"
+                                onClick={() => setShowSettings(!showSettings)}
+                                className={`p-1.5 transition-colors ${showSettings ? 'text-[#6C5DD3]' : 'text-white hover:text-[#6C5DD3]'}`}
+                                title="Settings"
                               >
-                                <Film className="w-3.5 h-3.5" />
-                                <span>{selectedQuality || 'Auto'}</span>
+                                <Settings className="w-4 h-4" />
                               </button>
-
-                              {showQualityMenu && (
-                                <div className="absolute bottom-full right-0 mb-2 bg-[#1A1A2E] border border-white/10 rounded-lg shadow-xl overflow-hidden min-w-[100px]">
-                                  {availableQualities.map((quality) => (
-                                    <button
-                                      key={quality}
-                                      onClick={async () => {
-                                        // Find stream with this quality
-                                        const stream = allDirectStreams.find(s => s.quality === quality);
-                                        if (stream) {
-                                          setSelectedQuality(quality);
-                                          // Generate proxy for this quality
-                                          const signedUrl = await getSignedVideoUrl(stream.url, id, currentEpisode);
-                                          setVideoUrl(signedUrl);
-                                        }
-                                        setShowQualityMenu(false);
-                                      }}
-                                      className={`w-full px-4 py-2 text-left text-sm hover:bg-white/10 transition-colors ${selectedQuality === quality ? 'text-[#6C5DD3] bg-white/5' : 'text-white'
-                                        }`}
-                                    >
-                                      {quality}
-                                      {selectedQuality === quality && ' ✓'}
-                                    </button>
-                                  ))}
+                              {showSettings && (
+                                <div className="absolute bottom-full right-0 mb-2 bg-black/95 rounded-xl p-4 min-w-[200px] text-sm z-50">
+                                  <div className="flex items-center gap-2 mb-3 text-white font-medium">
+                                    <Keyboard className="w-4 h-4" />
+                                    Keyboard Shortcuts
+                                  </div>
+                                  <div className="space-y-1.5 text-xs text-white/70">
+                                    <div className="flex justify-between"><span>Play/Pause</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">Space / K</kbd></div>
+                                    <div className="flex justify-between"><span>Seek -10s</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">← / J</kbd></div>
+                                    <div className="flex justify-between"><span>Seek +10s</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">→ / L</kbd></div>
+                                    <div className="flex justify-between"><span>Volume Up</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">↑</kbd></div>
+                                    <div className="flex justify-between"><span>Volume Down</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">↓</kbd></div>
+                                    <div className="flex justify-between"><span>Mute</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">M</kbd></div>
+                                    <div className="flex justify-between"><span>Fullscreen</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">F</kbd></div>
+                                    <div className="flex justify-between"><span>Theater Mode</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">T</kbd></div>
+                                    <div className="flex justify-between"><span>PiP</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">P</kbd></div>
+                                    <div className="flex justify-between"><span>Speed</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">S</kbd></div>
+                                    <div className="flex justify-between"><span>Next Episode</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">N</kbd></div>
+                                    <div className="flex justify-between"><span>Prev Episode</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">B</kbd></div>
+                                  </div>
+                                  <div className="mt-3 pt-3 border-t border-white/10 text-xs text-white/50">
+                                    Double-click left/right to skip ±10s
+                                  </div>
                                 </div>
                               )}
                             </div>
-                          )}
 
-                          {/* Theater Mode - hidden on mobile */}
-                          <button
-                            onClick={() => setIsTheaterMode(!isTheaterMode)}
-                            className={`hidden lg:block p-1.5 transition-colors ${isTheaterMode ? 'text-[#6C5DD3]' : 'text-white hover:text-[#6C5DD3]'}`}
-                            title="Theater Mode (T)"
-                          >
-                            <Monitor className="w-4 h-4" />
-                          </button>
-
-                          {/* Settings Menu - hidden on mobile */}
-                          <div className="relative hidden sm:block">
+                            {/* Fullscreen - always visible */}
                             <button
-                              onClick={() => setShowSettings(!showSettings)}
-                              className={`p-1.5 transition-colors ${showSettings ? 'text-[#6C5DD3]' : 'text-white hover:text-[#6C5DD3]'}`}
-                              title="Settings"
+                              onClick={toggleFullscreen}
+                              className="p-1.5 text-white hover:text-[#6C5DD3] transition-colors"
+                              title="Fullscreen (F)"
                             >
-                              <Settings className="w-4 h-4" />
+                              <Maximize className="w-4 h-4 sm:w-4 sm:h-4" />
                             </button>
-                            {showSettings && (
-                              <div className="absolute bottom-full right-0 mb-2 bg-black/95 rounded-xl p-4 min-w-[200px] text-sm z-50">
-                                <div className="flex items-center gap-2 mb-3 text-white font-medium">
-                                  <Keyboard className="w-4 h-4" />
-                                  Keyboard Shortcuts
-                                </div>
-                                <div className="space-y-1.5 text-xs text-white/70">
-                                  <div className="flex justify-between"><span>Play/Pause</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">Space / K</kbd></div>
-                                  <div className="flex justify-between"><span>Seek -10s</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">← / J</kbd></div>
-                                  <div className="flex justify-between"><span>Seek +10s</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">→ / L</kbd></div>
-                                  <div className="flex justify-between"><span>Volume Up</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">↑</kbd></div>
-                                  <div className="flex justify-between"><span>Volume Down</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">↓</kbd></div>
-                                  <div className="flex justify-between"><span>Mute</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">M</kbd></div>
-                                  <div className="flex justify-between"><span>Fullscreen</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">F</kbd></div>
-                                  <div className="flex justify-between"><span>Theater Mode</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">T</kbd></div>
-                                  <div className="flex justify-between"><span>PiP</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">P</kbd></div>
-                                  <div className="flex justify-between"><span>Speed</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">S</kbd></div>
-                                  <div className="flex justify-between"><span>Next Episode</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">N</kbd></div>
-                                  <div className="flex justify-between"><span>Prev Episode</span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">B</kbd></div>
-                                </div>
-                                <div className="mt-3 pt-3 border-t border-white/10 text-xs text-white/50">
-                                  Double-click left/right to skip ±10s
-                                </div>
-                              </div>
-                            )}
                           </div>
-
-                          {/* Fullscreen - always visible */}
-                          <button
-                            onClick={toggleFullscreen}
-                            className="p-1.5 text-white hover:text-[#6C5DD3] transition-colors"
-                            title="Fullscreen (F)"
-                          >
-                            <Maximize className="w-4 h-4 sm:w-4 sm:h-4" />
-                          </button>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Episode List Sidebar - 1 column */}
-          <div className="lg:col-span-1">
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="bg-white/5 rounded-2xl p-4 h-full">
-              <h3 className="text-white font-medium mb-3 flex items-center gap-2 text-sm">
-                <List className="w-4 h-4" />
-                Daftar Episode ({anime.episodeData?.length || totalEpisodes})
-              </h3>
-              <div className="grid grid-cols-5 gap-1.5">
-                {(anime.episodeData && anime.episodeData.length > 0
-                  ? [...anime.episodeData].sort((a: any, b: any) => (a.ep || a.episodeNumber || 0) - (b.ep || b.episodeNumber || 0))
-                  : Array.from({ length: Math.min(totalEpisodes, 50) }, (_, i) => ({ ep: i + 1 }))
-                ).map((ep: any) => {
-                  const epNum = ep.ep || ep.episodeNumber || 1;
-                  const hasStream = ep.streams && ep.streams.length > 0;
-                  return (
-                    <Link
-                      key={epNum}
-                      to={getWatchUrl(anime, epNum)}
-                      className={`aspect-square flex items-center justify-center rounded-lg text-sm font-medium transition-all hover:scale-105 ${epNum === currentEpisode
-                        ? 'bg-[#6C5DD3] text-white'
-                        : hasStream
-                          ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                          : 'bg-white/5 text-white/60 hover:bg-white/10'
-                        }`}
-                    >
-                      {epNum}
-                    </Link>
-                  );
-                })}
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </div>
-
-      {/* Info & Controls Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          {/* Main Title */}
-          <h1 className="text-xl sm:text-2xl font-bold text-white mb-3">{anime.title} - Episode {currentEpisode}</h1>
-          
-          {/* Meta Tags Bar */}
-          <div className="flex flex-wrap items-center gap-2 text-sm mb-6">
-            <span className="px-3 py-1 bg-[#6C5DD3]/20 text-[#6C5DD3] rounded-full font-medium">{anime.studio}</span>
-            <span className="px-2 py-1 bg-white/5 text-white/60 rounded-full">{anime.releasedYear}</span>
-            <span className="w-1 h-1 bg-white/30 rounded-full" />
-            <span className="text-white/50">Episode {currentEpisode} / {totalEpisodes}</span>
-            {anime.rating && (
-              <>
-                <span className="w-1 h-1 bg-white/30 rounded-full" />
-                <span className="flex items-center gap-1 px-2 py-1 bg-yellow-500/10 text-yellow-400 rounded-full">
-                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                  {anime.rating}
-                </span>
-              </>
-            )}
-          </div>
-
-          {/* Episode Details Card */}
-          {(() => {
-            const currentEpData = anime.episodeData?.find((e: any) => (e.ep || e.episodeNumber) === currentEpisode);
-            if (!currentEpData?.title && !currentEpData?.thumbnail) return null;
-            
-            return (
-              <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-white/5 to-white/[0.02] border border-white/10">
-                <div className="flex gap-4">
-                  {currentEpData.thumbnail && (
-                    <div className="flex-shrink-0 w-32 sm:w-40 aspect-video rounded-xl overflow-hidden bg-white/5">
-                      <img 
-                        src={currentEpData.thumbnail} 
-                        alt={`Episode ${currentEpisode}`}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    </div>
                   )}
-                  <div className="flex-1 min-w-0">
-                    {currentEpData.title && (
-                      <h3 className="text-white font-semibold mb-1 truncate">{currentEpData.title}</h3>
-                    )}
-                    <p className="text-white/50 text-sm">Episode {currentEpisode}</p>
-                    {currentEpData.releaseDate && (
-                      <p className="text-white/40 text-xs mt-1">
-                        Rilis: {new Date(currentEpData.releaseDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                      </p>
-                    )}
-                  </div>
                 </div>
               </div>
-            );
-          })()}
-
-          {/* Server & Quality Selection */}
-          <div className="flex flex-wrap items-start gap-6 mb-6">
-            <div>
-              <h3 className="text-white text-sm font-medium mb-2">Pilih Server</h3>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { id: 'server1', label: 'Server 1' },
-                  { id: 'server2', label: 'Server 2' },
-                ].map((server) => (
-                  <button
-                    key={server.id}
-                    onClick={() => setSelectedServer(server.id)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedServer === server.id
-                      ? 'bg-[#6C5DD3] text-white'
-                      : 'bg-white/5 text-white/70 hover:bg-white/10 border border-white/10'
-                      }`}
-                  >
-                    {server.label}
-                  </button>
-                ))}
-              </div>
             </div>
 
-
-          </div>
-
-          {downloadStreams.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-white text-sm font-medium mb-2">Download / Alternatif ({downloadStreams.length})</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                {downloadStreams.map((stream, idx) => (
-                  <a key={idx} href={stream.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-xs">
-                    <span className="text-white/90">{stream.server} ({stream.quality})</span>
-                    <Share2 className="w-3 h-3 text-white/30" />
-                  </a>
-                ))}
-              </div>
+            {/* Episode List Sidebar - 1 column */}
+            <div className="lg:col-span-1">
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="bg-white/5 rounded-2xl p-4 h-full">
+                <h3 className="text-white font-medium mb-3 flex items-center gap-2 text-sm">
+                  <List className="w-4 h-4" />
+                  Daftar Episode ({anime.episodeData?.length || totalEpisodes})
+                </h3>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {(anime.episodeData && anime.episodeData.length > 0
+                    ? [...anime.episodeData].sort((a: any, b: any) => (a.ep || a.episodeNumber || 0) - (b.ep || b.episodeNumber || 0))
+                    : Array.from({ length: Math.min(totalEpisodes, 50) }, (_, i) => ({ ep: i + 1 }))
+                  ).map((ep: any) => {
+                    const epNum = ep.ep || ep.episodeNumber || 1;
+                    const hasStream = ep.streams && ep.streams.length > 0;
+                    return (
+                      <Link
+                        key={epNum}
+                        to={getWatchUrl(anime, epNum)}
+                        className={`aspect-square flex items-center justify-center rounded-lg text-sm font-medium transition-all hover:scale-105 ${epNum === currentEpisode
+                          ? 'bg-[#6C5DD3] text-white'
+                          : hasStream
+                            ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                            : 'bg-white/5 text-white/60 hover:bg-white/10'
+                          }`}
+                      >
+                        {epNum}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </motion.div>
             </div>
-          )}
-
-          {/* Navigation with Up Next Preview */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            {/* Prev Episode */}
-            <button 
-              onClick={() => goToEpisode(currentEpisode - 1)} 
-              disabled={currentEpisode <= 1} 
-              className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-left"
-            >
-              <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
-                <ChevronLeftIcon className="w-5 h-5 text-white/70" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-white/50 text-xs">Sebelumnya</p>
-                <p className="text-white font-medium text-sm truncate">Episode {currentEpisode - 1}</p>
-              </div>
-            </button>
-
-            {/* Current Episode Info */}
-            <div className="hidden sm:flex items-center justify-center p-3 rounded-xl bg-[#6C5DD3]/10 border border-[#6C5DD3]/20">
-              <div className="text-center">
-                <p className="text-[#6C5DD3] text-xs font-medium">Sedang Menonton</p>
-                <p className="text-white font-bold">Episode {currentEpisode}</p>
-              </div>
-            </div>
-
-            {/* Next Episode */}
-            <button 
-              onClick={() => goToEpisode(currentEpisode + 1)} 
-              disabled={currentEpisode >= totalEpisodes} 
-              className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-right sm:flex-row-reverse"
-            >
-              <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
-                <ChevronRight className="w-5 h-5 text-white/70" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-white/50 text-xs">Selanjutnya</p>
-                <p className="text-white font-medium text-sm truncate">Episode {currentEpisode + 1}</p>
-              </div>
-            </button>
-          </div>
-
-          {/* Up Next Section - Only show if there's a next episode */}
-          {currentEpisode < totalEpisodes && (
-            <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-[#6C5DD3]/10 to-transparent border border-[#6C5DD3]/20">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-2 h-2 rounded-full bg-[#6C5DD3] animate-pulse" />
-                <h3 className="text-white font-medium text-sm">Up Next</h3>
-              </div>
-              <div className="flex items-center gap-4">
-                {(() => {
-                  const nextEp = anime.episodeData?.find((e: any) => (e.ep || e.episodeNumber) === currentEpisode + 1);
-                  return (
-                    <>
-                      <div className="w-24 sm:w-32 aspect-video rounded-xl overflow-hidden bg-white/5 flex-shrink-0">
-                        <img 
-                          src={nextEp?.thumbnail || anime.poster} 
-                          alt={`Episode ${currentEpisode + 1}`}
-                          className="w-full h-full object-cover opacity-80"
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white font-semibold mb-1">Episode {currentEpisode + 1}</p>
-                        {nextEp?.title && (
-                          <p className="text-white/60 text-sm truncate mb-2">{nextEp.title}</p>
-                        )}
-                        <button 
-                          onClick={() => goToEpisode(currentEpisode + 1)}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-[#6C5DD3] hover:bg-[#5a4ec0] text-white text-sm font-medium rounded-xl transition-colors"
-                        >
-                          <Play className="w-4 h-4 fill-current" />
-                          Tonton Selanjutnya
-                        </button>
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            </div>
-          )}
-
-          {/* Anime Synopsis */}
-          {anime.synopsis && (
-            <div className="mb-6 p-4 rounded-2xl bg-white/5 border border-white/10">
-              <h3 className="text-white font-medium mb-2 flex items-center gap-2">
-                <svg className="w-4 h-4 text-[#6C5DD3]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                Sinopsis
-              </h3>
-              <p className="text-white/60 text-sm leading-relaxed line-clamp-3">{anime.synopsis}</p>
-            </div>
-          )}
-
-          {/* Genres Tags */}
-          {anime.genres && anime.genres.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-white/50 text-xs mb-2">Genre</h3>
-              <div className="flex flex-wrap gap-2">
-                {anime.genres.map((genre: string) => (
-                  <Link 
-                    key={genre}
-                    to={`/anime-list?genre=${encodeURIComponent(genre)}`}
-                    className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs rounded-full transition-colors border border-white/10"
-                  >
-                    {genre}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Anime Stats */}
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-6">
-            <div className="p-3 rounded-xl bg-white/5 text-center">
-              <p className="text-white/40 text-xs mb-1">Status</p>
-              <p className={`text-sm font-medium ${anime.status === 'Ongoing' ? 'text-green-400' : 'text-blue-400'}`}>{anime.status}</p>
-            </div>
-            <div className="p-3 rounded-xl bg-white/5 text-center">
-              <p className="text-white/40 text-xs mb-1">Tipe</p>
-              <p className="text-white text-sm font-medium">{anime.type || 'TV'}</p>
-            </div>
-            <div className="p-3 rounded-xl bg-white/5 text-center">
-              <p className="text-white/40 text-xs mb-1">Episode</p>
-              <p className="text-white text-sm font-medium">{totalEpisodes}</p>
-            </div>
-            <div className="p-3 rounded-xl bg-white/5 text-center">
-              <p className="text-white/40 text-xs mb-1">Tahun</p>
-              <p className="text-white text-sm font-medium">{anime.releasedYear}</p>
-            </div>
-            <div className="p-3 rounded-xl bg-white/5 text-center">
-              <p className="text-white/40 text-xs mb-1">Durasi</p>
-              <p className="text-white text-sm font-medium">{anime.duration || '-'}</p>
-            </div>
-          </div>
-
-          {/* Episode Comments Section */}
-          <div className="border-t border-white/10 pt-6">
-            <CommentSection
-              animeId={params.id || ''}
-              episodeNumber={currentEpisode}
-            />
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Related Anime */}
-      <section className="py-12 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold font-heading text-white mb-6">Anime Serupa</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-            {animeList.filter(a => a.id !== anime?.id).slice(0, 6).map((related, index) => (
-              <AnimeCard key={related.id} anime={related} index={index} />
-            ))}
           </div>
         </div>
-      </section>
 
-      {/* Nobar Room */}
-      {showNobar && anime && (
-        <NobarRoom
-          roomId={nobarRoomId}
-          animeId={anime.id}
-          episodeId={`${anime.id}-ep-${currentEpisode}`}
-          animeTitle={anime.title}
-          episodeNumber={currentEpisode}
-          isHost={!nobarRoomId}
-          onClose={() => {
-            setShowNobar(false);
-            setNobarRoomId(undefined);
-          }}
-          videoRef={videoRef}
-        />
-      )}
+        {/* Info & Controls Section */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            {/* Main Title */}
+            <h1 className="text-xl sm:text-2xl font-bold text-white mb-3">{anime.title} - Episode {currentEpisode}</h1>
 
-      {/* Nobar Lobby */}
-      {showNobar && !anime && (
-        <NobarLobby
-          onJoinRoom={(roomId) => {
-            setNobarRoomId(roomId);
-          }}
-          onCreateRoom={() => {
-            navigate('/');
-          }}
-        />
-      )}
-    </main>
+            {/* Meta Tags Bar */}
+            <div className="flex flex-wrap items-center gap-2 text-sm mb-6">
+              <span className="px-3 py-1 bg-[#6C5DD3]/20 text-[#6C5DD3] rounded-full font-medium">{anime.studio}</span>
+              <span className="px-2 py-1 bg-white/5 text-white/60 rounded-full">{anime.releasedYear}</span>
+              <span className="w-1 h-1 bg-white/30 rounded-full" />
+              <span className="text-white/50">Episode {currentEpisode} / {totalEpisodes}</span>
+              {anime.rating && (
+                <>
+                  <span className="w-1 h-1 bg-white/30 rounded-full" />
+                  <span className="flex items-center gap-1 px-2 py-1 bg-yellow-500/10 text-yellow-400 rounded-full">
+                    <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                    {anime.rating}
+                  </span>
+                </>
+              )}
+            </div>
+
+            {/* Episode Details Card */}
+            {(() => {
+              const currentEpData = anime.episodeData?.find((e: any) => (e.ep || e.episodeNumber) === currentEpisode);
+              if (!currentEpData?.title && !currentEpData?.thumbnail) return null;
+
+              return (
+                <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-white/5 to-white/[0.02] border border-white/10">
+                  <div className="flex gap-4">
+                    {currentEpData.thumbnail && (
+                      <div className="flex-shrink-0 w-32 sm:w-40 aspect-video rounded-xl overflow-hidden bg-white/5">
+                        <img
+                          src={currentEpData.thumbnail}
+                          alt={`Episode ${currentEpisode}`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      {currentEpData.title && (
+                        <h3 className="text-white font-semibold mb-1 truncate">{currentEpData.title}</h3>
+                      )}
+                      <p className="text-white/50 text-sm">Episode {currentEpisode}</p>
+                      {currentEpData.releaseDate && (
+                        <p className="text-white/40 text-xs mt-1">
+                          Rilis: {new Date(currentEpData.releaseDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Server & Quality Selection */}
+            <div className="flex flex-wrap items-start gap-6 mb-6">
+              <div>
+                <h3 className="text-white text-sm font-medium mb-2">Pilih Server</h3>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { id: 'server1', label: 'Server 1' },
+                    { id: 'server2', label: 'Server 2' },
+                  ].map((server) => (
+                    <button
+                      key={server.id}
+                      onClick={() => setSelectedServer(server.id)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedServer === server.id
+                        ? 'bg-[#6C5DD3] text-white'
+                        : 'bg-white/5 text-white/70 hover:bg-white/10 border border-white/10'
+                        }`}
+                    >
+                      {server.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+
+            </div>
+
+            {downloadStreams.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-white text-sm font-medium mb-2">Download / Alternatif ({downloadStreams.length})</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {downloadStreams.map((stream, idx) => (
+                    <a key={idx} href={stream.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-xs">
+                      <span className="text-white/90">{stream.server} ({stream.quality})</span>
+                      <Share2 className="w-3 h-3 text-white/30" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Navigation with Up Next Preview */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              {/* Prev Episode */}
+              <button
+                onClick={() => goToEpisode(currentEpisode - 1)}
+                disabled={currentEpisode <= 1}
+                className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-left"
+              >
+                <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+                  <ChevronLeftIcon className="w-5 h-5 text-white/70" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-white/50 text-xs">Sebelumnya</p>
+                  <p className="text-white font-medium text-sm truncate">Episode {currentEpisode - 1}</p>
+                </div>
+              </button>
+
+              {/* Current Episode Info */}
+              <div className="hidden sm:flex items-center justify-center p-3 rounded-xl bg-[#6C5DD3]/10 border border-[#6C5DD3]/20">
+                <div className="text-center">
+                  <p className="text-[#6C5DD3] text-xs font-medium">Sedang Menonton</p>
+                  <p className="text-white font-bold">Episode {currentEpisode}</p>
+                </div>
+              </div>
+
+              {/* Next Episode */}
+              <button
+                onClick={() => goToEpisode(currentEpisode + 1)}
+                disabled={currentEpisode >= totalEpisodes}
+                className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-right sm:flex-row-reverse"
+              >
+                <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+                  <ChevronRight className="w-5 h-5 text-white/70" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-white/50 text-xs">Selanjutnya</p>
+                  <p className="text-white font-medium text-sm truncate">Episode {currentEpisode + 1}</p>
+                </div>
+              </button>
+            </div>
+
+            {/* Up Next Section - Only show if there's a next episode */}
+            {currentEpisode < totalEpisodes && (
+              <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-[#6C5DD3]/10 to-transparent border border-[#6C5DD3]/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2 h-2 rounded-full bg-[#6C5DD3] animate-pulse" />
+                  <h3 className="text-white font-medium text-sm">Up Next</h3>
+                </div>
+                <div className="flex items-center gap-4">
+                  {(() => {
+                    const nextEp = anime.episodeData?.find((e: any) => (e.ep || e.episodeNumber) === currentEpisode + 1);
+                    return (
+                      <>
+                        <div className="w-24 sm:w-32 aspect-video rounded-xl overflow-hidden bg-white/5 flex-shrink-0">
+                          <img
+                            src={nextEp?.thumbnail || anime.poster}
+                            alt={`Episode ${currentEpisode + 1}`}
+                            className="w-full h-full object-cover opacity-80"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-semibold mb-1">Episode {currentEpisode + 1}</p>
+                          {nextEp?.title && (
+                            <p className="text-white/60 text-sm truncate mb-2">{nextEp.title}</p>
+                          )}
+                          <button
+                            onClick={() => goToEpisode(currentEpisode + 1)}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-[#6C5DD3] hover:bg-[#5a4ec0] text-white text-sm font-medium rounded-xl transition-colors"
+                          >
+                            <Play className="w-4 h-4 fill-current" />
+                            Tonton Selanjutnya
+                          </button>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* Anime Synopsis */}
+            {anime.synopsis && (
+              <div className="mb-6 p-4 rounded-2xl bg-white/5 border border-white/10">
+                <h3 className="text-white font-medium mb-2 flex items-center gap-2">
+                  <svg className="w-4 h-4 text-[#6C5DD3]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  Sinopsis
+                </h3>
+                <p className="text-white/60 text-sm leading-relaxed line-clamp-3">{anime.synopsis}</p>
+              </div>
+            )}
+
+            {/* Genres Tags */}
+            {anime.genres && anime.genres.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-white/50 text-xs mb-2">Genre</h3>
+                <div className="flex flex-wrap gap-2">
+                  {anime.genres.map((genre: string) => (
+                    <Link
+                      key={genre}
+                      to={`/anime-list?genre=${encodeURIComponent(genre)}`}
+                      className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs rounded-full transition-colors border border-white/10"
+                    >
+                      {genre}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Anime Stats */}
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-6">
+              <div className="p-3 rounded-xl bg-white/5 text-center">
+                <p className="text-white/40 text-xs mb-1">Status</p>
+                <p className={`text-sm font-medium ${anime.status === 'Ongoing' ? 'text-green-400' : 'text-blue-400'}`}>{anime.status}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-white/5 text-center">
+                <p className="text-white/40 text-xs mb-1">Tipe</p>
+                <p className="text-white text-sm font-medium">{anime.type || 'TV'}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-white/5 text-center">
+                <p className="text-white/40 text-xs mb-1">Episode</p>
+                <p className="text-white text-sm font-medium">{totalEpisodes}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-white/5 text-center">
+                <p className="text-white/40 text-xs mb-1">Tahun</p>
+                <p className="text-white text-sm font-medium">{anime.releasedYear}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-white/5 text-center">
+                <p className="text-white/40 text-xs mb-1">Durasi</p>
+                <p className="text-white text-sm font-medium">{anime.duration || '-'}</p>
+              </div>
+            </div>
+
+            {/* Episode Comments Section */}
+            <div className="border-t border-white/10 pt-6">
+              <CommentSection
+                animeId={params.id || ''}
+                episodeNumber={currentEpisode}
+              />
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Related Anime */}
+        <section className="py-12 border-t border-white/5">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-2xl font-bold font-heading text-white mb-6">Anime Serupa</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              {animeList.filter(a => a.id !== anime?.id).slice(0, 6).map((related, index) => (
+                <AnimeCard key={related.id} anime={related} index={index} />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Nobar Room */}
+        {showNobar && anime && (
+          <NobarRoom
+            roomId={nobarRoomId}
+            animeId={anime.id}
+            episodeId={`${anime.id}-ep-${currentEpisode}`}
+            animeTitle={anime.title}
+            episodeNumber={currentEpisode}
+            isHost={!nobarRoomId}
+            onClose={() => {
+              setShowNobar(false);
+              setNobarRoomId(undefined);
+            }}
+            videoRef={videoRef}
+          />
+        )}
+
+        {/* Nobar Lobby */}
+        {showNobar && !anime && (
+          <NobarLobby
+            onJoinRoom={(roomId) => {
+              setNobarRoomId(roomId);
+            }}
+            onCreateRoom={() => {
+              navigate('/');
+            }}
+          />
+        )}
+      </main>
     </>
   );
 }
