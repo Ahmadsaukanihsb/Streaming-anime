@@ -32,8 +32,20 @@ const BUCKET_NAME = process.env.R2_BUCKET_NAME || 'streaminganime';
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || '';
 
 // WebP conversion settings
-const WEBP_QUALITY = 80; // 80% quality (good balance of size/quality)
+const WEBP_QUALITY = 80; // 80% quality for desktop (good balance of size/quality)
+const WEBP_QUALITY_MOBILE = 70; // 70% quality for mobile (smaller file size)
 const WEBP_ENABLED = true; // Set to false to disable WebP conversion
+
+// Responsive image sizes (width in pixels)
+const RESPONSIVE_SIZES = {
+    mobile_hero: 640,    // Mobile hero - optimize for LCP
+    mobile_poster: 300,  // Mobile poster cards
+    mobile_thumb: 160,   // Mobile thumbnails
+    tablet_hero: 1024,   // Tablet hero
+    desktop_hero: 1920,  // Desktop hero (full quality)
+    poster: 500,         // Standard poster
+    banner: 1280,        // Standard banner
+};
 
 // Allowed image sources (whitelist for security)
 const ALLOWED_SOURCES = [
@@ -159,6 +171,43 @@ async function convertToWebP(buffer) {
     } catch (error) {
         console.error('[ImageProxy] WebP conversion failed:', error.message);
         return buffer; // Return original on error
+    }
+}
+
+/**
+ * Convert image to WebP with resize for responsive images (mobile optimization)
+ * @param {Buffer} buffer - Original image buffer
+ * @param {string} targetSize - Target size key (e.g., 'mobile_hero', 'mobile_poster')
+ * @returns {Promise<Buffer>} - Optimized WebP buffer
+ */
+async function convertToWebPResponsive(buffer, targetSize = 'mobile_hero') {
+    if (!sharp) {
+        return buffer;
+    }
+
+    try {
+        const width = RESPONSIVE_SIZES[targetSize] || RESPONSIVE_SIZES.mobile_hero;
+        const quality = targetSize.startsWith('mobile') ? WEBP_QUALITY_MOBILE : WEBP_QUALITY;
+
+        const webpBuffer = await sharp(buffer)
+            .resize({
+                width,
+                withoutEnlargement: true, // Don't upscale small images
+                fit: 'inside'
+            })
+            .webp({ quality })
+            .toBuffer();
+
+        const originalSize = buffer.length;
+        const webpSize = webpBuffer.length;
+        const savings = Math.round((1 - webpSize / originalSize) * 100);
+
+        console.log(`[ImageProxy] Responsive WebP (${targetSize}@${width}px): ${Math.round(originalSize / 1024)}KB → ${Math.round(webpSize / 1024)}KB (${savings}% smaller)`);
+
+        return webpBuffer;
+    } catch (error) {
+        console.error('[ImageProxy] Responsive conversion failed:', error.message);
+        return buffer;
     }
 }
 
@@ -308,7 +357,10 @@ module.exports = {
     processImage,
     batchProcessImages,
     convertToWebP,
+    convertToWebPResponsive,
     isWebPEnabled,
     ALLOWED_SOURCES,
     WEBP_QUALITY,
+    WEBP_QUALITY_MOBILE,
+    RESPONSIVE_SIZES,
 };
