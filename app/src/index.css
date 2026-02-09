@@ -198,6 +198,23 @@
     box-shadow: 0 0 30px rgba(108, 93, 211, 0.4), 0 0 60px rgba(108, 93, 211, 0.2);
   }
 
+  /* Fade-in animation for hero carousel */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .glow-blue {
     box-shadow: 0 0 30px rgba(59, 130, 246, 0.4), 0 0 60px rgba(59, 130, 246, 0.2);
   }
