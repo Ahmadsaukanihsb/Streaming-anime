@@ -318,36 +318,33 @@ export default function Navbar() {
         </div>
       </motion.nav>
 
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="fixed inset-x-0 top-16 z-40 lg:hidden"
-          >
-            <div className="bg-[#0F0F1A]/95 backdrop-blur-xl border-b border-white/10 p-4">
-              <div className="flex flex-col gap-2">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.path}
-                    to={link.path}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${isActive(link.path)
-                      ? 'bg-[#6C5DD3]/20 text-white'
-                      : 'text-white/60 hover:bg-white/5 hover:text-white'
-                      }`}
-                  >
-                    <link.icon className="w-5 h-5" />
-                    {link.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Mobile Menu - CSS transitions instead of AnimatePresence */}
+      <div
+        className={`fixed inset-x-0 top-16 z-40 lg:hidden transition-all duration-300 ease-out ${isMobileMenuOpen
+            ? 'opacity-100 translate-y-0 pointer-events-auto'
+            : 'opacity-0 -translate-y-4 pointer-events-none'
+          }`}
+        style={{ transform: 'translateZ(0)' }}
+      >
+        <div className="bg-[#0F0F1A]/95 backdrop-blur-xl border-b border-white/10 p-4">
+          <div className="flex flex-col gap-2">
+            {navLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${isActive(link.path)
+                  ? 'bg-[#6C5DD3]/20 text-white'
+                  : 'text-white/60 hover:bg-white/5 hover:text-white'
+                  }`}
+              >
+                <link.icon className="w-5 h-5" />
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* Search Overlay */}
       <AnimatePresence>
