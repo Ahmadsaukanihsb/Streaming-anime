@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageCircle,
@@ -153,7 +154,10 @@ export default function GlobalChat() {
     return `${typingUsers.length} orang sedang mengetik...`;
   };
 
-  return (
+  // Use portal to isolate from main DOM tree and prevent repaint cascading
+  const portalContainer = document.getElementById('portal-root') || document.body;
+
+  return createPortal(
     <>
       {/* Floating Chat Button */}
       <motion.button
@@ -591,6 +595,7 @@ export default function GlobalChat() {
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </>,
+    portalContainer
   );
 }
