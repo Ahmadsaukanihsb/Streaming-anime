@@ -1,8 +1,8 @@
-// HeroMobile - Lightweight hero carousel for mobile
-// Uses CSS transitions instead of Framer Motion for better performance
+// HeroMobile - Smooth hero carousel for mobile
+// Uses CSS transitions with hardware acceleration and touch swipe gestures
 // Synced with admin panel hero settings
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Play, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
@@ -11,6 +11,8 @@ import { BACKEND_URL } from '@/config/api';
 import { apiFetch } from '@/lib/api';
 
 const AUTO_SLIDE_INTERVAL = 5000; // 5 seconds
+const SWIPE_THRESHOLD = 50; // Minimum swipe distance in pixels
+const SWIPE_VELOCITY_THRESHOLD = 0.3; // Minimum velocity for quick swipe
 
 // Helper function to generate clean slug from title
 const generateCleanSlug = (title: string): string => {
@@ -28,6 +30,13 @@ export default function HeroMobile() {
   const [isPaused, setIsPaused] = useState(false);
   const [heroAnimeIds, setHeroAnimeIds] = useState<string[]>([]);
   const [firstImagePreloaded, setFirstImagePreloaded] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  // Touch/swipe state
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number; time: number } | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef<HTMLElement>(null);
 
   // Load hero settings from database (same as desktop Hero)
   useEffect(() => {
@@ -125,22 +134,31 @@ export default function HeroMobile() {
 
   // Auto-slide logic
   useEffect(() => {
-    if (slides.length <= 1 || isPaused) return;
+    if (slides.length <= 1 || isPaused || isDragging) return;
 
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
+      if (!isAnimating) {
+        goToSlide((currentSlide + 1) % slides.length);
+      }
     }, AUTO_SLIDE_INTERVAL);
 
     return () => clearInterval(interval);
-  }, [slides.length, isPaused]);
+  }, [slides.length, isPaused, isDragging, currentSlide, isAnimating]);
 
-  // Navigation handlers
+  // Navigation handlers with animation lock
   const goToSlide = useCallback((index: number) => {
+    if (isAnimating || index === currentSlide) return;
+
+    setIsAnimating(true);
     setCurrentSlide(index);
     setIsPaused(true);
+
+    // Animation duration is 600ms, add small buffer
+    setTimeout(() => setIsAnimating(false), 650);
+
     // Resume auto-slide after 10 seconds of inactivity
     setTimeout(() => setIsPaused(false), 10000);
-  }, []);
+  }, [isAnimating, currentSlide]);
 
   const nextSlide = useCallback(() => {
     goToSlide((currentSlide + 1) % slides.length);
@@ -150,28 +168,116 @@ export default function HeroMobile() {
     goToSlide((currentSlide - 1 + slides.length) % slides.length);
   }, [currentSlide, slides.length, goToSlide]);
 
+  // Touch handlers for swipe gestures
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (isAnimating) return;
+    const touch = e.touches[0];
+    setTouchStart({ x: touch.clientX, y: touch.clientY, time: Date.now() });
+    setIsDragging(true);
+    setIsPaused(true);
+  }, [isAnimating]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStart || isAnimating) return;
+
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - touchStart.x;
+    const deltaY = touch.clientY - touchStart.y;
+
+    // Only track horizontal swipes (ignore vertical scrolling)
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      e.preventDefault();
+      // Add resistance at edges
+      const maxDrag = 150;
+      const resistance = 0.4;
+      let offset = deltaX;
+
+      if ((currentSlide === 0 && deltaX > 0) ||
+        (currentSlide === slides.length - 1 && deltaX < 0)) {
+        offset = deltaX * resistance;
+      }
+
+      setDragOffset(Math.max(-maxDrag, Math.min(maxDrag, offset)));
+    }
+  }, [touchStart, isAnimating, currentSlide, slides.length]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (!touchStart) return;
+
+    const deltaTime = Date.now() - touchStart.time;
+    const velocity = Math.abs(dragOffset) / deltaTime;
+
+    // Determine if we should change slides
+    const shouldChangeSlide =
+      Math.abs(dragOffset) > SWIPE_THRESHOLD ||
+      velocity > SWIPE_VELOCITY_THRESHOLD;
+
+    if (shouldChangeSlide) {
+      if (dragOffset > 0 && currentSlide > 0) {
+        goToSlide(currentSlide - 1);
+      } else if (dragOffset < 0 && currentSlide < slides.length - 1) {
+        goToSlide(currentSlide + 1);
+      }
+    }
+
+    // Reset drag state
+    setDragOffset(0);
+    setIsDragging(false);
+    setTouchStart(null);
+
+    // Resume auto-slide after 10 seconds
+    setTimeout(() => setIsPaused(false), 10000);
+  }, [touchStart, dragOffset, currentSlide, slides.length, goToSlide]);
+
   if (slides.length === 0) return null;
 
   const slide = slides[currentSlide];
 
   return (
-    <section className="hero-section relative">
-      {/* Background Images - preload next for smooth transition */}
+    <section
+      ref={containerRef}
+      className="hero-section relative touch-pan-y"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Background Images - smooth transitions with hardware acceleration */}
       <div className="absolute inset-0 overflow-hidden">
-        {slides.map((s, index) => (
-          <img
-            key={s.id}
-            src={s.poster}
-            alt={s.title}
-            width={640}
-            height={960}
-            className={`hero-image absolute inset-0 transition-opacity duration-500 ${index === currentSlide ? 'opacity-100' : 'opacity-0'
-              }`}
-            loading={index === 0 ? 'eager' : 'lazy'}
-            decoding="async"
-            fetchPriority={index === 0 ? 'high' : 'low'}
-          />
-        ))}
+        {slides.map((s, index) => {
+          const isActive = index === currentSlide;
+          const isPrev = index === (currentSlide - 1 + slides.length) % slides.length;
+          const isNext = index === (currentSlide + 1) % slides.length;
+
+          // Calculate transform based on drag offset
+          let translateX = 0;
+          if (isDragging && dragOffset !== 0) {
+            if (isActive) {
+              translateX = dragOffset * 0.3; // Slight parallax effect
+            }
+          }
+
+          return (
+            <img
+              key={s.id}
+              src={s.poster}
+              alt={s.title}
+              width={640}
+              height={960}
+              className="hero-image absolute inset-0"
+              style={{
+                opacity: isActive ? 1 : (isPrev || isNext) && isDragging ? 0.5 : 0,
+                transform: `translateX(${translateX}px) scale(${isActive ? 1 : 1.05})`,
+                transition: isDragging
+                  ? 'none'
+                  : 'opacity 600ms cubic-bezier(0.4, 0, 0.2, 1), transform 600ms cubic-bezier(0.4, 0, 0.2, 1)',
+                willChange: 'opacity, transform',
+              }}
+              loading={index === 0 ? 'eager' : 'lazy'}
+              decoding="async"
+              fetchPriority={index === 0 ? 'high' : 'low'}
+            />
+          );
+        })}
         {/* Gradient overlay */}
         <div
           className="absolute inset-0"
@@ -181,9 +287,15 @@ export default function HeroMobile() {
         />
       </div>
 
-      {/* Content */}
+      {/* Content with smooth transitions */}
       <div className="relative z-10 h-full flex items-end pb-8 px-4">
-        <div className="w-full">
+        <div
+          className="w-full"
+          style={{
+            transform: isDragging ? `translateX(${dragOffset * 0.5}px)` : 'translateX(0)',
+            transition: isDragging ? 'none' : 'transform 300ms ease-out',
+          }}
+        >
           {/* Featured Badge */}
           <div className="inline-flex items-center gap-1 px-2 py-1 bg-[#6C5DD3]/20 border border-[#6C5DD3]/30 rounded-full mb-3">
             <Star className="w-3 h-3 text-[#9B8CFF]" />
@@ -192,28 +304,54 @@ export default function HeroMobile() {
             </span>
           </div>
 
-          {/* Title with transition */}
-          <h1
-            key={slide.id}
-            className="text-2xl font-bold text-white mb-2 leading-tight line-clamp-2 animate-fade-in"
-          >
-            {slide.title}
-          </h1>
+          {/* Title with smooth transition */}
+          <div className="overflow-hidden">
+            <h1
+              key={slide.id}
+              className="text-2xl font-bold text-white mb-2 leading-tight line-clamp-2"
+              style={{
+                animation: 'slideUp 500ms cubic-bezier(0.4, 0, 0.2, 1) forwards',
+              }}
+            >
+              {slide.title}
+            </h1>
+          </div>
 
-          {/* Meta */}
-          <div className="flex items-center gap-3 text-xs text-white/60 mb-3">
+          {/* Meta with staggered animation */}
+          <div
+            key={`meta-${slide.id}`}
+            className="flex items-center gap-3 text-xs text-white/60 mb-3"
+            style={{
+              animation: 'fadeIn 400ms cubic-bezier(0.4, 0, 0.2, 1) 100ms forwards',
+              opacity: 0,
+            }}
+          >
             <span>{slide.episodes || '?'} Episode</span>
             <span>•</span>
             <span>{slide.rating.toFixed(1)} ★</span>
           </div>
 
-          {/* Synopsis */}
-          <p className="text-sm text-white/70 mb-4 line-clamp-2">
+          {/* Synopsis with staggered animation */}
+          <p
+            key={`synopsis-${slide.id}`}
+            className="text-sm text-white/70 mb-4 line-clamp-2"
+            style={{
+              animation: 'fadeIn 400ms cubic-bezier(0.4, 0, 0.2, 1) 200ms forwards',
+              opacity: 0,
+            }}
+          >
             {slide.synopsis || 'Sinopsis belum tersedia.'}
           </p>
 
-          {/* Actions */}
-          <div className="flex gap-3 mb-4">
+          {/* Actions with staggered animation */}
+          <div
+            key={`actions-${slide.id}`}
+            className="flex gap-3 mb-4"
+            style={{
+              animation: 'fadeIn 400ms cubic-bezier(0.4, 0, 0.2, 1) 300ms forwards',
+              opacity: 0,
+            }}
+          >
             <Link
               to={getWatchUrl(slide, 1)}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#6C5DD3] text-white text-sm font-semibold rounded-lg active:scale-95 transition-transform"
@@ -232,16 +370,18 @@ export default function HeroMobile() {
           {/* Slide Indicators & Navigation */}
           {slides.length > 1 && (
             <div className="flex items-center justify-between">
-              {/* Dots */}
+              {/* Dots with smooth animation */}
               <div className="flex gap-2">
                 {slides.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => goToSlide(index)}
-                    className={`transition-all duration-300 rounded-full ${index === currentSlide
-                      ? 'w-6 h-2 bg-[#6C5DD3]'
-                      : 'w-2 h-2 bg-white/30'
-                      }`}
+                    className="rounded-full transition-all duration-500 ease-out"
+                    style={{
+                      width: index === currentSlide ? '24px' : '8px',
+                      height: '8px',
+                      backgroundColor: index === currentSlide ? '#6C5DD3' : 'rgba(255,255,255,0.3)',
+                    }}
                     aria-label={`Go to slide ${index + 1}`}
                   />
                 ))}
@@ -251,14 +391,16 @@ export default function HeroMobile() {
               <div className="flex gap-2">
                 <button
                   onClick={prevSlide}
-                  className="p-2 rounded-full bg-white/10 active:bg-white/20 transition-colors"
+                  disabled={isAnimating}
+                  className="p-2 rounded-full bg-white/10 active:bg-white/20 transition-colors disabled:opacity-50"
                   aria-label="Previous slide"
                 >
                   <ChevronLeft className="w-4 h-4 text-white" />
                 </button>
                 <button
                   onClick={nextSlide}
-                  className="p-2 rounded-full bg-white/10 active:bg-white/20 transition-colors"
+                  disabled={isAnimating}
+                  className="p-2 rounded-full bg-white/10 active:bg-white/20 transition-colors disabled:opacity-50"
                   aria-label="Next slide"
                 >
                   <ChevronRight className="w-4 h-4 text-white" />
@@ -268,6 +410,28 @@ export default function HeroMobile() {
           )}
         </div>
       </div>
+
+      {/* Inline keyframe animations */}
+      <style>{`
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+      `}</style>
     </section>
   );
 }
