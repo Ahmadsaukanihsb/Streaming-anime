@@ -102,6 +102,24 @@
     }
   }
 
+  /* CLS Prevention - Reserve space for hero */
+  .hero-section,
+  [class*="h-[70vh]"],
+  [class*="h-[75vh]"] {
+    min-height: 420px;
+    contain: layout style;
+  }
+
+  /* Prevent CLS for images by reserving aspect-ratio space */
+  img {
+    content-visibility: auto;
+  }
+
+  /* Poster images - fixed aspect ratio */
+  img[class*="aspect-"] {
+    background-color: hsl(var(--card));
+  }
+
   html {
     scroll-behavior: smooth;
     overflow-x: hidden;
