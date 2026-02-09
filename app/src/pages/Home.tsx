@@ -1,8 +1,7 @@
-import { useEffect, useState, useMemo } from 'react';
-import Hero from '@/components/Hero';
+import { useEffect, useState, useMemo, lazy, Suspense } from 'react';
+// Mobile-first: Mobile components are smaller, load eagerly for better mobile LCP
 import HeroMobile from '@/components/HeroMobile';
 import MobileHome from '@/components/MobileHome';
-import DesktopHome from '@/components/DesktopHome';
 import { HomePageSkeleton } from '@/components/SkeletonLoading';
 import { HomeSEO } from '@/components/Seo';
 import { OrganizationSchema } from '@/components/SchemaOrg';
@@ -10,6 +9,10 @@ import { useApp } from '@/context/AppContext';
 import { BACKEND_URL } from '@/config/api';
 import { apiFetch } from '@/lib/api';
 import type { SidebarWidget } from '@/types';
+
+// Desktop: Heavy components lazy loaded to reduce initial bundle
+const Hero = lazy(() => import('@/components/Hero'));
+const DesktopHome = lazy(() => import('@/components/DesktopHome'));
 
 // Default sidebar widgets - Ideal order for UX
 const defaultWidgets: SidebarWidget[] = [
@@ -73,7 +76,7 @@ export default function Home() {
   }, [animeList]);
 
   // Filter and sort anime dynamically - Memoized untuk performance
-  const ongoingAnime = useMemo(() => 
+  const ongoingAnime = useMemo(() =>
     animeList
       .filter(a => a.status === 'Ongoing')
       .sort((a, b) => {
@@ -84,17 +87,17 @@ export default function Home() {
     [animeList]
   );
 
-  const completedAnime = useMemo(() => 
+  const completedAnime = useMemo(() =>
     animeList.filter(a => a.status === 'Completed'),
     [animeList]
   );
 
-  const topRatedAnime = useMemo(() => 
+  const topRatedAnime = useMemo(() =>
     [...animeList].sort((a, b) => b.rating - a.rating).slice(0, 10),
     [animeList]
   );
 
-  const latestAnime = useMemo(() => 
+  const latestAnime = useMemo(() =>
     [...animeList]
       .sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -105,7 +108,7 @@ export default function Home() {
     [animeList]
   );
 
-  const popularGenres = useMemo(() => 
+  const popularGenres = useMemo(() =>
     [...new Set(
       animeList
         .flatMap(anime => anime.genres || [])
@@ -134,9 +137,11 @@ export default function Home() {
           <div className="sm:hidden">
             <HeroMobile />
           </div>
-          {/* Desktop Hero - Full features */}
+          {/* Desktop Hero - Lazy loaded with Suspense */}
           <div className="hidden sm:block">
-            <Hero />
+            <Suspense fallback={<div className="h-[70vh] min-h-[520px] bg-[#0F0F1A] animate-pulse" />}>
+              <Hero />
+            </Suspense>
           </div>
         </div>
       </div>
@@ -145,8 +150,8 @@ export default function Home() {
       <section className="sr-only" aria-hidden="true">
         <h1>Nonton Anime Subtitle Indonesia Terbaru & Terlengkap</h1>
         <p>
-          Animeku adalah platform terbaik untuk <strong>nonton anime subtitle Indonesia</strong> secara gratis. 
-          Koleksi lengkap anime sub Indo mulai dari anime ongoing, movie, hingga anime klasik dengan 
+          Animeku adalah platform terbaik untuk <strong>nonton anime subtitle Indonesia</strong> secara gratis.
+          Koleksi lengkap anime sub Indo mulai dari anime ongoing, movie, hingga anime klasik dengan
           kualitas HD. Streaming tanpa buffering, update tiap hari!
         </p>
         <div>
@@ -170,17 +175,19 @@ export default function Home() {
           />
         </div>
 
-        {/* Desktop Layout - Hidden on mobile */}
+        {/* Desktop Layout - Lazy loaded with Suspense */}
         <div className="hidden sm:block">
-          <DesktopHome
-            trendingAnime={trendingAnime}
-            ongoingAnime={ongoingAnime}
-            latestAnime={latestAnime}
-            topRatedAnime={topRatedAnime}
-            completedAnime={completedAnime}
-            popularGenres={popularGenres}
-            sidebarWidgets={sidebarWidgets}
-          />
+          <Suspense fallback={<div className="min-h-[600px] bg-[#0F0F1A] animate-pulse" />}>
+            <DesktopHome
+              trendingAnime={trendingAnime}
+              ongoingAnime={ongoingAnime}
+              latestAnime={latestAnime}
+              topRatedAnime={topRatedAnime}
+              completedAnime={completedAnime}
+              popularGenres={popularGenres}
+              sidebarWidgets={sidebarWidgets}
+            />
+          </Suspense>
         </div>
       </div>
     </main>

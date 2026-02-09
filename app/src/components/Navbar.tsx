@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Search,
@@ -27,8 +27,9 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import NotificationDropdown from './NotificationDropdown';
 import SafeAvatar from '@/components/SafeAvatar';
-import SearchSuggestions from '@/components/SearchSuggestions';
 
+// Lazy load SearchSuggestions - only needed when search is opened
+const SearchSuggestions = lazy(() => import('@/components/SearchSuggestions'));
 
 export default function Navbar() {
   const { user, logout, searchQuery, setSearchQuery, bookmarks, watchlist, animeList } = useApp();
@@ -384,19 +385,21 @@ export default function Navbar() {
                 </button>
               </form>
 
-              {/* Autocomplete Suggestions - Debounced for performance */}
-              <SearchSuggestions
-                searchQuery={searchQuery}
-                animeList={animeList}
-                onSelect={() => {
-                  setSearchQuery('');
-                  setIsSearchOpen(false);
-                }}
-                onViewAll={() => {
-                  navigate(`/anime-list?search=${encodeURIComponent(searchQuery)}`);
-                  setIsSearchOpen(false);
-                }}
-              />
+              {/* Autocomplete Suggestions - Lazy loaded with Suspense */}
+              <Suspense fallback={null}>
+                <SearchSuggestions
+                  searchQuery={searchQuery}
+                  animeList={animeList}
+                  onSelect={() => {
+                    setSearchQuery('');
+                    setIsSearchOpen(false);
+                  }}
+                  onViewAll={() => {
+                    navigate(`/anime-list?search=${encodeURIComponent(searchQuery)}`);
+                    setIsSearchOpen(false);
+                  }}
+                />
+              </Suspense>
 
               <p className="mt-4 text-center text-white/40 text-sm">
                 Tekan Enter untuk mencari atau ESC untuk menutup
