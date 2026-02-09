@@ -53,7 +53,8 @@ const customAnimeSchema = new mongoose.Schema({
 });
 
 // Auto-generate cleanSlug before saving
-customAnimeSchema.pre('save', async function (next) {
+// Note: Mongoose 5+ supports async pre hooks without next()
+customAnimeSchema.pre('save', async function () {
     if (this.title && !this.cleanSlug) {
         this.cleanSlug = this.title
             .toLowerCase()
@@ -62,7 +63,6 @@ customAnimeSchema.pre('save', async function (next) {
             .replace(/-+/g, '-') // Multiple dash jadi satu
             .replace(/^-|-$/g, ''); // Hapus dash di awal/akhir
     }
-    next();
 });
 
 // Helper function to generate clean slug from title
