@@ -1,13 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Play,
-  Pause,
-  Volume2,
-  VolumeX,
-  Maximize,
-  SkipBack,
-  SkipForward,
   ChevronLeft,
   Share2,
   Flag,
@@ -16,22 +9,21 @@ import {
   ChevronLeft as ChevronLeftIcon,
   Settings,
   Monitor,
-  PictureInPicture2,
-  Sun,
   Keyboard,
   Camera,
-  Repeat,
-  FastForward,
   Film,
-  Users
+  Users,
+  Maximize,
+  Minimize
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { BACKEND_URL } from '@/config/api';
 import AnimeCard from '@/components/AnimeCard';
 import CommentSection from '@/components/CommentSection';
 import NobarRoom from '@/components/WatchPartyRoom';
 import NobarLobby from '@/components/WatchPartyLobby';
+import VideoPlayer from '@/components/VideoPlayer';
 import { apiFetch } from '@/lib/api';
 import { WatchSEO } from '@/components/Seo';
 import { VideoSchema, BreadcrumbSchema } from '@/components/SchemaOrg';
@@ -73,42 +65,24 @@ export default function Watch() {
   const [searchParams] = useSearchParams();
   const roomFromUrl = searchParams.get('room');
   const { animeList, updateWatchProgress, user } = useApp();
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-
-  const [isEmbed, setIsEmbed] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [volume, setVolume] = useState(1);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [showControls, setShowControls] = useState(true);
-  const [selectedServer, setSelectedServer] = useState('server1');
-  const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   // UI Enhancement States
   const [isTheaterMode, setIsTheaterMode] = useState(false);
-  const [brightness, setBrightness] = useState(100);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [showSettings, setShowSettings] = useState(false);
-  const videoContainerRef = useRef<HTMLDivElement>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
-  // Refs for keyboard shortcuts (to avoid stale closure)
-  const togglePlayRef = useRef<(() => void) | undefined>(undefined);
-  const toggleFullscreenRef = useRef<(() => void) | undefined>(undefined);
+  // Video streaming states
+  const [isEmbed, setIsEmbed] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string>('');
+  const [subtitleUrl, setSubtitleUrl] = useState<string>('');
+  const [autoNextEnabled, setAutoNextEnabled] = useState(true);
 
   // Fallback state for anime data (if not found in context/props)
-  // This handles direct navigation or refresh
   const [apiAnime, setApiAnime] = useState<any>(undefined);
   const contextAnime = id ? animeList.find(a => {
-    // 1. Cek exact match dengan id
     if (a.id === id) return true;
-    // 2. Cek match dengan cleanSlug yang tersimpan
     if (a.cleanSlug === id) return true;
-    // 3. Cek match dengan slug yang di-generate dari title
-    // Ini untuk handle anime lama yang belum memiliki cleanSlug di database
     const generatedSlug = generateCleanSlug(a.title);
     if (generatedSlug === id) return true;
-    // 4. Cek partial match dengan id (untuk backward compatibility)
     if (a.id.startsWith(id + '-')) return true;
     return false;
   }) : undefined;
@@ -119,25 +93,6 @@ export default function Watch() {
     return isNaN(parsed) || parsed < 1 ? 1 : parsed;
   })();
   const totalEpisodes = anime?.episodes || 1;
-
-  // Video streaming states
-  const [videoUrl, setVideoUrl] = useState<string>('');
-  const [isLoadingVideo, setIsLoadingVideo] = useState(false);
-  const [videoError, setVideoError] = useState<string | null>(null);
-  const [downloadStreams, setDownloadStreams] = useState<any[]>([]);
-  const [subtitleUrl, setSubtitleUrl] = useState<string>('');
-
-  // Advanced Playback States
-  const [buffered, setBuffered] = useState(0);
-  const [autoNextEnabled, setAutoNextEnabled] = useState(true);
-  const [showSkipIntro, setShowSkipIntro] = useState(false);
-  const [isLooping, setIsLooping] = useState(false);
-
-  // Quality Selection States
-  const [selectedQuality, setSelectedQuality] = useState<string>('');
-  const [availableQualities, setAvailableQualities] = useState<string[]>([]);
-  const [allDirectStreams, setAllDirectStreams] = useState<any[]>([]);
-  const [showQualityMenu, setShowQualityMenu] = useState(false);
 
   // Nobar State
   const [showNobar, setShowNobar] = useState(false);
@@ -289,391 +244,17 @@ export default function Watch() {
     return () => clearInterval(interval);
   }, [id, currentEpisode, isPlaying, updateWatchProgress]);
 
-  const handleMouseMove = () => {
-    setShowControls(true);
-    if (controlsTimeoutRef.current) {
-      clearTimeout(controlsTimeoutRef.current);
-    }
-    controlsTimeoutRef.current = setTimeout(() => {
-      if (isPlaying) setShowControls(false);
-    }, 3000);
-  };
-
-  const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play().catch(err => {
-          logger.error('[Watch] Play error:', err);
-        });
-      }
-      setIsPlaying(!isPlaying);
-    }
-  };
-
-  // Update refs when functions change
-  togglePlayRef.current = togglePlay;
-
-  const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
-    }
-  };
-
-  const toggleFullscreen = () => {
-    const videoContainer = videoContainerRef.current;
-    const video = videoRef.current as any;
-
-    if (!videoContainer && !video) return;
-
-    // Check if already in fullscreen
-    const isFullscreen = document.fullscreenElement ||
-      (document as any).webkitFullscreenElement ||
-      (document as any).mozFullScreenElement ||
-      (document as any).msFullscreenElement;
-
-    if (!isFullscreen) {
-      // Detect iOS Safari
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-      // On iOS, always use video element's native fullscreen
-      if (isIOS && video) {
-        if (video.webkitEnterFullscreen) {
-          video.webkitEnterFullscreen();
-          return;
-        } else if (video.webkitRequestFullscreen) {
-          video.webkitRequestFullscreen();
-          return;
-        }
-      }
-
-      // Desktop and Android: try container fullscreen first
-      if (videoContainer) {
-        if (videoContainer.requestFullscreen) {
-          videoContainer.requestFullscreen().catch(() => tryVideoFullscreen());
-        } else if ((videoContainer as any).webkitRequestFullscreen) {
-          (videoContainer as any).webkitRequestFullscreen();
-        } else if ((videoContainer as any).mozRequestFullScreen) {
-          (videoContainer as any).mozRequestFullScreen();
-        } else if ((videoContainer as any).msRequestFullscreen) {
-          (videoContainer as any).msRequestFullscreen();
-        } else {
-          tryVideoFullscreen();
-        }
-      } else {
-        tryVideoFullscreen();
-      }
-    } else {
-      // Exit fullscreen
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if ((document as any).webkitExitFullscreen) {
-        (document as any).webkitExitFullscreen();
-      } else if ((document as any).mozCancelFullScreen) {
-        (document as any).mozCancelFullScreen();
-      } else if ((document as any).msExitFullscreen) {
-        (document as any).msExitFullscreen();
-      }
-    }
-  };
-
-  // Update refs when functions change
-  toggleFullscreenRef.current = toggleFullscreen;
-
-  // Fallback fullscreen for iOS Safari (uses video element's native fullscreen)
-  const tryVideoFullscreen = () => {
-    const video = videoRef.current as any;
-    if (!video) return;
-
-    if (video.webkitEnterFullscreen) {
-      // iOS Safari
-      video.webkitEnterFullscreen();
-    } else if (video.webkitRequestFullscreen) {
-      video.webkitRequestFullscreen();
-    } else if (video.requestFullscreen) {
-      video.requestFullscreen();
-    }
-  };
-
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVolume = parseFloat(e.target.value);
-    if (videoRef.current) {
-      videoRef.current.volume = newVolume;
-      setVolume(newVolume);
-      setIsMuted(newVolume === 0);
-    }
-  };
-
-  const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime);
-    }
-  };
-
-  const handleLoadedMetadata = () => {
-    if (videoRef.current) {
-      setDuration(videoRef.current.duration);
-    }
-  };
-
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const time = parseFloat(e.target.value);
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-      setCurrentTime(time);
-    }
-  };
-
-  const formatTime = (time: number) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
-
   const goToEpisode = (epNum: number) => {
     if (epNum >= 1 && epNum <= totalEpisodes && id) {
       navigate(getWatchUrl(anime!, epNum));
     }
   };
 
-  // Skip forward/backward by seconds
-  const skip = (seconds: number) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = Math.max(0, Math.min(duration, videoRef.current.currentTime + seconds));
-    }
-  };
-
-  // Toggle Picture-in-Picture
-  const togglePiP = async () => {
-    if (!videoRef.current) return;
-    try {
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture();
-      } else {
-        await videoRef.current.requestPictureInPicture();
-      }
-    } catch (err) {
-      logger.error('[Watch] PiP error:', err);
-    }
-  };
-
-  // Change playback speed
-  const changePlaybackSpeed = () => {
-    const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
-    const currentIndex = speeds.indexOf(playbackSpeed);
-    const nextIndex = (currentIndex + 1) % speeds.length;
-    const newSpeed = speeds[nextIndex];
-    setPlaybackSpeed(newSpeed);
-    if (videoRef.current) {
-      videoRef.current.playbackRate = newSpeed;
-    }
-  };
-
-  // Double-click handler for seek
-  const handleDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!videoContainerRef.current) return;
-    const rect = videoContainerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const isLeftSide = x < rect.width / 2;
-    skip(isLeftSide ? -10 : 10);
-  };
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if user is typing in an input
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-
-      switch (e.key.toLowerCase()) {
-        case ' ':
-        case 'k':
-          e.preventDefault();
-          togglePlay();
-          break;
-        case 'arrowleft':
-        case 'j':
-          e.preventDefault();
-          skip(-10);
-          break;
-        case 'arrowright':
-        case 'l':
-          e.preventDefault();
-          skip(10);
-          break;
-        case 'arrowup':
-          e.preventDefault();
-          if (videoRef.current) {
-            const newVol = Math.min(1, volume + 0.1);
-            videoRef.current.volume = newVol;
-            setVolume(newVol);
-          }
-          break;
-        case 'arrowdown':
-          e.preventDefault();
-          if (videoRef.current) {
-            const newVol = Math.max(0, volume - 0.1);
-            videoRef.current.volume = newVol;
-            setVolume(newVol);
-          }
-          break;
-        case 'm':
-          e.preventDefault();
-          toggleMute();
-          break;
-        case 'f':
-          e.preventDefault();
-          toggleFullscreen();
-          break;
-        case 't':
-          e.preventDefault();
-          setIsTheaterMode(!isTheaterMode);
-          break;
-        case 'p':
-          e.preventDefault();
-          togglePiP();
-          break;
-        case 's':
-          e.preventDefault();
-          changePlaybackSpeed();
-          break;
-        case 'n':
-          e.preventDefault();
-          goToEpisode(currentEpisode + 1);
-          break;
-        case 'b':
-          e.preventDefault();
-          goToEpisode(currentEpisode - 1);
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, volume, isMuted, isTheaterMode, playbackSpeed, currentEpisode, totalEpisodes]);
-
-  // Resume Playback - Save position to database
-  const userId = user?.id;
-
-  // Load saved position from database
-  useEffect(() => {
-    const loadProgress = async () => {
-      if (!id || !currentEpisode || !userId) return;
-      try {
-        const res = await apiFetch(`${BACKEND_URL}/api/watch-progress/${id}/${currentEpisode}?userId=${userId}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.currentTime > 5 && videoRef.current && duration > 0 && data.currentTime < duration - 10) {
-            videoRef.current.currentTime = data.currentTime;
-            logger.log('[Watch] Resumed from', formatTime(data.currentTime));
-          }
-        }
-      } catch (err) {
-        logger.warn('[Watch] Failed to load progress from DB');
-      }
-    };
-    if (videoUrl && duration > 0) {
-      loadProgress();
-    }
-  }, [videoUrl, duration, id, currentEpisode, userId]);
-
-  // Save progress periodically to database
-  useEffect(() => {
-    const saveInterval = setInterval(async () => {
-      if (videoRef.current && currentTime > 5 && id && currentEpisode && userId) {
-        try {
-          await apiFetch(`${BACKEND_URL}/api/watch-progress/${id}/${currentEpisode}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              currentTime,
-              duration,
-              completed: false
-            })
-          });
-        } catch (err) {
-          logger.warn('[Watch] Failed to save progress to DB');
-        }
-      }
-    }, 10000); // Save every 10 seconds
-    return () => clearInterval(saveInterval);
-  }, [currentTime, duration, id, currentEpisode, userId]);
-
-  // Buffer Progress Tracking
-  const handleProgress = () => {
-    if (videoRef.current && videoRef.current.buffered.length > 0) {
-      const bufferedEnd = videoRef.current.buffered.end(videoRef.current.buffered.length - 1);
-      setBuffered((bufferedEnd / duration) * 100);
-    }
-  };
-
-  // Show Skip Intro button (first 120 seconds)
-  useEffect(() => {
-    if (currentTime >= 5 && currentTime <= 120) {
-      setShowSkipIntro(true);
-    } else {
-      setShowSkipIntro(false);
-    }
-  }, [currentTime]);
-
-  // Skip Intro function
-  const skipIntro = () => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = 85; // Skip to 1:25
-      setShowSkipIntro(false);
-    }
-  };
-
   // Handle Video End - Auto Next Episode
   const handleVideoEnd = async () => {
-    // Mark as completed in database
-    if (id && currentEpisode && userId) {
-      try {
-        await apiFetch(`${BACKEND_URL}/api/watch-progress/${id}/${currentEpisode}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            currentTime: duration,
-            duration,
-            completed: true
-          })
-        });
-      } catch (err) {
-        logger.warn('[Watch] Failed to mark as completed');
-      }
-    }
-
     if (autoNextEnabled && currentEpisode < totalEpisodes) {
       logger.log('[Watch] Auto-playing next episode');
       goToEpisode(currentEpisode + 1);
-    } else if (isLooping) {
-      if (videoRef.current) {
-        videoRef.current.currentTime = 0;
-        videoRef.current.play();
-      }
-    }
-  };
-
-  // Screenshot function
-  const takeScreenshot = () => {
-    if (!videoRef.current) return;
-
-    const video = videoRef.current;
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      // Download the screenshot
-      const link = document.createElement('a');
-      link.download = `${anime?.title || 'anime'}_ep${currentEpisode}_${formatTime(currentTime).replace(':', '-')}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
     }
   };
 
@@ -737,199 +318,25 @@ export default function Watch() {
           <div className={`grid gap-4 ${isTheaterMode ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-4'}`}>
             {/* Video Player - 3 columns (or full width in theater mode) */}
             <div className={`${isTheaterMode ? 'w-full' : 'lg:col-span-3'} ${showNobar ? 'hidden' : ''}`}>
-              <div className="relative bg-black rounded-xl overflow-hidden">
-                {/* Back Button */}
-                <Link
-                  to={getAnimeUrl(anime!)}
-                  className="absolute top-4 left-4 z-50 flex items-center gap-2 px-3 py-1.5 bg-black/50 backdrop-blur-sm rounded-lg text-white/70 hover:text-white transition-colors text-sm"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Kembali
-                </Link>
-
-                {/* Video Container */}
-                <div
-                  ref={videoContainerRef}
-                  className="relative aspect-video bg-black overflow-hidden flex items-center justify-center"
-                  onMouseMove={handleMouseMove}
-                  onMouseLeave={() => isPlaying && setShowControls(false)}
-                  onDoubleClick={handleDoubleClick}
-                  style={{ filter: `brightness(${brightness}%)` }}
-                >
-
-                  {/* Video Render */}
-                  {videoUrl && (videoUrl.startsWith('http') || videoUrl.startsWith('//')) ? (
-                    isEmbed ? (
-                      <iframe
-                        src={videoUrl}
-                        className="w-full h-full border-0"
-                        allowFullScreen
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      />
-                    ) : (
-                      <video
-                        ref={videoRef}
-                        className="w-full h-full object-contain cursor-pointer"
-                        onClick={togglePlay}
-                        onTimeUpdate={handleTimeUpdate}
-                        onLoadedMetadata={handleLoadedMetadata}
-                        onProgress={handleProgress}
-                        onEnded={handleVideoEnd}
-                        onCanPlay={() => { }}
-                        onError={(e) => {
-                          const video = e.target as HTMLVideoElement;
-                          logger.error('[Watch] Video Error:', video.error?.message, video.error?.code);
-                          setVideoError(`Video tidak dapat diputar: ${video.error?.message || 'Unknown error'}`);
-                        }}
-                        poster={anime.banner || anime.poster}
-                        key={videoUrl}
-                        src={videoUrl}
-                        autoPlay={isPlaying}
-                        playsInline
-                        // @ts-ignore - webkit attribute for iOS Safari
-                        webkit-playsinline="true"
-                        x-webkit-airplay="allow"
-                        loop={isLooping}
-                        crossOrigin="anonymous"
-                      >
-                        {subtitleUrl && (
-                          <track
-                            kind="subtitles"
-                            label="Subtitle"
-                            srcLang="id"
-                            src={subtitleUrl}
-                            default
-                          />
-                        )}
-                        Your browser does not support the video tag.
-                      </video>
-                    )
-                  ) : (
-                    <div className="flex flex-col items-center gap-4">
-                      {!videoError && !isLoadingVideo && (
-                        <div className="w-12 h-12 border-4 border-[#6C5DD3] border-t-transparent rounded-full animate-spin" />
-                      )}
-                      <p className="text-white/40 text-sm">
-                        {videoError ? videoError : "Menyiapkan aliran video..."}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Loading Overlay */}
-                  {isLoadingVideo && videoUrl && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-20">
-                      <div className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin" />
-                    </div>
-                  )}
-
-                  {/* Big Play Button */}
-                  {!isPlaying && !isLoadingVideo && videoUrl && !isEmbed && (
-                    <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
-                      <button
-                        onClick={togglePlay}
-                        className="w-16 h-16 rounded-full bg-[#6C5DD3]/90 flex items-center justify-center hover:scale-110 transition-transform pointer-events-auto"
-                      >
-                        <Play className="w-8 h-8 text-white fill-current ml-1" />
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Controls Overlay */}
-                  {!isEmbed && (
-                    <div
-                      className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent transition-opacity duration-300 pointer-events-none ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0'}`}
-                    >
-                      <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between pointer-events-auto">
-                        <div className="flex items-center gap-3">
-                          <span className="text-white font-medium text-sm">{anime.title}</span>
-                          <span className="text-white/50 text-sm">EP {currentEpisode}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => setShowNobar(true)}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-[#6C5DD3]/80 hover:bg-[#6C5DD3] text-white rounded-lg text-sm transition-colors"
-                          >
-                            <Users className="w-4 h-4" />
-                            <span className="hidden sm:inline">Nobar</span>
-                          </button>
-                          <button className="p-2 text-white/70 hover:text-white transition-colors">
-                            <Flag className="w-4 h-4" />
-                          </button>
-                          <button className="p-2 text-white/70 hover:text-white transition-colors">
-                            <Share2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-auto">
-                        {/* Skip Intro Button */}
-                        {showSkipIntro && (
-                          <button
-                            onClick={skipIntro}
-                            className="absolute -top-12 right-4 flex items-center gap-2 px-4 py-2 bg-white/90 text-black font-medium rounded-lg hover:bg-white transition-all animate-pulse"
-                          >
-                            <FastForward className="w-4 h-4" />
-                            Skip Intro
-                          </button>
-                        )}
-
-                        {/* Progress Bar with Buffer */}
-                        <div className="mb-3 relative h-1.5 group">
-                          {/* Buffer Progress (background) */}
-                          <div
-                            className="absolute top-0 left-0 h-full bg-white/30 rounded-full transition-all"
-                            style={{ width: `${buffered}%` }}
-                          />
-                          {/* Current Progress (foreground) */}
-                          <input
-                            type="range"
-                            min={0}
-                            max={duration || 100}
-                            value={currentTime}
-                            onChange={handleSeek}
-                            className="absolute top-0 left-0 w-full h-full bg-transparent rounded-full appearance-none cursor-pointer [&::-webkit-slider-runnable-track]:bg-white/20 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:h-1.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-[#6C5DD3] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:mt-[-3px] group-hover:[&::-webkit-slider-thumb]:scale-125"
-                            style={{
-                              background: `linear-gradient(to right, #6C5DD3 0%, #6C5DD3 ${(currentTime / (duration || 100)) * 100}%, transparent ${(currentTime / (duration || 100)) * 100}%)`
-                            }}
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                          <div className="flex items-center gap-2 sm:gap-3">
-                            <button onClick={togglePlay} className="text-white hover:text-[#6C5DD3] transition-colors p-1">
-                              {isPlaying ? <Pause className="w-5 h-5 sm:w-5 sm:h-5 fill-current" /> : <Play className="w-5 h-5 sm:w-5 sm:h-5 fill-current" />}
-                            </button>
-                            <button onClick={() => goToEpisode(currentEpisode - 1)} disabled={currentEpisode <= 1} className="text-white hover:text-[#6C5DD3] transition-colors disabled:opacity-30 p-1">
-                              <SkipBack className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => goToEpisode(currentEpisode + 1)} disabled={currentEpisode >= totalEpisodes} className="text-white hover:text-[#6C5DD3] transition-colors disabled:opacity-30 p-1">
-                              <SkipForward className="w-4 h-4" />
-                            </button>
-
-                            {/* Volume - hidden on mobile */}
-                            <div className="hidden sm:flex items-center gap-2">
-                              <button onClick={toggleMute} className="text-white hover:text-[#6C5DD3] transition-colors">
-                                {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                              </button>
-                              <input type="range" min={0} max={1} step={0.1} value={isMuted ? 0 : volume} onChange={handleVolumeChange} className="w-16 h-1 bg-white/20 rounded-full cursor-pointer" />
-                            </div>
-                            <span className="text-white text-[10px] sm:text-xs whitespace-nowrap">{formatTime(currentTime)} / {formatTime(duration)}</span>
-                          </div>
-                          <div className="flex items-center gap-1 sm:gap-2">
-                            {/* Playback Speed - always visible */}
-                            <button
-                              onClick={changePlaybackSpeed}
-                              className="px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs font-medium text-white bg-white/10 hover:bg-white/20 rounded transition-colors"
-                              title="Playback Speed (S)"
-                            >
-                              {playbackSpeed}x
-                            </button>
-
-                            {/* Brightness Control - hidden on mobile */}
-                            <div className="relative group hidden sm:block">
-                              <button className="p-1.5 text-white hover:text-[#6C5DD3] transition-colors" title="Brightness">
-                                <Sun className="w-4 h-4" />
-                              </button>
+              <VideoPlayer
+                videoUrl={videoUrl}
+                poster={anime.banner || anime.poster}
+                title={anime.title}
+                episode={currentEpisode}
+                animeId={anime.id}
+                isEmbed={isEmbed}
+                subtitleUrl={subtitleUrl}
+                autoPlay={isPlaying}
+                onBack={() => navigate(getAnimeUrl(anime))}
+                onNobar={() => setShowNobar(true)}
+                onShare={() => {/* TODO: Implement share */}}
+                onReport={() => {/* TODO: Implement report */}}
+                onEnded={handleVideoEnd}
+                onTimeUpdate={(time, duration) => {
+                  setCurrentTime(time);
+                  setDuration(duration);
+                }}
+              />
                               <div className="absolute bottom-full right-0 mb-2 hidden group-hover:flex items-center gap-2 bg-black/90 px-3 py-2 rounded-lg">
                                 <span className="text-xs text-white/70">Brightness</span>
                                 <input
@@ -1066,21 +473,6 @@ export default function Watch() {
                               )}
                             </div>
 
-                            {/* Fullscreen - always visible */}
-                            <button
-                              onClick={toggleFullscreen}
-                              className="p-1.5 text-white hover:text-[#6C5DD3] transition-colors"
-                              title="Fullscreen (F)"
-                            >
-                              <Maximize className="w-4 h-4 sm:w-4 sm:h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
 
             {/* Episode List Sidebar - 1 column */}
