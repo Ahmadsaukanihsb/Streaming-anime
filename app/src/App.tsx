@@ -7,10 +7,14 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { ToastProvider } from '@/components/ui/toast-simple';
 import PageLoader from '@/components/PageLoader';
 
-// Lazy load layout components for better initial load performance
-const Navbar = lazy(() => import('@/components/Navbar'));
-const Footer = lazy(() => import('@/components/Footer'));
-const BottomNav = lazy(() => import('@/components/BottomNav'));
+// ==========================================
+// LAYOUT COMPONENTS (Eager load to prevent flickering)
+// These are always visible and should not flicker on navigation
+// ==========================================
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import BottomNav from '@/components/BottomNav';
+import GlobalChat from '@/components/GlobalChat';
 
 // ==========================================
 // CRITICAL PAGES (Eager for LCP)
@@ -57,8 +61,7 @@ const Donate = lazy(() => import('@/pages/Donate'));
 // Admin Page (heavy)
 const Admin = lazy(() => import('@/pages/Admin'));
 
-// Heavy Components (load on demand)
-const GlobalChat = lazy(() => import('@/components/GlobalChat'));
+// Schema (lazy is fine, not visible)
 const WebsiteSchema = lazy(() => import('@/components/SchemaOrg').then(m => ({ default: m.WebsiteSchema })));
 
 // Dynamically load Lenis only when needed
@@ -270,19 +273,11 @@ function App() {
                   <WebsiteSchema />
                 </Suspense>
                 <div className="min-h-screen bg-[#0F0F1A] pb-16 sm:pb-0">
-                  <Suspense fallback={<div className="h-16" />}>
-                    <Navbar />
-                  </Suspense>
+                  <Navbar />
                   <AppRoutes />
-                  <Suspense fallback={null}>
-                    <Footer />
-                  </Suspense>
-                  <Suspense fallback={null}>
-                    <BottomNav />
-                  </Suspense>
-                  <Suspense fallback={null}>
-                    <GlobalChat />
-                  </Suspense>
+                  <Footer />
+                  <BottomNav />
+                  <GlobalChat />
                 </div>
               </SmoothScroll>
             </Router>

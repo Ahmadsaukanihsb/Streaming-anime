@@ -224,71 +224,56 @@ export default function Hero() {
         touchStartX.current = null;
       }}
     >
-      {/* Background - Video Trailer or Image */}
-      {reducedMotion ? (
-        // Mobile/Reduced Motion: Simple div without heavy animations (no key to prevent remount)
-        <div className="absolute inset-0">
-          <OptimizedImage
-            src={slide.poster}
-            alt={`Banner ${slide.title} - Nonton Anime Subtitle Indonesia Gratis`}
-            aspectRatio="banner"
-            priority
-            className="w-full h-full"
-            containerClassName="w-full h-full"
-          />
-          {/* Gradient Overlays */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0F0F1A] via-[#0F0F1A]/80 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F1A] via-transparent to-[#0F0F1A]/40" />
-        </div>
-      ) : (
-        // Desktop: Full animations with AnimatePresence
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentSlide}
-            initial={{ opacity: 0, scale: 1.05 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.2, ease: [0.645, 0.045, 0.355, 1] }}
-            className="absolute inset-0"
-          >
-            {hasTrailer ? (
-              slide.trailerType === 'youtube' ? (
+      {/* Background - CSS Transitions instead of Framer Motion for better performance */}
+      <div className="absolute inset-0">
+        {heroSlides.map((s, index) => {
+          const isActive = index === currentSlide;
+          return (
+            <div
+              key={s.id}
+              className="absolute inset-0 transition-all duration-700 ease-out"
+              style={{
+                opacity: isActive ? 1 : 0,
+                transform: isActive ? 'scale(1)' : 'scale(1.05)',
+                zIndex: isActive ? 1 : 0,
+              }}
+            >
+              {isActive && hasTrailer && s.trailerType === 'youtube' ? (
                 <iframe
-                  key={`yt-${slide.id}-${currentSlide}`}
-                  src={getYouTubeEmbedUrl(slide.trailer!)}
+                  src={getYouTubeEmbedUrl(s.trailer!)}
                   className="w-full h-full object-cover scale-125"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                   loading="eager"
                   style={{ border: 'none', pointerEvents: 'none' }}
                 />
-              ) : (
+              ) : isActive && hasTrailer && s.trailerType === 'direct' ? (
                 <video
                   ref={videoRef}
-                  src={slide.trailer}
+                  src={s.trailer}
                   autoPlay
                   loop
                   muted={isMuted}
                   playsInline
                   className="w-full h-full object-cover"
                 />
-              )
-            ) : (
-              <OptimizedImage
-                src={slide.poster}
-                alt={`Banner ${slide.title} - Nonton Anime Subtitle Indonesia Gratis`}
-                aspectRatio="banner"
-                priority
-                className="w-full h-full"
-                containerClassName="w-full h-full"
-              />
-            )}
-            {/* Gradient Overlays */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#0F0F1A] via-[#0F0F1A]/80 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F1A] via-transparent to-[#0F0F1A]/40" />
-          </motion.div>
-        </AnimatePresence>
-      )}
+              ) : (
+                <OptimizedImage
+                  src={s.poster}
+                  alt={`Banner ${s.title} - Nonton Anime Subtitle Indonesia Gratis`}
+                  aspectRatio="banner"
+                  priority={index === 0}
+                  className="w-full h-full"
+                  containerClassName="w-full h-full"
+                />
+              )}
+            </div>
+          );
+        })}
+        {/* Gradient Overlays */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0F0F1A] via-[#0F0F1A]/80 to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F1A] via-transparent to-[#0F0F1A]/40 z-10" />
+      </div>
 
       {/* Mute/Unmute Button for direct video */}
       {hasTrailer && slide.trailerType === 'direct' && (
