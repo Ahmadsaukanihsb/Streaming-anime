@@ -409,10 +409,10 @@ export default function Watch() {
           </div>
         )}
         {/* Video Player + Episode List Section */}
-        <div className={`mx-auto sm:px-6 lg:px-8 pt-20 transition-all duration-300 ${isTheaterMode ? 'max-w-full px-0' : 'max-w-7xl px-0 sm:px-4'}`}>
+        <div className={`mx-auto lg:px-8 pt-20 transition-all duration-300 ${isTheaterMode ? 'max-w-full' : 'max-w-7xl'}`}>
           <div className={`grid gap-4 ${isTheaterMode ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-4'}`}>
             {/* Video Player - 3 columns (or full width in theater mode) */}
-            <div className={`${isTheaterMode ? 'w-full' : 'lg:col-span-3'} ${showNobar ? 'hidden' : ''} w-full`}>
+            <div className={`${isTheaterMode ? 'w-full' : 'lg:col-span-3'} ${showNobar ? 'hidden' : ''}`}>
               <VideoPlayer
                 videoUrl={videoUrl}
                 poster={anime.banner || anime.poster}
