@@ -58,8 +58,9 @@ const Terms = lazy(() => import('@/pages/Terms'));
 const FAQ = lazy(() => import('@/pages/FAQ'));
 const Donate = lazy(() => import('@/pages/Donate'));
 
-// Admin Page (heavy)
+// Admin Pages (heavy)
 const Admin = lazy(() => import('@/pages/Admin'));
+const SkipTimesManager = lazy(() => import('@/pages/admin/SkipTimesManager'));
 
 // Schema (lazy is fine, not visible)
 const WebsiteSchema = lazy(() => import('@/components/SchemaOrg').then(m => ({ default: m.WebsiteSchema })));
@@ -240,10 +241,15 @@ function AppRoutes() {
         </Suspense>
       } />
 
-      {/* Admin Route - Lazy Loaded (Heavy Admin Panel) */}
+      {/* Admin Routes - Lazy Loaded (Heavy Admin Panel) */}
       <Route path="/admin" element={
         <Suspense fallback={<PageLoader />}>
           <Admin />
+        </Suspense>
+      } />
+      <Route path="/admin/skip-times" element={
+        <Suspense fallback={<PageLoader />}>
+          <SkipTimesManager />
         </Suspense>
       } />
 

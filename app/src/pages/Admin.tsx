@@ -37,7 +37,8 @@ import {
   Menu,
   Sparkles,
   Camera,
-  RefreshCw
+  RefreshCw,
+  Clock
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
@@ -1193,6 +1194,18 @@ export default function Admin() {
                   {item.label}
                 </button>
               ))}
+            </nav>
+
+            {/* Tools Section */}
+            <p className="text-xs text-white/30 uppercase tracking-wider mb-2 px-2 mt-6">Tools</p>
+            <nav className="space-y-1">
+              <Link
+                to="/admin/skip-times"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all text-white/60 hover:bg-white/5 hover:text-white"
+              >
+                <Clock className="w-4 h-4" />
+                Skip Times
+              </Link>
             </nav>
 
             {/* Settings Section */}

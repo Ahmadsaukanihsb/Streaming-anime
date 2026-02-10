@@ -24,32 +24,43 @@ async function containsBannedWord(text) {
 router.get('/:animeId', async (req, res) => {
     try {
         const { animeId } = req.params;
-        const { page = 1, limit = 20 } = req.query;
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20)); // Max 50 per page
 
-        const comments = await Comment.find({
-            animeId,
-            episodeNumber: null,
-            isDeleted: false,
-            parentId: null // Only top-level comments
-        })
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(parseInt(limit));
-
-        // Get replies for each comment
-        const commentsWithReplies = await Promise.all(
-            comments.map(async (comment) => {
-                const replies = await Comment.find({
-                    parentId: comment._id,
-                    isDeleted: false
-                }).sort({ createdAt: 1 });
-
-                return {
-                    ...comment.toJSON(),
-                    replies
-                };
-            })
-        );
+        // Use aggregation to get comments with replies in a single query
+        const commentsWithReplies = await Comment.aggregate([
+            // Match top-level comments
+            {
+                $match: {
+                    animeId,
+                    episodeNumber: null,
+                    isDeleted: false,
+                    parentId: null
+                }
+            },
+            // Sort by newest first
+            { $sort: { createdAt: -1 } },
+            // Pagination
+            { $skip: (page - 1) * limit },
+            { $limit: limit },
+            // Lookup replies
+            {
+                $lookup: {
+                    from: 'comments',
+                    let: { commentId: '$_id' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: { $eq: ['$parentId', '$$commentId'] },
+                                isDeleted: false
+                            }
+                        },
+                        { $sort: { createdAt: 1 } }
+                    ],
+                    as: 'replies'
+                }
+            }
+        ]);
 
         const total = await Comment.countDocuments({
             animeId,
@@ -61,7 +72,7 @@ router.get('/:animeId', async (req, res) => {
         res.json({
             comments: commentsWithReplies,
             total,
-            page: parseInt(page),
+            page,
             totalPages: Math.ceil(total / limit)
         });
     } catch (error) {
@@ -74,32 +85,43 @@ router.get('/:animeId', async (req, res) => {
 router.get('/:animeId/episode/:episodeNumber', async (req, res) => {
     try {
         const { animeId, episodeNumber } = req.params;
-        const { page = 1, limit = 20 } = req.query;
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20)); // Max 50 per page
 
-        const comments = await Comment.find({
-            animeId,
-            episodeNumber: parseInt(episodeNumber),
-            isDeleted: false,
-            parentId: null
-        })
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(parseInt(limit));
-
-        // Get replies
-        const commentsWithReplies = await Promise.all(
-            comments.map(async (comment) => {
-                const replies = await Comment.find({
-                    parentId: comment._id,
-                    isDeleted: false
-                }).sort({ createdAt: 1 });
-
-                return {
-                    ...comment.toJSON(),
-                    replies
-                };
-            })
-        );
+        // Use aggregation to get comments with replies in a single query
+        const commentsWithReplies = await Comment.aggregate([
+            // Match episode comments
+            {
+                $match: {
+                    animeId,
+                    episodeNumber: parseInt(episodeNumber),
+                    isDeleted: false,
+                    parentId: null
+                }
+            },
+            // Sort by newest first
+            { $sort: { createdAt: -1 } },
+            // Pagination
+            { $skip: (page - 1) * limit },
+            { $limit: limit },
+            // Lookup replies
+            {
+                $lookup: {
+                    from: 'comments',
+                    let: { commentId: '$_id' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: { $eq: ['$parentId', '$$commentId'] },
+                                isDeleted: false
+                            }
+                        },
+                        { $sort: { createdAt: 1 } }
+                    ],
+                    as: 'replies'
+                }
+            }
+        ]);
 
         const total = await Comment.countDocuments({
             animeId,
@@ -111,7 +133,7 @@ router.get('/:animeId/episode/:episodeNumber', async (req, res) => {
         res.json({
             comments: commentsWithReplies,
             total,
-            page: parseInt(page),
+            page,
             totalPages: Math.ceil(total / limit)
         });
     } catch (error) {

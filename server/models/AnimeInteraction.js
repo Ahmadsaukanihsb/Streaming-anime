@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const animeInteractionSchema = new mongoose.Schema({
+    _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        auto: true
+    },
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -69,6 +73,9 @@ const animeInteractionSchema = new mongoose.Schema({
             default: true
         }
     }
+}, {
+    versionKey: false, // Disable versioning to prevent version conflicts
+    optimisticConcurrency: false // Disable optimistic concurrency
 });
 
 module.exports = mongoose.model('AnimeInteraction', animeInteractionSchema);

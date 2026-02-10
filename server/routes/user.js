@@ -113,19 +113,26 @@ router.post('/bookmarks', validateBody([
     const { animeId } = req.body;
     const userId = req.user.id;
     try {
-        let interaction = await AnimeInteraction.findOne({ userId });
-        if (!interaction) {
-            interaction = new AnimeInteraction({ userId, bookmarks: [], watchlist: [], watchHistory: [] });
+        // Try to pull first (if exists)
+        const afterPull = await AnimeInteraction.findOneAndUpdate(
+            { userId, bookmarks: animeId },
+            { $pull: { bookmarks: animeId } },
+            { new: true }
+        );
+
+        if (afterPull) {
+            // Was removed
+            return res.json(afterPull.bookmarks);
         }
 
-        // Toggle
-        if (interaction.bookmarks.includes(animeId)) {
-            interaction.bookmarks = interaction.bookmarks.filter(id => id !== animeId);
-        } else {
-            interaction.bookmarks.push(animeId);
-        }
-        await interaction.save();
-        res.json(interaction.bookmarks);
+        // Was not present, add it
+        const afterPush = await AnimeInteraction.findOneAndUpdate(
+            { userId },
+            { $push: { bookmarks: animeId } },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+
+        res.json(afterPush?.bookmarks || []);
     } catch (err) {
         console.error('[User] Bookmarks error:', err.message);
         res.status(500).json({ error: 'Server error', message: err.message });
@@ -139,19 +146,26 @@ router.post('/watchlist', validateBody([
     const { animeId } = req.body;
     const userId = req.user.id;
     try {
-        let interaction = await AnimeInteraction.findOne({ userId });
-        if (!interaction) {
-            interaction = new AnimeInteraction({ userId, watchlist: [] });
+        // Try to pull first (if exists)
+        const afterPull = await AnimeInteraction.findOneAndUpdate(
+            { userId, watchlist: animeId },
+            { $pull: { watchlist: animeId } },
+            { new: true }
+        );
+
+        if (afterPull) {
+            // Was removed
+            return res.json(afterPull.watchlist);
         }
 
-        // Toggle
-        if (interaction.watchlist.includes(animeId)) {
-            interaction.watchlist = interaction.watchlist.filter(id => id !== animeId);
-        } else {
-            interaction.watchlist.push(animeId);
-        }
-        await interaction.save();
-        res.json(interaction.watchlist);
+        // Was not present, add it
+        const afterPush = await AnimeInteraction.findOneAndUpdate(
+            { userId },
+            { $push: { watchlist: animeId } },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+
+        res.json(afterPush?.watchlist || []);
     } catch (err) {
         console.error('[User] Watchlist error:', err.message);
         res.status(500).json({ error: 'Server error', message: err.message });
@@ -168,27 +182,36 @@ router.post('/history', validateBody([
     const { animeId, episodeId, episodeNumber, progress } = req.body;
     const userId = req.user.id;
     try {
-        let interaction = await AnimeInteraction.findOne({ userId });
-        if (!interaction) {
-            interaction = new AnimeInteraction({ userId, watchHistory: [] });
-        }
-
-        // Remove existing entry for this episode
-        interaction.watchHistory = interaction.watchHistory.filter(
-            h => !(h.animeId === animeId && h.episodeId === episodeId)
+        // Use atomic update to avoid version conflicts
+        // First, pull any existing entry for this episode
+        await AnimeInteraction.findOneAndUpdate(
+            { userId },
+            { 
+                $pull: { 
+                    watchHistory: { animeId, episodeId } 
+                } 
+            },
+            { upsert: false }
         );
 
-        // Add new entry
-        interaction.watchHistory.push({
-            animeId,
-            episodeId,
-            episodeNumber,
-            progress,
-            timestamp: Date.now()
-        });
+        // Then push the new entry
+        const interaction = await AnimeInteraction.findOneAndUpdate(
+            { userId },
+            { 
+                $push: { 
+                    watchHistory: {
+                        animeId,
+                        episodeId,
+                        episodeNumber,
+                        progress,
+                        timestamp: Date.now()
+                    }
+                }
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
 
-        await interaction.save();
-        res.json(interaction.watchHistory);
+        res.json(interaction?.watchHistory || []);
     } catch (err) {
         console.error('[User] History error:', err.message);
         res.status(500).json({ error: 'Server error', message: err.message });
@@ -205,25 +228,32 @@ router.post('/rating', validateBody([
     const { animeId, rating } = req.body;
     const userId = req.user.id;
     try {
-        let interaction = await AnimeInteraction.findOne({ userId });
-        if (!interaction) {
-            interaction = new AnimeInteraction({ userId, ratings: [] });
-        }
+        // Pull existing rating first
+        await AnimeInteraction.findOneAndUpdate(
+            { userId },
+            { $pull: { ratings: { animeId } } },
+            { upsert: false }
+        );
 
-        // Remove existing rating for this anime
-        interaction.ratings = interaction.ratings.filter(r => r.animeId !== animeId);
-
-        // Add new rating
+        // If rating > 0, add new rating
         if (rating > 0) {
-            interaction.ratings.push({
-                animeId,
-                rating,
-                ratedAt: new Date()
-            });
+            await AnimeInteraction.findOneAndUpdate(
+                { userId },
+                { 
+                    $push: { 
+                        ratings: {
+                            animeId,
+                            rating,
+                            ratedAt: new Date()
+                        }
+                    }
+                },
+                { upsert: true, setDefaultsOnInsert: true }
+            );
         }
 
-        await interaction.save();
-        res.json(interaction.ratings);
+        const interaction = await AnimeInteraction.findOne({ userId });
+        res.json(interaction?.ratings || []);
     } catch (err) {
         console.error('[User] Rating error:', err.message);
         res.status(500).json({ error: 'Server error', message: err.message });
@@ -235,13 +265,16 @@ router.delete('/rating/:userId/:animeId', async (req, res) => {
     const { userId, animeId } = req.params;
     if (!ensureSelf(req, res, userId)) return;
     try {
-        let interaction = await AnimeInteraction.findOne({ userId: req.user.id });
+        const interaction = await AnimeInteraction.findOneAndUpdate(
+            { userId: req.user.id },
+            { $pull: { ratings: { animeId } } },
+            { new: true }
+        );
+
         if (!interaction) {
             return res.status(404).json({ msg: 'User not found' });
         }
 
-        interaction.ratings = interaction.ratings.filter(r => r.animeId !== animeId);
-        await interaction.save();
         res.json(interaction.ratings);
     } catch (err) {
         console.error('[User] Delete rating error:', err.message);
@@ -257,27 +290,33 @@ router.post('/watched-episode', validateBody([
     const { animeId, episodeNumber } = req.body;
     const userId = req.user.id;
     try {
-        let interaction = await AnimeInteraction.findOne({ userId });
-        if (!interaction) {
-            interaction = new AnimeInteraction({ userId, watchedEpisodes: [] });
+        // First ensure the anime entry exists in watchedEpisodes
+        await AnimeInteraction.findOneAndUpdate(
+            { userId, 'watchedEpisodes.animeId': { $ne: animeId } },
+            { $push: { watchedEpisodes: { animeId, episodes: [] } } },
+            { upsert: false }
+        );
+
+        // Try to pull the episode (if exists)
+        const afterPull = await AnimeInteraction.findOneAndUpdate(
+            { userId, 'watchedEpisodes.animeId': animeId, 'watchedEpisodes.$.episodes': episodeNumber },
+            { $pull: { 'watchedEpisodes.$.episodes': episodeNumber } },
+            { new: true }
+        );
+
+        if (afterPull) {
+            // Episode was removed
+            return res.json(afterPull.watchedEpisodes);
         }
 
-        // Find or create anime entry
-        let animeEntry = interaction.watchedEpisodes.find(w => w.animeId === animeId);
-        if (!animeEntry) {
-            interaction.watchedEpisodes.push({ animeId, episodes: [] });
-            animeEntry = interaction.watchedEpisodes.find(w => w.animeId === animeId);
-        }
+        // Episode was not present, add it
+        const afterPush = await AnimeInteraction.findOneAndUpdate(
+            { userId, 'watchedEpisodes.animeId': animeId },
+            { $push: { 'watchedEpisodes.$.episodes': episodeNumber } },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
 
-        // Toggle episode
-        if (animeEntry.episodes.includes(episodeNumber)) {
-            animeEntry.episodes = animeEntry.episodes.filter(ep => ep !== episodeNumber);
-        } else {
-            animeEntry.episodes.push(episodeNumber);
-        }
-
-        await interaction.save();
-        res.json(interaction.watchedEpisodes);
+        res.json(afterPush?.watchedEpisodes || []);
     } catch (err) {
         console.error('[User] Watched episode error:', err.message);
         res.status(500).json({ error: 'Server error', message: err.message });
@@ -309,20 +348,26 @@ router.post('/subscribe', validateBody([
     const { animeId } = req.body;
     const userId = req.user.id;
     try {
-        let interaction = await AnimeInteraction.findOne({ userId });
-        if (!interaction) {
-            interaction = new AnimeInteraction({ userId, subscribedAnime: [] });
+        // Try to pull first (if exists)
+        const afterPull = await AnimeInteraction.findOneAndUpdate(
+            { userId, subscribedAnime: animeId },
+            { $pull: { subscribedAnime: animeId } },
+            { new: true }
+        );
+
+        if (afterPull) {
+            // Was removed
+            return res.json(afterPull.subscribedAnime);
         }
 
-        // Toggle
-        if (interaction.subscribedAnime.includes(animeId)) {
-            interaction.subscribedAnime = interaction.subscribedAnime.filter(id => id !== animeId);
-        } else {
-            interaction.subscribedAnime.push(animeId);
-        }
+        // Was not present, add it
+        const afterPush = await AnimeInteraction.findOneAndUpdate(
+            { userId },
+            { $push: { subscribedAnime: animeId } },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
 
-        await interaction.save();
-        res.json(interaction.subscribedAnime);
+        res.json(afterPush?.subscribedAnime || []);
     } catch (err) {
         console.error('[User] Subscribe error:', err.message);
         res.status(500).json({ error: 'Server error', message: err.message });
@@ -499,19 +544,16 @@ router.put('/settings', async (req, res) => {
     const { settings } = req.body;
     const userId = req.user.id;
     try {
-        let interaction = await AnimeInteraction.findOne({ userId });
-        if (!interaction) {
-            interaction = new AnimeInteraction({ userId, settings: {} });
-        }
+        // Use $set for simple fields, but need to merge nested settings
+        const interaction = await AnimeInteraction.findOneAndUpdate(
+            { userId },
+            { 
+                $set: { settings: settings }
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
 
-        // Merge settings
-        interaction.settings = {
-            ...interaction.settings,
-            ...settings
-        };
-
-        await interaction.save();
-        res.json(interaction.settings);
+        res.json(interaction?.settings || {});
     } catch (err) {
         console.error('[User] Update settings error:', err.message);
         res.status(500).json({ error: 'Server error', message: err.message });
@@ -522,13 +564,15 @@ router.put('/settings', async (req, res) => {
 router.delete('/history/:userId', async (req, res) => {
     try {
         if (!ensureSelf(req, res, req.params.userId)) return;
-        let interaction = await AnimeInteraction.findOne({ userId: req.user.id });
+        const interaction = await AnimeInteraction.findOneAndUpdate(
+            { userId: req.user.id },
+            { $set: { watchHistory: [] } },
+            { new: true }
+        );
+
         if (!interaction) {
             return res.status(404).json({ msg: 'User not found' });
         }
-
-        interaction.watchHistory = [];
-        await interaction.save();
 
         res.json({ msg: 'History deleted' });
     } catch (err) {

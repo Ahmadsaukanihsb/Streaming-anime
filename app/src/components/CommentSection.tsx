@@ -9,6 +9,7 @@ import { getAuthHeaders } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
 import SafeAvatar from '@/components/SafeAvatar';
 import RoleBadge from '@/components/RoleBadge';
+import { sanitizeContent } from '@/lib/security';
 
 interface Comment {
     _id: string;
@@ -236,7 +237,10 @@ export default function CommentSection({ animeId, episodeNumber, title, size = '
                             {comment.userRole && <RoleBadge role={comment.userRole} size="sm" />}
                             <span className={`text-white/30 ${isSm ? 'text-[11px]' : 'text-xs'}`}>{formatTimeAgo(comment.createdAt)}</span>
                         </div>
-                        <p className={`text-white/70 ${isSm ? 'text-xs' : 'text-sm'} mt-1 break-words`}>{comment.content}</p>
+                        <p 
+                            className={`text-white/70 ${isSm ? 'text-xs' : 'text-sm'} mt-1 break-words`}
+                            dangerouslySetInnerHTML={{ __html: sanitizeContent(comment.content) }}
+                        />
 
                         {/* Actions */}
                         <div className={`flex items-center ${isSm ? 'gap-3 mt-2' : 'gap-4 mt-2'}`}>

@@ -5,6 +5,7 @@ const User = require('../models/User');
 const crypto = require('crypto');
 const { signAccessToken } = require('../middleware/auth');
 const { validateBody, EMAIL_REGEX } = require('../middleware/validate');
+const { createRateLimitMiddleware, authRateLimiter } = require('../lib/security');
 
 const SALT_ROUNDS = 10;
 const REFRESH_TTL_DAYS = parseInt(process.env.REFRESH_TOKEN_TTL_DAYS || '7', 10);
@@ -142,8 +143,8 @@ async function saveRefreshToken(user, refreshToken, meta = {}) {
     await user.save();
 }
 
-// Register
-router.post('/register', validateBody([
+// Register - Rate limited to 5 attempts per 15 minutes
+router.post('/register', createRateLimitMiddleware(authRateLimiter, 'ip'), validateBody([
     { field: 'name', required: true, type: 'string', minLength: 2, maxLength: 80 },
     { field: 'email', required: true, type: 'string', minLength: 5, maxLength: 254, pattern: EMAIL_REGEX },
     { field: 'password', required: true, type: 'string', minLength: 6, maxLength: 200 }
@@ -153,7 +154,8 @@ router.post('/register', validateBody([
         const normalizedEmail = (email || '').toLowerCase().trim();
 
         let user = await User.findOne({ email: normalizedEmail });
-        if (user) return res.status(400).json({ msg: 'User already exists' });
+        // Generic error to prevent user enumeration
+        if (user) return res.status(400).json({ msg: 'Registration failed. Please try again.' });
 
         // Hash password before saving
         const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
@@ -196,8 +198,8 @@ router.post('/register', validateBody([
     }
 });
 
-// Login
-router.post('/login', validateBody([
+// Login - Rate limited to 5 attempts per 15 minutes
+router.post('/login', createRateLimitMiddleware(authRateLimiter, 'ip'), validateBody([
     { field: 'email', required: true, type: 'string', minLength: 5, maxLength: 254, pattern: EMAIL_REGEX },
     { field: 'password', required: true, type: 'string', minLength: 6, maxLength: 200 }
 ]), async (req, res) => {
@@ -206,12 +208,13 @@ router.post('/login', validateBody([
         const normalizedEmail = (email || '').toLowerCase().trim();
 
         const user = await User.findOne({ email: normalizedEmail });
-        if (!user) return res.status(400).json({ msg: 'Invalid credentials' });
+        // Generic error to prevent user enumeration
+        if (!user) return res.status(400).json({ msg: 'Invalid email or password' });
 
         // Compare password dengan hash
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(400).json({ msg: 'Invalid credentials' });
+            return res.status(400).json({ msg: 'Invalid email or password' });
         }
 
         // Return user tanpa password

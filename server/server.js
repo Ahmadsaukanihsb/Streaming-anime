@@ -98,6 +98,7 @@ app.use('/api/discussions', require('./routes/discussion'));
 app.use('/api/notifications', require('./routes/notification'));
 app.use('/api/schedule-subscriptions', require('./routes/scheduleSubscription'));
 app.use('/api/reviews', require('./routes/review'));
+app.use('/api/skip-times', require('./routes/skiptimes'));
 app.use('/api/badges', require('./routes/badge'));
 app.use('/api/watchparty', require('./routes/watchParty'));
 app.use('/api', require('./routes/turnstile'));

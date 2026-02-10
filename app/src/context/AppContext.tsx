@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import type { Anime } from '@/data/animeData';
 import { BACKEND_URL } from '@/config/api';
 import { getAuthHeaders, saveAuthToken } from '@/lib/auth';
@@ -269,6 +269,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     notifyNewEpisode: true,
     notifyNewAnime: true,
   });
+
+  // Debounce refs for API calls
+  const historyDebounceRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   // Badge config map (roleId -> config)
   const [badgeMap, setBadgeMap] = useState<Record<string, BadgeConfig>>({});
@@ -633,6 +636,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     episodeNumber: number,
     progress: number
   ) => {
+    const key = `${animeId}-${episodeId}`;
+    
+    // Always update local state immediately
     setWatchHistory(prev => {
       const existing = prev.find(h => h.animeId === animeId && h.episodeId === episodeId);
       if (existing) {
@@ -642,14 +648,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
 
     if (user) {
-      // Debounce logic should be here ideally, but for now direct call
-      try {
-        await apiFetch(`${BACKEND_URL}/api/user/history`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-          body: JSON.stringify({ userId: user.id, animeId, episodeId, episodeNumber, progress }),
-        });
-      } catch (err) { logger.error(err); }
+      // Debounce API call - wait 3 seconds after last update before sending
+      if (historyDebounceRef.current[key]) {
+        clearTimeout(historyDebounceRef.current[key]);
+      }
+      
+      historyDebounceRef.current[key] = setTimeout(async () => {
+        try {
+          await apiFetch(`${BACKEND_URL}/api/user/history`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({ userId: user.id, animeId, episodeId, episodeNumber, progress }),
+          });
+        } catch (err) { logger.error(err); }
+        delete historyDebounceRef.current[key];
+      }, 3000);
     }
   }, [user]);
 

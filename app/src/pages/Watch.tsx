@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { fetchSkipTimes, type SkipTimes } from '@/services/aniskip';
+import { type SkipTimes } from '@/services/aniskip';
+import { getSkipTimes } from '@/services/skiptimes';
 import {
   List,
   ChevronRight,
@@ -166,7 +167,7 @@ export default function Watch() {
   const [showNobar, setShowNobar] = useState(false);
   const [nobarRoomId, setNobarRoomId] = useState<string | undefined>();
 
-  // Fetch AniSkip data (auto-detected intro/outro)
+  // Fetch Skip Times (prioritize database over AniSkip)
   useEffect(() => {
     const loadSkipTimes = async () => {
       if (!anime?.id) {
@@ -174,24 +175,27 @@ export default function Watch() {
         return;
       }
       
-      // Extract MAL ID from anime data (if available)
-      // Fallback: use anime.id as identifier
-      const malId = anime.malId || anime.id;
+      logger.log('[Watch] Fetching skip times for:', anime.title, 'EP', currentEpisode);
       
-      logger.log('[Watch] Fetching AniSkip data for:', anime.title, 'EP', currentEpisode);
-      const times = await fetchSkipTimes(malId, currentEpisode);
+      // Get skip times from database (admin configured)
+      const dbSkipTimes = await getSkipTimes(anime.id, currentEpisode);
       
-      if (times) {
-        logger.log('[Watch] AniSkip found:', times);
-        setSkipTimes(times);
+      if (dbSkipTimes?.found && dbSkipTimes.op && dbSkipTimes.op.endTime > 0) {
+        logger.log('[Watch] Using database skip times:', dbSkipTimes);
+        setSkipTimes({
+          op: { startTime: dbSkipTimes.op.startTime, endTime: dbSkipTimes.op.endTime },
+          ed: dbSkipTimes.ed && dbSkipTimes.ed.endTime > 0 
+            ? { startTime: dbSkipTimes.ed.startTime, endTime: dbSkipTimes.ed.endTime } 
+            : undefined
+        });
       } else {
-        logger.log('[Watch] AniSkip not found, using fallback');
+        logger.log('[Watch] No skip times found, using fallback');
         setSkipTimes(null);
       }
     };
     
     loadSkipTimes();
-  }, [anime?.id, anime?.title, anime?.malId, currentEpisode]);
+  }, [anime?.id, anime?.title, currentEpisode]);
 
   // Auto-join room from URL query param
   useEffect(() => {
@@ -327,23 +331,11 @@ export default function Watch() {
   // This avoids duplicate event listeners for better performance
 
 
-  // Auto-save progress every 10 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (videoRef.current && id && !videoRef.current.paused) {
-        const progress = (videoRef.current.currentTime / videoRef.current.duration) * 100;
-        updateWatchProgress(id, `ep-${currentEpisode}`, currentEpisode, progress);
-      }
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [id, currentEpisode, updateWatchProgress]);
-
-  const goToEpisode = (epNum: number) => {
+  const goToEpisode = useCallback((epNum: number) => {
     if (epNum >= 1 && epNum <= totalEpisodes && id) {
       navigate(getWatchUrl(anime!, epNum));
     }
-  };
+  }, [id, totalEpisodes, anime, navigate]);
 
   // Handle Video End - Auto Next Episode
   const handleVideoEnd = async () => {
@@ -353,7 +345,14 @@ export default function Watch() {
     }
   };
 
-
+  // Memoized callback for saving progress
+  const handleSaveProgress = useCallback((time: number) => {
+    const currentDuration = durationRef.current;
+    if (id && currentDuration > 0) {
+      const progress = (time / currentDuration) * 100;
+      updateWatchProgress(id, `ep-${currentEpisode}`, currentEpisode, progress);
+    }
+  }, [id, currentEpisode, updateWatchProgress]);
 
   if (!anime) {
     return (
@@ -421,11 +420,15 @@ export default function Watch() {
                 animeId={anime.id}
                 isEmbed={isEmbed}
                 subtitleUrl={subtitleUrl}
-                autoPlay={false}
+                autoPlay={true}
                 onBack={() => navigate(getAnimeUrl(anime))}
                 onNobar={() => setShowNobar(true)}
                 onShare={() => {/* TODO: Implement share */}}
                 onReport={() => {/* TODO: Implement report */}}
+                onNextEpisode={currentEpisode < totalEpisodes ? () => goToEpisode(currentEpisode + 1) : undefined}
+                onPrevEpisode={currentEpisode > 1 ? () => goToEpisode(currentEpisode - 1) : undefined}
+                hasNextEpisode={currentEpisode < totalEpisodes}
+                hasPrevEpisode={currentEpisode > 1}
                 onEnded={handleVideoEnd}
                 onTimeUpdate={(time, duration) => {
                   setCurrentTime(time);
@@ -438,14 +441,7 @@ export default function Watch() {
                   logger.log('[Watch] Quality changed to:', quality);
                   setSelectedQuality(quality);
                 }}
-                onSaveProgress={(time) => {
-                  // Progress juga disimpan ke backend via updateWatchProgress
-                  const currentDuration = durationRef.current;
-                  if (id && currentDuration > 0) {
-                    const progress = (time / currentDuration) * 100;
-                    updateWatchProgress(id, `ep-${currentEpisode}`, currentEpisode, progress);
-                  }
-                }}
+                onSaveProgress={handleSaveProgress}
                 chapters={chapters}
                 introEndTime={introTime}
                 skipTimes={skipTimes}

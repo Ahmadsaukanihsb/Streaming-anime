@@ -10,6 +10,7 @@ const { uploadFile: uploadToR2 } = require('../utils/r2-storage');
 const { processImage, getCachedImageUrl, isAllowedSource, isWebPEnabled } = require('../utils/imageProxy');
 const { requireAdmin } = require('../middleware/auth');
 const { validateBody } = require('../middleware/validate');
+const { escapeRegex, createRateLimitMiddleware, apiRateLimiter } = require('../lib/security');
 
 // R2 URL replacement settings
 const ENABLE_R2_IMAGE_URLS = process.env.ENABLE_R2_IMAGES !== 'false'; // Default: enabled
@@ -378,25 +379,28 @@ router.get('/stream/:animeTitle/:episode', async (req, res) => {
         try {
             console.log(`[API/Stream] Looking for anime: "${animeTitle}" episode ${episodeNumber}`);
 
+            // Escape animeTitle to prevent regex injection
+            const safeAnimeTitle = escapeRegex(animeTitle);
+            
             // Try exact match first
             let dbAnime = await CustomAnime.findOne({
-                title: { $regex: new RegExp(`^${animeTitle}$`, 'i') }
+                title: { $regex: new RegExp(`^${safeAnimeTitle}$`, 'i') }
             });
 
             // If not found, try partial match
             if (!dbAnime) {
                 console.log(`[API/Stream] Exact match not found, trying partial match...`);
                 dbAnime = await CustomAnime.findOne({
-                    title: { $regex: new RegExp(animeTitle, 'i') }
+                    title: { $regex: new RegExp(safeAnimeTitle, 'i') }
                 });
             }
 
             // If still not found, try slug matching
             if (!dbAnime) {
-                const slug = animeTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                const slug = safeAnimeTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
                 console.log(`[API/Stream] Trying slug match: "${slug}"`);
                 dbAnime = await CustomAnime.findOne({
-                    id: { $regex: new RegExp(slug, 'i') }
+                    id: { $regex: new RegExp(escapeRegex(slug), 'i') }
                 });
             }
 

@@ -18,7 +18,10 @@ import {
   Share2,
   ChevronLeft,
   MonitorPlay,
-  Loader2
+  Loader2,
+  Settings,
+  ChevronRight,
+  RotateCcw
 } from 'lucide-react';
 
 // Types
@@ -45,6 +48,10 @@ interface VideoPlayerProps {
   onNobar?: () => void;
   onShare?: () => void;
   onReport?: () => void;
+  onNextEpisode?: () => void; // Navigate to next episode
+  onPrevEpisode?: () => void; // Navigate to previous episode
+  hasNextEpisode?: boolean; // Whether next episode exists
+  hasPrevEpisode?: boolean; // Whether previous episode exists
   availableQualities?: string[];
   selectedQuality?: string;
   onQualityChange?: (quality: string) => void;
@@ -88,6 +95,10 @@ export default function VideoPlayer({
   onNobar,
   onShare,
   onReport,
+  onNextEpisode,
+  onPrevEpisode,
+  hasNextEpisode = false,
+  hasPrevEpisode = false,
   availableQualities = [],
   selectedQuality,
   onQualityChange,
@@ -102,12 +113,18 @@ export default function VideoPlayer({
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const progressSaveIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onSaveProgressRef = useRef(onSaveProgress);
+  
+  // Keep ref in sync
+  useEffect(() => {
+    onSaveProgressRef.current = onSaveProgress;
+  }, [onSaveProgress]);
 
   // Playback State
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [buffered, setBuffered] = useState(0);
+  const [bufferedRanges, setBufferedRanges] = useState<{ start: number; end: number }[]>([]);
   const [_isPiP, setIsPiP] = useState(false);
   
   // Resume State
@@ -134,6 +151,15 @@ export default function VideoPlayer({
   const [isHoveringProgress, setIsHoveringProgress] = useState(false);
   const progressBarRef = useRef<HTMLDivElement>(null);
   
+  // Settings menu for mobile
+  const [showSettings, setShowSettings] = useState(false);
+  
+  // Keyboard shortcuts help
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  
+  // Double tap visual feedback
+  const [doubleTapFeedback, setDoubleTapFeedback] = useState<{ side: 'left' | 'right'; visible: boolean } | null>(null);
+  
   // Touch gesture state
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const [touchStartTime, setTouchStartTime] = useState(0);
@@ -141,6 +167,11 @@ export default function VideoPlayer({
   const [startVolume, setStartVolume] = useState(1);
   const [startBrightness, setStartBrightness] = useState(100);
   const [lastTouchTap, setLastTouchTap] = useState<{ time: number; x: number } | null>(null);
+  
+  // Long press for fast seek
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isLongPressing, setIsLongPressing] = useState(false);
+  const longPressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Update loading state and reset playback when videoUrl changes
   useEffect(() => {
@@ -170,7 +201,7 @@ export default function VideoPlayer({
       const time = videoRef.current?.currentTime || 0;
       if (time > 0) {
         localStorage.setItem(getProgressKey(animeId, episode), time.toString());
-        onSaveProgress?.(time);
+        onSaveProgressRef.current?.(time);
       }
     }, 5000);
     
@@ -179,7 +210,39 @@ export default function VideoPlayer({
         clearInterval(progressSaveIntervalRef.current);
       }
     };
-  }, [isPlaying, animeId, episode, onSaveProgress]);
+  }, [isPlaying, animeId, episode]);
+
+  // Save progress on unmount and visibility change
+  useEffect(() => {
+    const saveProgress = () => {
+      const time = videoRef.current?.currentTime || 0;
+      if (time > 0) {
+        localStorage.setItem(getProgressKey(animeId, episode), time.toString());
+        onSaveProgressRef.current?.(time);
+      }
+    };
+
+    // Save on visibility change (tab switch, minimize, etc)
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        saveProgress();
+      }
+    };
+
+    // Save on page unload
+    const handleBeforeUnload = () => {
+      saveProgress();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      saveProgress(); // Save one final time on unmount
+    };
+  }, [animeId, episode]);
 
   // Close quality selector when clicking outside
   useEffect(() => {
@@ -198,6 +261,23 @@ export default function VideoPlayer({
       document.removeEventListener('click', handleClickOutside);
     };
   }, [showQualitySelector]);
+
+  // Close settings menu when clicking outside
+  useEffect(() => {
+    if (!showSettings) return;
+    
+    const handleClickOutside = () => {
+      setShowSettings(false);
+    };
+    
+    setTimeout(() => {
+      document.addEventListener('click', handleClickOutside, { once: true });
+    }, 100);
+    
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [showSettings]);
 
   // Keyboard shortcuts
   const togglePlay = useCallback(() => {
@@ -293,6 +373,14 @@ export default function VideoPlayer({
     const handlePause = () => {
       setIsPlaying(false);
       onPause?.();
+      // Save progress when paused
+      if (video) {
+        const time = video.currentTime;
+        if (time > 0) {
+          localStorage.setItem(getProgressKey(animeId, episode), time.toString());
+          onSaveProgressRef.current?.(time);
+        }
+      }
     };
 
     const handleTimeUpdate = () => {
@@ -316,9 +404,15 @@ export default function VideoPlayer({
     };
 
     const handleProgress = () => {
-      if (video.buffered.length > 0) {
-        const bufferedEnd = video.buffered.end(video.buffered.length - 1);
-        setBuffered((bufferedEnd / video.duration) * 100);
+      if (video.buffered.length > 0 && video.duration > 0) {
+        const ranges: { start: number; end: number }[] = [];
+        for (let i = 0; i < video.buffered.length; i++) {
+          ranges.push({
+            start: (video.buffered.start(i) / video.duration) * 100,
+            end: (video.buffered.end(i) / video.duration) * 100
+          });
+        }
+        setBufferedRanges(ranges);
       }
     };
 
@@ -355,7 +449,7 @@ export default function VideoPlayer({
       video.removeEventListener('waiting', handleWaiting);
       video.removeEventListener('canplay', handleCanPlay);
     };
-  }, [onPlay, onPause, onTimeUpdate, onEnded]);
+  }, [onPlay, onPause, onTimeUpdate, onEnded, animeId, episode]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -402,6 +496,10 @@ export default function VideoPlayer({
           e.preventDefault();
           changePlaybackSpeed();
           break;
+        case '?':
+          e.preventDefault();
+          setShowShortcuts(prev => !prev);
+          break;
       }
     };
 
@@ -426,33 +524,44 @@ export default function VideoPlayer({
       if (controlsTimeoutRef.current) {
         clearTimeout(controlsTimeoutRef.current);
       }
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
+      if (longPressIntervalRef.current) {
+        clearInterval(longPressIntervalRef.current);
+      }
     };
   }, []);
 
-  if (isEmbed) {
-    return (
-      <div 
-        className="relative w-full bg-black lg:rounded-xl overflow-hidden"
-        style={{ aspectRatio: '16/9' }}
-      >
-        <iframe
-          src={videoUrl}
-          className="w-full h-full border-0"
-          allowFullScreen
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        />
-      </div>
-    );
-  }
-
-  // Touch gesture handlers
+  // Touch gesture handlers - must be defined before any early returns
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const touch = e.touches[0];
     setTouchStart({ x: touch.clientX, y: touch.clientY });
     setTouchStartTime(Date.now());
     setStartVolume(volume);
     setStartBrightness(brightness);
-  }, [volume, brightness]);
+    
+    // Long press detection for fast seek
+    const containerWidth = containerRef.current?.offsetWidth || 1;
+    const touchX = touch.clientX / containerWidth;
+    const side = touchX < 0.5 ? 'left' : 'right';
+    
+    longPressTimerRef.current = setTimeout(() => {
+      setIsLongPressing(true);
+      // Start fast seeking
+      longPressIntervalRef.current = setInterval(() => {
+        if (videoRef.current) {
+          const seekAmount = side === 'left' ? -3 : 3; // 3 seconds per interval
+          videoRef.current.currentTime = Math.max(0, Math.min(duration, videoRef.current.currentTime + seekAmount));
+          setGestureIndicator({
+            type: 'seek',
+            value: side === 'left' ? '<< Rewind' : 'Forward >>',
+            visible: true
+          });
+        }
+      }, 100); // Fast seek every 100ms
+    }, 500); // Start after 500ms long press
+  }, [volume, brightness, duration]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!touchStart || !containerRef.current || !videoRef.current) return;
@@ -504,6 +613,22 @@ export default function VideoPlayer({
   }, [touchStart, duration, currentTime, startVolume, startBrightness, handleVolumeChange]);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    // Clear long press timers
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    if (longPressIntervalRef.current) {
+      clearInterval(longPressIntervalRef.current);
+      longPressIntervalRef.current = null;
+    }
+    if (isLongPressing) {
+      setIsLongPressing(false);
+      setGestureIndicator(prev => ({ ...prev, visible: false }));
+      setTouchStart(null);
+      return; // Don't process as tap if it was a long press
+    }
+    
     if (!touchStart || !videoRef.current || !containerRef.current) return;
     
     const touch = e.changedTouches[0];
@@ -531,6 +656,9 @@ export default function VideoPlayer({
           value: side === 'left' ? '-10s' : '+10s',
           visible: true
         });
+        // Show visual feedback for double tap
+        setDoubleTapFeedback({ side, visible: true });
+        setTimeout(() => setDoubleTapFeedback(null), 400);
         setTimeout(() => setGestureIndicator(prev => ({ ...prev, visible: false })), 800);
         setLastTouchTap(null);
       } else {
@@ -551,6 +679,23 @@ export default function VideoPlayer({
     setTouchStart(null);
   }, [touchStart, touchStartTime, lastTouchTap, skip, togglePlay]);
 
+  // Early return for embed mode - AFTER all hooks are defined
+  if (isEmbed) {
+    return (
+      <div 
+        className="relative w-full bg-black lg:rounded-xl overflow-hidden"
+        style={{ aspectRatio: '16/9' }}
+      >
+        <iframe
+          src={videoUrl}
+          className="w-full h-full border-0"
+          allowFullScreen
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       ref={containerRef}
@@ -567,21 +712,39 @@ export default function VideoPlayer({
     >
       {/* Video Element - only render when videoUrl is available */}
       {videoUrl ? (
-        <video
-          ref={videoRef}
-          src={videoUrl}
-          poster={poster}
-          className="w-full h-full object-contain cursor-pointer"
-          onClick={togglePlay}
-          autoPlay={autoPlay}
-          playsInline
-          loop={isLooping}
-          crossOrigin="anonymous"
-        >
-          {subtitleUrl && (
-            <track kind="subtitles" src={subtitleUrl} srcLang="id" label="Indonesia" default />
-          )}
-        </video>
+        <>
+          <style>{`
+            video::cue {
+              font-size: 16px;
+              font-weight: 500;
+              background-color: rgba(0, 0, 0, 0.7);
+              color: white;
+              text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+              padding: 4px 8px;
+              border-radius: 4px;
+            }
+            @media (max-width: 640px) {
+              video::cue {
+                font-size: 14px;
+              }
+            }
+          `}</style>
+          <video
+            ref={videoRef}
+            src={videoUrl}
+            poster={poster}
+            className="w-full h-full object-contain cursor-pointer"
+            onClick={togglePlay}
+            autoPlay={autoPlay}
+            playsInline
+            loop={isLooping}
+            crossOrigin="anonymous"
+          >
+            {subtitleUrl && (
+              <track kind="subtitles" src={subtitleUrl} srcLang="id" label="Indonesia" default />
+            )}
+          </video>
+        </>
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-black">
           {poster ? (
@@ -613,6 +776,21 @@ export default function VideoPlayer({
               <span className="text-white font-medium text-lg">{gestureIndicator.value}</span>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Double Tap Visual Feedback */}
+      <AnimatePresence>
+        {doubleTapFeedback?.visible && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 0.3, scale: 1.5 }}
+            exit={{ opacity: 0, scale: 2 }}
+            transition={{ duration: 0.4 }}
+            className={`absolute top-1/2 -translate-y-1/2 w-32 h-32 rounded-full bg-white/20 pointer-events-none z-30 ${
+              doubleTapFeedback.side === 'left' ? 'left-0 -translate-x-1/4' : 'right-0 translate-x-1/4'
+            }`}
+          />
         )}
       </AnimatePresence>
 
@@ -656,6 +834,78 @@ export default function VideoPlayer({
         )}
       </AnimatePresence>
 
+      {/* Keyboard Shortcuts Help Overlay */}
+      <AnimatePresence>
+        {showShortcuts && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-50"
+            onClick={() => setShowShortcuts(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#1A1A2E] border border-white/10 rounded-2xl p-6 max-w-sm w-[90%] shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-white font-semibold text-lg">Shortcut Keyboard</h3>
+                <button 
+                  onClick={() => setShowShortcuts(false)}
+                  className="text-white/50 hover:text-white transition-colors"
+                >
+                  <span className="text-xl">&times;</span>
+                </button>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between text-white/80">
+                  <span>Spasi / K</span>
+                  <span className="text-white/50">Play / Pause</span>
+                </div>
+                <div className="flex justify-between text-white/80">
+                  <span>&larr; / J</span>
+                  <span className="text-white/50">-10 detik</span>
+                </div>
+                <div className="flex justify-between text-white/80">
+                  <span>&rarr; / L</span>
+                  <span className="text-white/50">+10 detik</span>
+                </div>
+                <div className="flex justify-between text-white/80">
+                  <span>&uarr; / &darr;</span>
+                  <span className="text-white/50">Volume</span>
+                </div>
+                <div className="flex justify-between text-white/80">
+                  <span>M</span>
+                  <span className="text-white/50">Mute</span>
+                </div>
+                <div className="flex justify-between text-white/80">
+                  <span>F</span>
+                  <span className="text-white/50">Fullscreen</span>
+                </div>
+                <div className="flex justify-between text-white/80">
+                  <span>P</span>
+                  <span className="text-white/50">Picture in Picture</span>
+                </div>
+                <div className="flex justify-between text-white/80">
+                  <span>S</span>
+                  <span className="text-white/50">Kecepatan</span>
+                </div>
+                <div className="flex justify-between text-white/80">
+                  <span>?</span>
+                  <span className="text-white/50">Bantuan ini</span>
+                </div>
+              </div>
+              <p className="mt-4 text-white/40 text-xs text-center">
+                Double tap kiri/kanan untuk skip &plusmn;10s
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Resume Prompt */}
       <AnimatePresence>
         {showResumePrompt && !isLoading && (
@@ -663,33 +913,37 @@ export default function VideoPlayer({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="absolute top-20 left-1/2 -translate-x-1/2 z-40"
+            className="absolute top-12 sm:top-20 left-1/2 -translate-x-1/2 z-40 w-auto max-w-[90%]"
           >
-            <div className="flex items-center gap-3 px-4 py-3 bg-[#1A1A2E]/95 backdrop-blur-sm border border-white/10 rounded-xl shadow-xl">
-              <span className="text-white/80 text-sm">
-                Lanjutkan dari <span className="text-[#6C5DD3] font-medium">{formatTime(resumeTime)}</span>?
+            <div className="flex items-center gap-2 px-2.5 sm:px-4 py-2 bg-[#1A1A2E]/95 backdrop-blur-sm border border-white/10 rounded-lg sm:rounded-xl shadow-xl">
+              <span className="text-white/80 text-[10px] sm:text-sm whitespace-nowrap">
+                Lanjut <span className="text-[#6C5DD3] font-medium">{formatTime(resumeTime)}</span>?
               </span>
-              <button
-                onClick={() => {
-                  if (videoRef.current) {
-                    videoRef.current.currentTime = resumeTime;
-                    videoRef.current.play().catch(() => {});
-                  }
-                  setShowResumePrompt(false);
-                }}
-                className="px-3 py-1.5 bg-[#6C5DD3] hover:bg-[#5a4ec0] text-white text-xs font-medium rounded-lg transition-colors"
-              >
-                Lanjutkan
-              </button>
-              <button
-                onClick={() => {
-                  localStorage.removeItem(getProgressKey(animeId, episode));
-                  setShowResumePrompt(false);
-                }}
-                className="px-3 py-1.5 text-white/60 hover:text-white text-xs transition-colors"
-              >
-                Dari Awal
-              </button>
+              <div className="flex items-center gap-1 sm:gap-2">
+                <button
+                  onClick={() => {
+                    if (videoRef.current) {
+                      videoRef.current.currentTime = resumeTime;
+                      videoRef.current.play().catch(() => {});
+                    }
+                    setShowResumePrompt(false);
+                  }}
+                  className="px-2 sm:px-3 py-1 bg-[#6C5DD3] hover:bg-[#5a4ec0] text-white text-[10px] sm:text-xs font-medium rounded-md sm:rounded-lg transition-colors"
+                >
+                  <span className="sm:hidden">Lanjut</span>
+                  <span className="hidden sm:inline">Lanjutkan</span>
+                </button>
+                <button
+                  onClick={() => {
+                    localStorage.removeItem(getProgressKey(animeId, episode));
+                    setShowResumePrompt(false);
+                  }}
+                  className="px-2 sm:px-3 py-1 text-white/60 hover:text-white text-[10px] sm:text-xs transition-colors"
+                >
+                  <span className="sm:hidden">Awal</span>
+                  <span className="hidden sm:inline">Dari Awal</span>
+                </button>
+              </div>
             </div>
           </motion.div>
         )}
@@ -708,9 +962,9 @@ export default function VideoPlayer({
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               onClick={togglePlay}
-              className="w-20 h-20 rounded-full bg-[#6C5DD3] flex items-center justify-center pointer-events-auto shadow-2xl shadow-[#6C5DD3]/30"
+              className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-[#6C5DD3] flex items-center justify-center pointer-events-auto shadow-2xl shadow-[#6C5DD3]/30"
             >
-              <Play className="w-10 h-10 text-white fill-current ml-1" />
+              <Play className="w-7 h-7 sm:w-10 sm:h-10 text-white fill-current ml-0.5 sm:ml-1" />
             </motion.button>
           </motion.div>
         )}
@@ -724,10 +978,10 @@ export default function VideoPlayer({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
             onClick={skipIntro}
-            className="absolute top-20 right-4 z-30 flex items-center gap-2 px-4 py-2.5 bg-white/95 hover:bg-white text-black font-semibold rounded-lg shadow-lg transition-all"
+            className="absolute top-16 sm:top-20 right-3 sm:right-4 z-30 flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-white/95 hover:bg-white text-black font-semibold rounded-lg shadow-lg transition-all"
           >
             <FastForward className="w-4 h-4" />
-            <span className="text-sm">Lewati Intro</span>
+            <span className="text-xs sm:text-sm">Lewati Intro</span>
           </motion.button>
         )}
       </AnimatePresence>
@@ -740,13 +994,13 @@ export default function VideoPlayer({
         className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10"
       >
         {/* Top Bar */}
-        <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between">
+        <div className="absolute top-0 left-0 right-0 p-3 sm:p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={onBack}
-              className="flex items-center gap-2 px-3 py-1.5 bg-black/40 backdrop-blur-sm rounded-lg text-white/80 hover:text-white hover:bg-black/60 transition-all"
+              className="flex items-center gap-2 p-2 sm:px-3 sm:py-1.5 bg-black/40 backdrop-blur-sm rounded-lg text-white/80 hover:text-white hover:bg-black/60 transition-all"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-5 h-5 sm:w-4 sm:h-4" />
               <span className="text-sm hidden sm:inline">Kembali</span>
             </button>
             <div className="hidden sm:block">
@@ -755,23 +1009,23 @@ export default function VideoPlayer({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <button
               onClick={onNobar}
-              className="flex items-center gap-2 px-3 py-1.5 bg-[#6C5DD3]/80 hover:bg-[#6C5DD3] text-white rounded-lg text-sm transition-all"
+              className="flex items-center gap-2 px-2 sm:px-3 py-1.5 bg-[#6C5DD3]/80 hover:bg-[#6C5DD3] text-white rounded-lg text-sm transition-all"
             >
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Nobar</span>
             </button>
             <button
               onClick={onShare}
-              className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+              className="p-2 sm:p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all"
             >
-              <Share2 className="w-4 h-4" />
+              <Share2 className="w-5 h-5 sm:w-4 sm:h-4" />
             </button>
             <button
               onClick={onReport}
-              className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+              className="hidden sm:block p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all"
             >
               <MonitorPlay className="w-4 h-4" />
             </button>
@@ -779,12 +1033,12 @@ export default function VideoPlayer({
         </div>
 
         {/* Bottom Controls */}
-        <div className="absolute bottom-0 left-0 right-0 p-4">
+        <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4">
           {/* Progress Bar */}
-          <div className="group mb-4">
+          <div className="group mb-1 sm:mb-4">
             <div 
               ref={progressBarRef}
-              className="relative h-1.5 bg-white/20 rounded-full cursor-pointer overflow-visible"
+              className="relative h-1 sm:h-1.5 bg-white/20 rounded-full cursor-pointer overflow-visible"
               onMouseMove={(e) => {
                 if (!progressBarRef.current || !duration) return;
                 const rect = progressBarRef.current.getBoundingClientRect();
@@ -803,11 +1057,17 @@ export default function VideoPlayer({
                 videoRef.current.currentTime = time;
               }}
             >
-              {/* Buffer */}
-              <div
-                className="absolute top-0 left-0 h-full bg-white/30 rounded-full transition-all duration-300"
-                style={{ width: `${buffered}%` }}
-              />
+              {/* Buffer - Multi-section indicator */}
+              {bufferedRanges.map((range, index) => (
+                <div
+                  key={index}
+                  className="absolute top-0 h-full bg-white/30 rounded-full transition-all duration-300"
+                  style={{ 
+                    left: `${range.start}%`,
+                    width: `${range.end - range.start}%`
+                  }}
+                />
+              ))}
               {/* Progress */}
               <motion.div
                 className="absolute top-0 left-0 h-full bg-[#6C5DD3] rounded-full"
@@ -831,8 +1091,8 @@ export default function VideoPlayer({
               )}
               {/* Thumb */}
               <div
-                className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-[#6C5DD3] rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                style={{ left: `calc(${(currentTime / (duration || 1)) * 100}% - 6px)` }}
+                className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#6C5DD3] rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                style={{ left: `calc(${(currentTime / (duration || 1)) * 100}% - 5px)` }}
               />
               
               {/* Chapter Markers */}
@@ -841,7 +1101,7 @@ export default function VideoPlayer({
                 return (
                   <div
                     key={index}
-                    className="absolute top-1/2 -translate-y-1/2 h-3 w-0.5 cursor-pointer group/marker z-10 hover:scale-125 transition-transform rounded-full"
+                    className="absolute top-1/2 -translate-y-1/2 h-1.5 sm:h-3 w-0.5 cursor-pointer group/marker z-10 hover:scale-125 transition-transform rounded-full"
                     style={{ left: `${position}%`, backgroundColor: chapter.color || '#FFD700' }}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -868,7 +1128,7 @@ export default function VideoPlayer({
             </div>
             
             {/* Time Display */}
-            <div className="flex justify-between mt-1.5 text-xs text-white/60">
+            <div className="flex justify-between mt-0.5 sm:mt-2 text-[10px] sm:text-xs text-white/60">
               <span>{formatTime(currentTime)}</span>
               <span>{formatTime(duration)}</span>
             </div>
@@ -877,34 +1137,56 @@ export default function VideoPlayer({
           {/* Control Buttons */}
           <div className="flex items-center justify-between">
             {/* Left Controls */}
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-0 sm:gap-2">
+              {/* Previous Episode - Hidden if no prev */}
+              {hasPrevEpisode && onPrevEpisode && (
+                <button
+                  onClick={onPrevEpisode}
+                  className="hidden sm:flex p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                  title="Episode Sebelumnya"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+              )}
+
               <button
                 onClick={togglePlay}
-                className="p-2.5 text-white hover:bg-white/10 rounded-lg transition-all"
+                className="p-3 sm:p-2.5 text-white hover:bg-white/10 rounded-lg transition-all"
               >
                 {isPlaying ? (
-                  <Pause className="w-5 h-5 fill-current" />
+                  <Pause className="w-6 h-6 sm:w-5 sm:h-5 fill-current" />
                 ) : (
-                  <Play className="w-5 h-5 fill-current" />
+                  <Play className="w-6 h-6 sm:w-5 sm:h-5 fill-current" />
                 )}
               </button>
 
               <button
                 onClick={() => skip(-10)}
-                className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                className="p-2 sm:p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all"
               >
-                <SkipBack className="w-4 h-4" />
+                <SkipBack className="w-5 h-5 sm:w-4 sm:h-4" />
               </button>
 
               <button
                 onClick={() => skip(10)}
-                className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                className="p-2 sm:p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all"
               >
-                <SkipForward className="w-4 h-4" />
+                <SkipForward className="w-5 h-5 sm:w-4 sm:h-4" />
               </button>
 
-              {/* Volume Control */}
-              <div className="flex items-center gap-2 group/volume">
+              {/* Next Episode - Hidden if no next */}
+              {hasNextEpisode && onNextEpisode && (
+                <button
+                  onClick={onNextEpisode}
+                  className="hidden sm:flex p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                  title="Episode Berikutnya"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
+
+              {/* Volume Control - Hidden on small mobile */}
+              <div className="hidden sm:flex items-center gap-2 group/volume">
                 <button
                   onClick={toggleMute}
                   className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all"
@@ -930,11 +1212,11 @@ export default function VideoPlayer({
             </div>
 
             {/* Right Controls */}
-            <div className="flex items-center gap-1 sm:gap-2">
-              {/* Playback Speed */}
+            <div className="flex items-center gap-0 sm:gap-2">
+              {/* Playback Speed - Hidden on mobile */}
               <button
                 onClick={changePlaybackSpeed}
-                className="px-2 py-1 text-xs font-medium text-white/70 hover:text-white hover:bg-white/10 rounded transition-all min-w-[40px]"
+                className="hidden sm:block px-2 py-1 text-xs font-medium text-white/70 hover:text-white hover:bg-white/10 rounded transition-all min-w-[40px]"
               >
                 {playbackSpeed}x
               </button>
@@ -947,7 +1229,7 @@ export default function VideoPlayer({
                       e.stopPropagation();
                       setShowQualitySelector(!showQualitySelector);
                     }}
-                    className="px-2 py-1 text-xs font-medium text-white/70 hover:text-white hover:bg-white/10 rounded transition-all min-w-[50px] cursor-pointer"
+                    className="px-2 py-1 text-xs font-medium text-white/70 hover:text-white hover:bg-white/10 rounded transition-all min-w-[40px] sm:min-w-[50px] cursor-pointer"
                     title={`Available: ${availableQualities.join(', ')}`}
                   >
                     {selectedQuality || 'Auto'}
@@ -978,8 +1260,8 @@ export default function VideoPlayer({
                 </div>
               )}
 
-              {/* Brightness */}
-              <div className="relative">
+              {/* Brightness - Hidden on mobile */}
+              <div className="hidden sm:block relative">
                 <button
                   onClick={() => setShowBrightness(!showBrightness)}
                   className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all"
@@ -1004,10 +1286,10 @@ export default function VideoPlayer({
                 )}
               </div>
 
-              {/* Loop */}
+              {/* Loop - Hidden on mobile */}
               <button
                 onClick={() => setIsLooping(!isLooping)}
-                className={`p-2 rounded-lg transition-all ${isLooping ? 'text-[#6C5DD3] bg-[#6C5DD3]/20' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+                className={`hidden sm:block p-2 rounded-lg transition-all ${isLooping ? 'text-[#6C5DD3] bg-[#6C5DD3]/20' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
               >
                 <Repeat className="w-4 h-4" />
               </button>
@@ -1020,15 +1302,79 @@ export default function VideoPlayer({
                 <PictureInPicture2 className="w-4 h-4" />
               </button>
 
+              {/* Settings Menu - Mobile Only */}
+              <div className="relative sm:hidden">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowSettings(!showSettings);
+                  }}
+                  className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                >
+                  <Settings className="w-5 h-5" />
+                </button>
+                {showSettings && (
+                  <div 
+                    className="absolute bottom-full right-0 mb-2 py-2 bg-[#1A1A2E] border border-white/10 rounded-lg shadow-xl min-w-[160px] z-50"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Playback Speed */}
+                    <div className="px-3 py-2 border-b border-white/10">
+                      <span className="text-white/50 text-xs">Kecepatan</span>
+                      <div className="flex gap-1 mt-1">
+                        {[0.5, 1, 1.5, 2].map((speed) => (
+                          <button
+                            key={speed}
+                            onClick={() => {
+                              if (videoRef.current) {
+                                videoRef.current.playbackRate = speed;
+                              }
+                              setPlaybackSpeed(speed);
+                            }}
+                            className={`flex-1 px-2 py-1 text-xs rounded transition-colors ${
+                              playbackSpeed === speed
+                                ? 'bg-[#6C5DD3] text-white'
+                                : 'text-white/70 hover:bg-white/10'
+                            }`}
+                          >
+                            {speed}x
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Loop Toggle */}
+                    <button
+                      onClick={() => setIsLooping(!isLooping)}
+                      className={`w-full px-3 py-2 flex items-center gap-2 text-xs transition-colors ${
+                        isLooping ? 'text-[#6C5DD3]' : 'text-white/70'
+                      }`}
+                    >
+                      <Repeat className="w-4 h-4" />
+                      <span>Ulangi</span>
+                    </button>
+                    
+                    {/* PiP */}
+                    <button
+                      onClick={togglePiP}
+                      className="w-full px-3 py-2 flex items-center gap-2 text-xs text-white/70 hover:text-white transition-colors"
+                    >
+                      <PictureInPicture2 className="w-4 h-4" />
+                      <span>Picture in Picture</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* Fullscreen */}
               <button
                 onClick={toggleFullscreen}
-                className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                className="p-2 sm:p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all"
               >
                 {isFullscreen ? (
-                  <Minimize className="w-4 h-4" />
+                  <Minimize className="w-5 h-5 sm:w-4 sm:h-4" />
                 ) : (
-                  <Maximize className="w-4 h-4" />
+                  <Maximize className="w-5 h-5 sm:w-4 sm:h-4" />
                 )}
               </button>
             </div>
