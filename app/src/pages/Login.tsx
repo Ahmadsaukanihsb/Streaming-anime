@@ -4,7 +4,7 @@ import { Eye, EyeOff, Mail, Lock, Film, ArrowRight, AlertCircle } from 'lucide-r
 import { motion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { Button } from '@/components/ui/button';
-import { DEFAULT_SITE_NAME } from '../config/api';
+import { DEFAULT_SITE_NAME, BACKEND_URL } from '../config/api';
 import { StaticPageSEO } from '@/components/Seo';
 import TurnstileWidget from '@/components/TurnstileWidget';
 
@@ -115,17 +115,22 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      // Verify Turnstile token with backend
-      const verifyRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/verify-turnstile`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: turnstileToken })
-      });
+      // Skip Turnstile verification in development mode (auto-verified)
+      const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       
-      if (!verifyRes.ok) {
-        setError('Verifikasi keamanan gagal. Silakan coba lagi.');
-        setTurnstileToken('');
-        return;
+      if (!isDevelopment) {
+        // Verify Turnstile token with backend
+        const verifyRes = await fetch(`${BACKEND_URL}/api/verify-turnstile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: turnstileToken })
+        });
+        
+        if (!verifyRes.ok) {
+          setError('Verifikasi keamanan gagal. Silakan coba lagi.');
+          setTurnstileToken('');
+          return;
+        }
       }
       
       const success = await login(email, password);
