@@ -1117,12 +1117,17 @@ export default function Admin() {
     }
   };
 
-  // Filter anime based on search and status
-  const filteredAnime = animeList.filter(anime => {
-    const matchesSearch = anime.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || anime.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // Filter anime based on search and status, remove duplicates by ID
+  const filteredAnime = animeList
+    .filter((anime, index, self) => 
+      // Remove duplicates by ID - keep first occurrence
+      index === self.findIndex(a => a.id === anime.id)
+    )
+    .filter(anime => {
+      const matchesSearch = anime.title.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || anime.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
 
   if (!user?.isAdmin) {
     return (
