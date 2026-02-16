@@ -2142,7 +2142,6 @@ export default function Admin() {
                             };
                             
                             addAnime({
-                              id: customId,
                               title: anime.title,
                               studio: anime.studios?.[0]?.name || 'Unknown',
                               releasedYear: anime.year || new Date(anime.aired?.from).getFullYear() || 0,
@@ -2291,7 +2290,6 @@ export default function Admin() {
                                   };
                                   
                                   addAnime({
-                                    id: customId,
                                     title: anime.title,
                                     studio: anime.studios?.[0]?.name || 'Unknown',
                                     releasedYear: anime.year || new Date(anime.aired?.from).getFullYear() || 0,
