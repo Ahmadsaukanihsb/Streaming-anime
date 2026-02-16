@@ -197,13 +197,103 @@ export default function AnimeDetail() {
     jam: anime.jadwalRilis.jam || '??:?? WIB'
   } : null;
 
-  // Get related anime by genres
-  const relatedAnime = anime
-    ? animeList.filter(a =>
-      a.id !== anime.id &&
-      a.genres.some(g => anime.genres.includes(g))
-    ).slice(0, 12)
-    : [];
+  // Smart anime recommendations
+  const getSmartRecommendations = () => {
+    if (!anime) return [];
+
+    // Helper: Extract base title (remove season/part indicators)
+    const extractBaseTitle = (title: string) => {
+      return title
+        .toLowerCase()
+        .replace(/\s+season\s+\d+/gi, '')
+        .replace(/\s+part\s+\d+/gi, '')
+        .replace(/\s+\d+(st|nd|rd|th)\s+season/gi, '')
+        .replace(/\s+s\d+/gi, '')
+        .replace(/\s+:\s*.+$/g, '')
+        .replace(/\s+movie/gi, '')
+        .replace(/\s+ova/gi, '')
+        .replace(/\s+special/gi, '')
+        .replace(/\s+ona/gi, '')
+        .trim();
+    };
+
+    // Helper: Get season number from title
+    const getSeasonNumber = (title: string) => {
+      const seasonMatch = title.match(/season\s+(\d+)/i);
+      if (seasonMatch) return parseInt(seasonMatch[1]);
+      
+      const partMatch = title.match(/part\s+(\d+)/i);
+      if (partMatch) return parseInt(partMatch[1]);
+      
+      const ordinalMatch = title.match(/(\d+)(st|nd|rd|th)\s+season/i);
+      if (ordinalMatch) return parseInt(ordinalMatch[1]);
+      
+      const sMatch = title.match(/\s+S(\d+)/i);
+      if (sMatch) return parseInt(sMatch[1]);
+      
+      return 0; // No season detected
+    };
+
+    const currentBaseTitle = extractBaseTitle(anime.title);
+    const currentSeason = getSeasonNumber(anime.title);
+    const currentGenres = new Set(anime.genres);
+
+    // Score each anime
+    const scoredAnime = animeList
+      .filter(a => a.id !== anime.id)
+      .map(a => {
+        let score = 0;
+        const aBaseTitle = extractBaseTitle(a.title);
+        const aSeason = getSeasonNumber(a.title);
+
+        // Priority 1: Same franchise (base title match)
+        if (aBaseTitle === currentBaseTitle) {
+          score += 1000;
+          
+          // Bonus: Next/previous season
+          if (aSeason === currentSeason + 1) score += 500; // Next season
+          if (aSeason === currentSeason - 1) score += 400; // Previous season
+          if (aSeason > 0) score += aSeason * 10; // Sort by season order
+        }
+
+        // Priority 2: Similar title (for cases like "Shingeki no Kyojin" vs "Attack on Titan")
+        const titleWords = currentBaseTitle.split(' ').filter(w => w.length > 3);
+        const matchWords = titleWords.filter(word => 
+          aBaseTitle.includes(word) || a.title.toLowerCase().includes(word)
+        ).length;
+        score += matchWords * 50;
+
+        // Priority 3: Genre overlap
+        const genreOverlap = a.genres.filter(g => currentGenres.has(g)).length;
+        score += genreOverlap * 30;
+
+        // Priority 4: Same studio
+        if (a.studio && anime.studio && a.studio === anime.studio) {
+          score += 25;
+        }
+
+        // Priority 5: Same status
+        if (a.status === anime.status) {
+          score += 10;
+        }
+
+        // Priority 6: Recent release year proximity
+        if (a.releasedYear && anime.releasedYear) {
+          const yearDiff = Math.abs(a.releasedYear - anime.releasedYear);
+          if (yearDiff <= 2) score += 20 - yearDiff * 5;
+        }
+
+        return { anime: a, score };
+      });
+
+    // Sort by score descending
+    scoredAnime.sort((a, b) => b.score - a.score);
+
+    // Return top 12
+    return scoredAnime.slice(0, 12).map(item => item.anime);
+  };
+
+  const relatedAnime = getSmartRecommendations();
   const episodeNumbers = anime
     ? (anime.episodeData && anime.episodeData.length > 0
       ? anime.episodeData.map(e => e.ep || e.episodeNumber || 0).sort((a, b) => a - b)
@@ -923,6 +1013,83 @@ export default function AnimeDetail() {
         </div>
       </div>
 
+      {/* Watch Next Section - Show next season if available */}
+      {(() => {
+        // Find next season
+        const getSeasonNumber = (title: string) => {
+          const seasonMatch = title.match(/season\s+(\d+)/i);
+          if (seasonMatch) return parseInt(seasonMatch[1]);
+          const partMatch = title.match(/part\s+(\d+)/i);
+          if (partMatch) return parseInt(partMatch[1]);
+          const ordinalMatch = title.match(/(\d+)(st|nd|rd|th)\s+season/i);
+          if (ordinalMatch) return parseInt(ordinalMatch[1]);
+          const sMatch = title.match(/\s+S(\d+)/i);
+          if (sMatch) return parseInt(sMatch[1]);
+          return 0;
+        };
+
+        const extractBaseTitle = (title: string) => {
+          return title
+            .toLowerCase()
+            .replace(/\s+season\s+\d+/gi, '')
+            .replace(/\s+part\s+\d+/gi, '')
+            .replace(/\s+\d+(st|nd|rd|th)\s+season/gi, '')
+            .replace(/\s+s\d+/gi, '')
+            .replace(/\s+:\s*.+$/g, '')
+            .trim();
+        };
+
+        const currentSeason = getSeasonNumber(anime?.title || '');
+        const currentBaseTitle = extractBaseTitle(anime?.title || '');
+        
+        const nextSeason = relatedAnime.find(a => {
+          const aBase = extractBaseTitle(a.title);
+          const aSeason = getSeasonNumber(a.title);
+          return aBase === currentBaseTitle && aSeason === currentSeason + 1;
+        });
+
+        if (!nextSeason) return null;
+
+        return (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-r from-[#6C5DD3]/20 to-[#8B7BEF]/10 border border-[#6C5DD3]/30 rounded-2xl p-4 sm:p-6"
+            >
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="flex-shrink-0 w-24 sm:w-32 aspect-[3/4] rounded-xl overflow-hidden border border-white/10">
+                  <img
+                    src={nextSeason.poster}
+                    alt={nextSeason.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-green-500/20 text-green-400 text-xs font-medium border border-green-500/30 mb-2">
+                    <Play className="w-3 h-3" />
+                    Season Berikutnya
+                  </span>
+                  <h3 className="text-lg sm:text-xl font-bold text-white mb-1 truncate">
+                    {nextSeason.title}
+                  </h3>
+                  <p className="text-white/50 text-sm mb-3 line-clamp-2">
+                    Lanjutkan menonton season berikutnya dari seri {currentBaseTitle}
+                  </p>
+                  <Link
+                    to={`/anime/${nextSeason.id}`}
+                    className="inline-flex items-center gap-2 bg-[#6C5DD3] hover:bg-[#5a4ec0] text-white text-sm font-medium px-4 py-2 rounded-xl transition-all"
+                  >
+                    <Play className="w-4 h-4 fill-current" />
+                    Tonton Sekarang
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        );
+      })()}
+
       {/* Content Tabs */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <Tabs defaultValue="episodes" className="w-full">
@@ -1499,10 +1666,98 @@ export default function AnimeDetail() {
           {/* Related Tab */}
           <TabsContent value="related">
             {relatedAnime.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                {relatedAnime.map((related, index) => (
-                  <AnimeCard key={related.id} anime={related} index={index} />
-                ))}
+              <div className="space-y-6">
+                {/* Same Franchise / Season */}
+                {(() => {
+                  // Helper functions
+                  const extractBaseTitle = (title: string) => {
+                    return title
+                      .toLowerCase()
+                      .replace(/\s+season\s+\d+/gi, '')
+                      .replace(/\s+part\s+\d+/gi, '')
+                      .replace(/\s+\d+(st|nd|rd|th)\s+season/gi, '')
+                      .replace(/\s+s\d+/gi, '')
+                      .replace(/\s+:\s*.+$/g, '')
+                      .replace(/\s+movie/gi, '')
+                      .replace(/\s+ova/gi, '')
+                      .replace(/\s+special/gi, '')
+                      .replace(/\s+ona/gi, '')
+                      .trim();
+                  };
+
+                  const getSeasonNumber = (title: string) => {
+                    const seasonMatch = title.match(/season\s+(\d+)/i);
+                    if (seasonMatch) return parseInt(seasonMatch[1]);
+                    const partMatch = title.match(/part\s+(\d+)/i);
+                    if (partMatch) return parseInt(partMatch[1]);
+                    const ordinalMatch = title.match(/(\d+)(st|nd|rd|th)\s+season/i);
+                    if (ordinalMatch) return parseInt(ordinalMatch[1]);
+                    const sMatch = title.match(/\s+S(\d+)/i);
+                    if (sMatch) return parseInt(sMatch[1]);
+                    return 0;
+                  };
+
+                  const getSeasonLabel = (title: string, currentTitle: string) => {
+                    const currentSeason = getSeasonNumber(currentTitle);
+                    const relatedSeason = getSeasonNumber(title);
+                    
+                    if (relatedSeason === currentSeason + 1) return { text: 'Season Berikutnya', color: 'bg-green-500/20 text-green-400 border-green-500/30' };
+                    if (relatedSeason === currentSeason - 1) return { text: 'Season Sebelumnya', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' };
+                    if (relatedSeason > 0) return { text: `Season ${relatedSeason}`, color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' };
+                    if (title.toLowerCase().includes('movie')) return { text: 'Movie', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' };
+                    if (title.toLowerCase().includes('ova')) return { text: 'OVA', color: 'bg-pink-500/20 text-pink-400 border-pink-500/30' };
+                    if (title.toLowerCase().includes('special')) return { text: 'Special', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30' };
+                    return { text: 'Seri Terkait', color: 'bg-white/10 text-white/70 border-white/20' };
+                  };
+
+                  const currentBaseTitle = anime ? extractBaseTitle(anime.title) : '';
+                  
+                  // Separate franchise and genre-based
+                  const franchiseAnime = relatedAnime.filter(a => extractBaseTitle(a.title) === currentBaseTitle);
+                  const genreAnime = relatedAnime.filter(a => extractBaseTitle(a.title) !== currentBaseTitle);
+
+                  return (
+                    <>
+                      {/* Same Franchise Section */}
+                      {franchiseAnime.length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                            <Film className="w-5 h-5 text-[#6C5DD3]" />
+                            {anime?.title.includes('Season') ? 'Season Lainnya' : 'Franchise Seri Ini'}
+                          </h3>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                            {franchiseAnime.map((related, index) => {
+                              const label = getSeasonLabel(related.title, anime?.title || '');
+                              return (
+                                <div key={related.id} className="relative group">
+                                  <AnimeCard anime={related} index={index} />
+                                  <div className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-medium border ${label.color} backdrop-blur-sm z-10`}>
+                                    {label.text}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Genre-Based Section */}
+                      {genreAnime.length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                            <Star className="w-5 h-5 text-[#6C5DD3]" />
+                            Rekomendasi Serupa
+                          </h3>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                            {genreAnime.map((related, index) => (
+                              <AnimeCard key={related.id} anime={related} index={index} />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             ) : (
               <div className="text-center py-12">
